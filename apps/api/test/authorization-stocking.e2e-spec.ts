@@ -130,4 +130,30 @@ describe('authorization and stocking invariants (e2e)', () => {
     const crop = await prisma.crop.findUniqueOrThrow({ where: { id: response.body.id } });
     expect(crop.preparationStartDate.toISOString()).toBe('2026-07-20T00:00:00.000Z');
   });
+
+  it('completes the Phase-1 lifecycle through frozen P&L', async () => {
+    const speciesId = randomUUID();
+    const feedItemId = randomUUID();
+    const costHeadId = randomUUID();
+    await prisma.species.create({ data: { id: speciesId, category: 'SHRIMP', name: `Lifecycle-${speciesId}`, createdBy: actor, updatedBy: actor, deviceId: device } });
+    await prisma.feedItem.create({ data: { id: feedItemId, businessId: businessA, brand: 'Lifecycle', feedType: 'STARTER', gradeCode: 'S1', bagWeightKg: '25', createdBy: actor, updatedBy: actor, deviceId: device } });
+    await prisma.feedRateHistory.create({ data: { id: randomUUID(), businessId: businessA, feedItemId, effectiveFrom: new Date('2026-01-01'), ratePerKgPaise: 100n, createdBy: actor, updatedBy: actor, deviceId: device } });
+    await prisma.costHead.create({ data: { id: costHeadId, businessId: businessA, code: `L-${costHeadId}`, name: 'Lifecycle expense', classification: 'DIRECT', createdBy: actor, updatedBy: actor, deviceId: device } });
+    await prisma.preparationActivity.create({ data: { businessId: businessA, pondId: pondA, name: 'Lifecycle prep', startDate: new Date('2026-07-01'), labourCostPaise: 0n, materialCostPaise: 0n, amountPaise: 0n, createdBy: actor, updatedBy: actor, deviceId: device } });
+    const auth = { Authorization: `Bearer ${token(businessA, 'AE_OWNER', true, ['*']) }` };
+    const stocked = await request(app.getHttpServer()).post(`/ponds/${pondA}/stock`).set(auth).send({ speciesCategory: 'SHRIMP', batches: [{ speciesId, stockedOn: '2026-07-10', quantityPieces: '1000', ratePaise: '10' }] }).expect(201);
+    const cropId = stocked.body.id;
+    await request(app.getHttpServer()).post(`/crops/${cropId}/feed-logs`).set(auth).send({ logDate: '2026-07-11', mealSlot: 'MORNING', feedItemId, quantityKg: '1' }).expect(201);
+    await request(app.getHttpServer()).post(`/crops/${cropId}/growth-samples`).set(auth).send({ sampledOn: '2026-08-01', doc: 22, animalsInSample: 10, sampleWeightG: '1' }).expect(201);
+    await request(app.getHttpServer()).post('/finance/expenses').set(auth).send({ expenseDate: '2026-07-11', costHeadId, allocationTarget: 'POND_CROP', pondId: pondA, cropId, amountPaise: '1000' }).expect(201);
+    await request(app.getHttpServer()).post(`/crops/${cropId}/harvests`).set(auth).send({ harvestDate: '2026-08-10', doc: 31, type: 'PARTIAL', reason: 'MARKET_RATE', sampleTaken: true, sampleCount: 10, sampleWeightG: '1.2', lines: [{ basis: 'COUNT', key: 'ALL', quantityKg: '0.5', ratePerKgPaise: '200' }] }).expect(201);
+    await request(app.getHttpServer()).post(`/crops/${cropId}/harvests`).set(auth).send({ harvestDate: '2026-09-10', doc: 62, type: 'FINAL', reason: 'SEASON_END', sampleTaken: true, sampleCount: 10, sampleWeightG: '1.5', lines: [{ basis: 'COUNT', key: 'ALL', quantityKg: '0.5', ratePerKgPaise: '200' }] }).expect(201);
+    const pnl = await request(app.getHttpServer()).post(`/crops/${cropId}/close`).set(auth).expect(201);
+    expect(pnl.body.isCurrent).toBe(true);
+    expect(pnl.body.payload.status).toBe('FROZEN');
+    const crop = await prisma.crop.findUniqueOrThrow({ where: { id: cropId } });
+    expect(crop.preparationStartDate.toISOString()).toBe('2026-07-01T00:00:00.000Z');
+    expect(crop.status).toBe('CLOSED');
+    expect((await prisma.pond.findUniqueOrThrow({ where: { id: pondA } })).status).toBe('IDLE');
+  });
 });
