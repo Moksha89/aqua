@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../platform/prisma.service';
+import { paise, valueInput } from '../rules-engine';
 
 type Context = { businessId: string; userId: string; deviceId: string };
 type ExpenseInput = { expenseDate: string; costHeadId: string; allocationTarget: 'POND_CROP' | 'COMMON'; pondId?: string; cropId?: string; commonPoolId?: string; amountPaise: string; quantity?: string; ratePaise?: string; partyId?: string; paymentStatus?: PaymentStatus; paymentMode?: string; paymentReference?: string; billKey?: string; remarks?: string; ratePending?: boolean };
@@ -49,5 +50,29 @@ export class FinanceService {
     ]);
     if (!party) throw new NotFoundException('Party not found');
     return { party, expenses, payments };
+  }
+
+  async payables(ctx: Context) {
+    return this.prisma.expense.findMany({ where: { businessId: ctx.businessId, partyId: { not: null }, paymentStatus: { in: ['UNPAID', 'PART_PAID'] }, voidedAt: null }, orderBy: { expenseDate: 'asc' } });
+  }
+
+  async receivables(ctx: Context) {
+    return this.prisma.harvestEvent.findMany({ where: { businessId: ctx.businessId, receivablePaise: { gt: 0 }, voidedAt: null }, orderBy: { receivableDueDate: 'asc' } });
+  }
+
+  async supplierHeadroom(partyId: string, ctx: Context) {
+    const limit = await this.prisma.supplierCreditLimit.findFirst({ where: { businessId: ctx.businessId, partyId, voidedAt: null }, orderBy: { effectiveFrom: 'desc' } });
+    if (!limit) throw new NotFoundException('Supplier credit limit not found');
+    const outstanding = await this.prisma.expense.aggregate({ where: { businessId: ctx.businessId, partyId, paymentStatus: { in: ['UNPAID', 'PART_PAID'] }, voidedAt: null }, _sum: { amountPaise: true } });
+    const used = outstanding._sum.amountPaise ?? 0n;
+    return { limitPaise: limit.limitPaise, usedPaise: used, headroomPaise: limit.limitPaise - used };
+  }
+
+  async valueInput(cropId: string, itemId: string, ctx: Context) {
+    const purchases = await this.prisma.expense.findMany({ where: { businessId: ctx.businessId, cropId, ratePending: false, voidedAt: null }, select: { quantity: true, ratePaise: true } });
+    const rates = purchases.filter((p) => p.quantity && p.ratePaise).map((p) => ({ quantity: BigInt(Math.round(Number(p.quantity) * 1000)), ratePaise: paise(p.ratePaise!) }));
+    const master = await this.prisma.feedRateHistory.findFirst({ where: { feedItemId: itemId, effectiveFrom: { lte: new Date() } }, orderBy: { effectiveFrom: 'desc' } });
+    const result = valueInput(rates, master ? paise(master.ratePerKgPaise) : undefined);
+    return { rate: result.rate, ratePending: result.ratePending };
   }
 }

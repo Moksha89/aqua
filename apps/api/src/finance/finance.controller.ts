@@ -17,4 +17,8 @@ export class FinanceController {
   @Post('payments') payment(@Body() b: PaymentDto, @Req() r: AuthenticatedRequest) { return this.finance.payment(b, this.ctx(r)); }
   @Post('lease-payments') leasePayment(@Body() b: LeasePaymentDto, @Req() r: AuthenticatedRequest) { return this.finance.leasePayment(b, this.ctx(r)); }
   @Get('parties/:id/ledger') ledger(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.finance.ledger(id, this.ctx(r)); }
+  @Get('payables') payables(@Req() r: AuthenticatedRequest) { return this.finance.payables(this.ctx(r)); }
+  @Get('receivables') receivables(@Req() r: AuthenticatedRequest) { return this.finance.receivables(this.ctx(r)); }
+  @Get('suppliers/:id/headroom') headroom(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.finance.supplierHeadroom(id, this.ctx(r)); }
+  @Get('crops/:cropId/input-value/:itemId') inputValue(@Param('cropId') cropId: string, @Param('itemId') itemId: string, @Req() r: AuthenticatedRequest) { return this.finance.valueInput(cropId, itemId, this.ctx(r)); }
 }
