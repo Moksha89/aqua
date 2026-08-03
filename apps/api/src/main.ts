@@ -1,10 +1,30 @@
 import 'reflect-metadata';
 
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './platform/http-exception.filter';
+import { JsonSerialiserInterceptor } from './platform/json-serialiser.interceptor';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api/v1');
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new JsonSerialiserInterceptor());
+  const config = new DocumentBuilder()
+    .setTitle('AE Farm & Financial Management API')
+    .setDescription('Offline-first aqua farm operations and finance API')
+    .setVersion('1.0')
+    .build();
+  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
   await app.listen(process.env.PORT ?? 3000);
 }
 
