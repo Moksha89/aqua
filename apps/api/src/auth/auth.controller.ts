@@ -24,12 +24,17 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('otp/request')
-  requestOtp(@Body() body: OtpRequestDto): { mobile: string } {
+  requestOtp(@Body() body: OtpRequestDto): ReturnType<AuthService['requestOtp']> {
     return this.auth.requestOtp(body.mobile);
   }
 
   @Post('otp/verify')
   verifyOtp(@Body() body: OtpVerifyDto): ReturnType<AuthService['verifyOtp']> {
     return this.auth.verifyOtp(body.mobile, body.code, body.deviceId);
+  }
+
+  @Post('refresh')
+  refresh(@Body('refreshToken') refreshToken: string): ReturnType<AuthService['refresh']> {
+    return this.auth.refresh(refreshToken);
   }
 }
