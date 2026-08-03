@@ -995,6 +995,27 @@ model CropInputBalance {
   voidedBy String? @db.Uuid
   voidReason String?
 }
+model CropInputMovement {
+  @@map("crop_input_movement")
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  itemType String
+  itemId String @db.Uuid
+  quantity Decimal @db.Decimal(14,3)
+  valuePaise BigInt @map("value_paise")
+  movementType String
+  reason String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
 model HarvestEvent {
   @@map("harvest_event")
   id String @id @default(uuid()) @db.Uuid

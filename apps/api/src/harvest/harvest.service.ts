@@ -84,6 +84,18 @@ export class HarvestService {
       if (!count) throw new BadRequestException('At least one harvest is required');
     }
     if (step === 'RECONCILE_FEED_STOCK' && note !== 'CARRY_FORWARD' && !note?.startsWith('WRITE_OFF:')) throw new BadRequestException('Choose CARRY_FORWARD or WRITE_OFF:<reason>');
+    if (step === 'RECONCILE_FEED_STOCK') {
+      await this.prisma.$transaction(async (tx) => {
+        const balances = await tx.cropInputBalance.findMany({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
+        for (const balance of balances) {
+          const quantity = new Prisma.Decimal(balance.qtyOnHand);
+          if (quantity.isZero()) continue;
+          const value = BigInt(Math.round(Number(quantity) * Number(balance.weightedAvgRatePaise)));
+          await tx.cropInputMovement.create({ data: { businessId: ctx.businessId, cropId, itemType: balance.itemType, itemId: balance.itemId, quantity, valuePaise: value, movementType: note === 'CARRY_FORWARD' ? 'CARRY_FORWARD' : 'WRITE_OFF', reason: note === 'CARRY_FORWARD' ? null : note!.slice('WRITE_OFF:'.length), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+          await tx.cropInputBalance.update({ where: { id: balance.id }, data: note === 'CARRY_FORWARD' ? { carriedInQty: { increment: quantity }, qtyOnHand: 0 } : { qtyOnHand: 0, qtyConsumed: { increment: quantity } } });
+        }
+      });
+    }
     if (step === 'POST_OCCUPANCY_COSTS' || step === 'CLOSURE_ALLOCATION') {
       if (!this.allocations) throw new BadRequestException('Allocation service unavailable');
       await this.allocations.run({ periodStart: crop.preparationStartDate.toISOString(), periodEnd: (crop.finalHarvestDate ?? new Date()).toISOString(), trigger: 'CLOSURE' }, ctx);
