@@ -15,17 +15,17 @@ describe('SyncService', () => {
     const tx = { outboxReceipt: { findUnique: jest.fn().mockResolvedValue(null) }, expense: { findFirst: jest.fn().mockResolvedValue({ id: 'e', rev: 2n }), update: jest.fn() }, syncConflict: { create: jest.fn() } };
     const prisma = { $transaction: jest.fn((fn: (value: unknown) => unknown) => fn(tx)) };
     const service = new SyncService(prisma as never, {} as never);
-    const result = await service.push({ records: [{ entity: 'expense', id: '11111111-1111-1111-1111-111111111111', idempotencyKey: 'k', payload: {} }] }, ctx);
+    const result = await service.push({ records: [{ entity: 'expense', id: '11111111-1111-1111-1111-111111111111', idempotencyKey: 'k', payload: { expenseDate: '2026-01-01', costHeadId: 'c', allocationTarget: 'COMMON', commonPoolId: 'p', amountPaise: '100' } }] }, ctx);
     expect(result.receipts[0]!.status).toBe('conflict');
     expect(tx.expense.update).not.toHaveBeenCalled();
     expect(tx.syncConflict.create).toHaveBeenCalled();
   });
 
   it('applies an operational conflict and records a marker', async () => {
-    const tx = { outboxReceipt: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() }, feedLog: { findFirst: jest.fn().mockResolvedValue({ id: 'e', rev: 2n }), update: jest.fn() }, syncConflict: { create: jest.fn() } };
+    const tx = { crop: { findFirst: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) }, outboxReceipt: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() }, feedLog: { findFirst: jest.fn().mockResolvedValue({ id: 'e', rev: 2n }), update: jest.fn() }, syncConflict: { create: jest.fn() } };
     const prisma = { $transaction: jest.fn((fn: (value: unknown) => unknown) => fn(tx)) };
     const service = new SyncService(prisma as never, {} as never);
-    const result = await service.push({ records: [{ entity: 'feedLog', id: '11111111-1111-1111-1111-111111111111', idempotencyKey: 'k', payload: {} }] }, ctx);
+    const result = await service.push({ records: [{ entity: 'feedLog', id: '11111111-1111-1111-1111-111111111111', idempotencyKey: 'k', payload: { cropId: 'c', logDate: '2026-01-01', mealSlot: 'AM', feedItemId: 'f', quantityKg: '1' } }] }, ctx);
     expect(result.receipts[0]!.status).toBe('applied');
     expect(tx.feedLog.update).toHaveBeenCalled();
     expect(tx.syncConflict.create).toHaveBeenCalled();
@@ -41,5 +41,14 @@ describe('SyncService', () => {
     expect(prisma.expense.findMany).not.toHaveBeenCalled();
     expect(result.theme).toBeTruthy();
     expect(prisma.waterReading.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ pondId: { in: ['p1'] } }) }));
+  });
+
+  it('rejects writes targeting a closed crop', async () => {
+    const tx = { crop: { findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED' }) }, outboxReceipt: { findUnique: jest.fn().mockResolvedValue(null) } };
+    const prisma = { $transaction: jest.fn((fn: (value: unknown) => unknown) => fn(tx)) };
+    const service = new SyncService(prisma as never, {} as never);
+    const result = await service.push({ records: [{ entity: 'feedLog', id: '11111111-1111-1111-1111-111111111111', idempotencyKey: 'closed', payload: { cropId: 'c', logDate: '2026-01-01', mealSlot: 'AM', feedItemId: 'f', quantityKg: '1' } }] }, ctx);
+    expect(result.receipts[0]!.status).toBe('rejected');
+    expect(result.receipts[0]!.reason).toContain('read-only');
   });
 });
