@@ -19,7 +19,7 @@ class AttendanceDto { @ApiProperty() @IsString() labourId!: string; @ApiProperty
 @Controller('crops')
 export class OperationsController {
   constructor(private readonly operations: OperationsService) {}
-  private ctx(r: AuthenticatedRequest) { return { businessId: r.user!.businessId!, userId: r.user!.id, deviceId: r.user!.deviceId }; }
+  private ctx(r: AuthenticatedRequest) { return { businessId: r.user!.businessId!, userId: r.user!.id, deviceId: r.user!.deviceId, role: r.user!.role, pondScope: r.user!.pondScope }; }
   @Post(':id/feed-logs') feed(@Param('id') id: string, @Body() body: FeedDto, @Req() r: AuthenticatedRequest) { return this.operations.feed(id, body, this.ctx(r)); }
   @Post(':id/feed-logs/bulk') bulk(@Param('id') id: string, @Body() body: FeedBulkDto, @Req() r: AuthenticatedRequest) { return this.operations.feedBulk(id, body.rows, this.ctx(r)); }
   @Post(':id/feed-logs/same-as-yesterday') same(@Param('id') id: string, @Body() body: SameYesterdayDto, @Req() r: AuthenticatedRequest) { return this.operations.feedSameAsYesterday(id, body.date, this.ctx(r)); }

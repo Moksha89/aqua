@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/comm
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
+import { FinancialAccessGuard } from '../auth/roles.guard';
 import { FinanceService } from './finance.service';
 import { ApiResponse } from '@nestjs/swagger';
 import { AssetRegisterReportDto, BusinessPnlReportDto, CashReportDto, CostHeadAnalysisReportDto, CostSheetReportDto, CropSummaryReportDto, EstimateVsActualReportDto, LeaseRegisterReportDto, LifetimeProfitabilityReportDto, PondHistoryReportDto, ProfitabilityReportDto } from './report.dto';
@@ -10,11 +11,11 @@ class ExpenseDto { @ApiProperty() @IsString() expenseDate!: string; @ApiProperty
 class PaymentDto { @ApiProperty() @IsString() partyId!: string; @ApiProperty() @IsString() paidOn!: string; @ApiProperty() @IsString() direction!: string; @ApiProperty() @IsString() amountPaise!: string; @ApiProperty() @IsString() mode!: string; @ApiProperty({ required: false }) @IsOptional() @IsString() reference?: string; @ApiProperty({ required: false }) @IsOptional() @IsString() notes?: string; }
 class LeasePaymentDto { @ApiProperty() @IsString() scheduleId!: string; @ApiProperty() @IsString() paidOn!: string; @ApiProperty() @IsString() amountPaise!: string; @ApiProperty() @IsString() mode!: string; @ApiProperty({ required: false }) @IsOptional() @IsString() reference?: string; }
 
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, FinancialAccessGuard)
 @Controller('finance')
 export class FinanceController {
   constructor(private readonly finance: FinanceService) {}
-  private ctx(r: AuthenticatedRequest) { return { businessId: r.user!.businessId!, userId: r.user!.id, deviceId: r.user!.deviceId }; }
+  private ctx(r: AuthenticatedRequest) { return { businessId: r.user!.businessId!, userId: r.user!.id, deviceId: r.user!.deviceId, role: r.user!.role, pondScope: r.user!.pondScope }; }
   @Post('expenses') expense(@Body() b: ExpenseDto, @Req() r: AuthenticatedRequest) { return this.finance.expense(b, this.ctx(r)); }
   @Post('payments') payment(@Body() b: PaymentDto, @Req() r: AuthenticatedRequest) { return this.finance.payment(b, this.ctx(r)); }
   @Post('lease-payments') leasePayment(@Body() b: LeasePaymentDto, @Req() r: AuthenticatedRequest) { return this.finance.leasePayment(b, this.ctx(r)); }

@@ -47,6 +47,10 @@ export class HarvestService {
     return this.prisma.$transaction(async (tx) => {
       const crop = await tx.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
       if (!crop) throw new NotFoundException('Crop not found');
+      if (crop.status === 'CLOSED') {
+        const frozen = await tx.cropPnl.findFirst({ where: { cropId, businessId: ctx.businessId, isCurrent: true }, orderBy: { version: 'desc' } });
+        if (frozen) return frozen;
+      }
       const checklist = await tx.cropClosureChecklist.findMany({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
       const required = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION'];
       if (required.some((step) => checklist.find((item) => item.step === step)?.status !== 'COMPLETED')) throw new BadRequestException('Closure checklist is incomplete');

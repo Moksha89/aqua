@@ -3,7 +3,7 @@ import { PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../platform/prisma.service';
 import { paise, valueInput } from '../rules-engine';
 
-type Context = { businessId: string; userId: string; deviceId: string };
+type Context = { businessId: string; userId: string; deviceId: string; role?: string; pondScope?: string[] };
 type ExpenseInput = { expenseDate: string; costHeadId: string; allocationTarget: 'POND_CROP' | 'COMMON'; pondId?: string; cropId?: string; commonPoolId?: string; amountPaise: string; quantity?: string; ratePaise?: string; partyId?: string; paymentStatus?: PaymentStatus; paymentMode?: string; paymentReference?: string; billKey?: string; remarks?: string; ratePending?: boolean };
 type PaymentInput = { partyId: string; paidOn: string; direction: string; amountPaise: string; mode: string; reference?: string; notes?: string };
 type LeasePaymentInput = { scheduleId: string; paidOn: string; amountPaise: string; mode: string; reference?: string };
@@ -16,6 +16,12 @@ export class FinanceService {
     if (body.allocationTarget === 'POND_CROP' && (!body.pondId || !body.cropId)) throw new BadRequestException('Pond and crop are required');
     if (body.allocationTarget === 'COMMON' && !body.commonPoolId) throw new BadRequestException('Common pool is required');
     return this.prisma.$transaction(async (tx) => {
+      if (body.pondId && ctx.role !== 'AE_OWNER' && !(ctx.pondScope ?? []).includes('*') && !(ctx.pondScope ?? []).includes(body.pondId)) throw new BadRequestException('Pond is outside assigned scope');
+      if (body.cropId) {
+        const crop = await tx.crop.findFirst({ where: { id: body.cropId, businessId: ctx.businessId, voidedAt: null } });
+        if (!crop) throw new NotFoundException('Crop not found');
+        if (crop.status === 'CLOSED') throw new BadRequestException('Closed crops are read-only');
+      }
       if (body.partyId) {
         const limit = await tx.supplierCreditLimit.findFirst({ where: { businessId: ctx.businessId, partyId: body.partyId, effectiveFrom: { lte: new Date(body.expenseDate) }, voidedAt: null }, orderBy: { effectiveFrom: 'desc' } });
         if (limit) {

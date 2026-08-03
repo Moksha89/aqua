@@ -14,15 +14,16 @@ describe('authorization and stocking invariants (e2e)', () => {
   const businessA = randomUUID();
   const businessB = randomUUID();
   const user = randomUUID();
+  const adminUser = randomUUID();
   const farmA = randomUUID();
   const pondA = randomUUID();
   const pondOther = randomUUID();
   const farmB = randomUUID();
   const pondB = randomUUID();
 
-  const token = (businessId: string, role = 'OPERATOR', financialAccess = false, scope: string[] = [pondA]) => {
+  const token = (businessId: string, role = 'OPERATOR', financialAccess = false, scope: string[] = [pondA], subject = user) => {
     const encoded = Buffer.from(JSON.stringify({
-      sub: user, deviceId: device, businessId, type: 'access', role, financialAccess, pondScope: scope,
+      sub: subject, deviceId: device, businessId, type: 'access', role, financialAccess, pondScope: scope,
       exp: Date.now() + 86_400_000,
     })).toString('base64url');
     const signature = createHmac('sha256', process.env.JWT_SECRET ?? 'development-secret')
@@ -52,8 +53,14 @@ describe('authorization and stocking invariants (e2e)', () => {
     await prisma.userAccount.create({
       data: { id: user, mobile: `9${Date.now()}`, name: 'Operator', defaultLanguage: 'en', status: 'ACTIVE', createdBy: actor, updatedBy: actor, deviceId: device },
     });
+    await prisma.userAccount.create({
+      data: { id: adminUser, mobile: `8${Date.now()}`, name: 'Admin', defaultLanguage: 'en', status: 'ACTIVE', createdBy: actor, updatedBy: actor, deviceId: device },
+    });
     await prisma.userBusinessRole.create({
       data: { businessId: businessA, userId: user, role: 'OPERATOR', financialAccess: false, pondScope: [pondA], createdBy: actor, updatedBy: actor, deviceId: device },
+    });
+    await prisma.userBusinessRole.create({
+      data: { businessId: businessA, userId: adminUser, role: 'AE_OWNER', financialAccess: true, pondScope: ['*'], createdBy: actor, updatedBy: actor, deviceId: device },
     });
     await prisma.farm.createMany({
       data: [
@@ -100,7 +107,7 @@ describe('authorization and stocking invariants (e2e)', () => {
 
   it('rolls back a failed stocking transaction', async () => {
     await request(app.getHttpServer()).post(`/ponds/${pondA}/stock`)
-      .set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'])}`)
+      .set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'], adminUser)}`)
       .send({
         speciesCategory: 'SHRIMP',
         batches: [{ speciesId: randomUUID(), stockedOn: 'not-a-date', quantityPieces: '100', ratePaise: '10' }],
@@ -122,7 +129,7 @@ describe('authorization and stocking invariants (e2e)', () => {
       },
     });
     const response = await request(app.getHttpServer()).post(`/ponds/${pondOther}/stock`)
-      .set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'])}`)
+      .set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'], adminUser)}`)
       .send({
         speciesCategory: 'SHRIMP',
         batches: [{ speciesId, stockedOn: '2026-08-01', quantityPieces: '100', ratePaise: '10' }],
@@ -140,7 +147,7 @@ describe('authorization and stocking invariants (e2e)', () => {
     await prisma.feedRateHistory.create({ data: { id: randomUUID(), businessId: businessA, feedItemId, effectiveFrom: new Date('2026-01-01'), ratePerKgPaise: 100n, createdBy: actor, updatedBy: actor, deviceId: device } });
     await prisma.costHead.create({ data: { id: costHeadId, businessId: businessA, code: `L-${costHeadId}`, name: 'Lifecycle expense', classification: 'DIRECT', createdBy: actor, updatedBy: actor, deviceId: device } });
     await prisma.preparationActivity.create({ data: { businessId: businessA, pondId: pondA, name: 'Lifecycle prep', startDate: new Date('2026-07-01'), labourCostPaise: 0n, materialCostPaise: 0n, amountPaise: 0n, createdBy: actor, updatedBy: actor, deviceId: device } });
-    const auth = { Authorization: `Bearer ${token(businessA, 'AE_OWNER', true, ['*']) }` };
+    const auth = { Authorization: `Bearer ${token(businessA, 'AE_OWNER', true, ['*'], adminUser) }` };
     const stocked = await request(app.getHttpServer()).post(`/ponds/${pondA}/stock`).set(auth).send({ speciesCategory: 'SHRIMP', batches: [{ speciesId, stockedOn: '2026-07-10', quantityPieces: '1000', ratePaise: '10' }] }).expect(201);
     const cropId = stocked.body.id;
     await request(app.getHttpServer()).post(`/crops/${cropId}/feed-logs`).set(auth).send({ logDate: '2026-07-11', mealSlot: 'MORNING', feedItemId, quantityKg: '1' }).expect(201);
@@ -167,7 +174,7 @@ describe('authorization and stocking invariants (e2e)', () => {
     await prisma.leaseAgreement.create({ data: { id: leaseId, businessId: businessA, landlordName: 'BPD landlord', extentAcres: '1', ratePerAcrePerAnnumPaise: 66200n, startDate: new Date('2026-01-01'), endDate: new Date('2026-12-31'), paymentFrequency: 'ANNUAL', advancePaise: 0n, advanceRefundable: false, createdBy: actor, updatedBy: actor, deviceId: device } });
     await prisma.pond.update({ where: { id: pondA }, data: { leaseAgreementId: leaseId } });
     await prisma.crop.create({ data: { id: cropId, businessId: businessA, pondId: pondA, code: `ALLOC-${cropId}`, speciesCategory: 'SHRIMP', status: 'ACTIVE', preparationStartDate: new Date('2026-01-01'), stockingDate: new Date('2026-01-01'), survivalAssumptionPct: '0', feedLoggingEnabled: true, createdBy: actor, updatedBy: actor, deviceId: device } });
-    await request(app.getHttpServer()).post('/allocations/runs').set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'])}`).send({ periodStart: '2026-01-01', periodEnd: '2026-12-31', trigger: 'MONTH_END' }).expect(201);
+    await request(app.getHttpServer()).post('/allocations/runs').set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'], adminUser)}`).send({ periodStart: '2026-01-01', periodEnd: '2026-12-31', trigger: 'MONTH_END' }).expect(201);
     const row = await prisma.apportionedCost.findFirstOrThrow({ where: { cropId, kind: 'LEASE' }, orderBy: { createdAt: 'desc' } });
     expect(row.amountPaise).toBe(66065n);
     expect((row.derivation as { status: string }).status).toBe('ACTUAL');
@@ -187,7 +194,7 @@ describe('authorization and stocking invariants (e2e)', () => {
       { id: generatorId, businessId: businessA, name: 'Generator', category: 'GENERATOR', purchaseDate: new Date('2024-01-01'), costPaise: 45000000n, salvagePct: '10', usefulLifeYears: '10', createdBy: actor, updatedBy: actor, deviceId: device },
     ] });
     await prisma.crop.create({ data: { id: cropId, businessId: businessA, pondId: pondA, code: `BPD-${cropId}`, speciesCategory: 'SHRIMP', status: 'ACTIVE', preparationStartDate: new Date('2025-01-01'), stockingDate: new Date('2025-01-01'), survivalAssumptionPct: '0', feedLoggingEnabled: true, createdBy: actor, updatedBy: actor, deviceId: device } });
-    await request(app.getHttpServer()).post('/allocations/runs').set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'])}`).send({ periodStart: '2025-01-01', periodEnd: '2025-05-15', trigger: 'MONTH_END' }).expect(201);
+    await request(app.getHttpServer()).post('/allocations/runs').set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'], adminUser)}`).send({ periodStart: '2025-01-01', periodEnd: '2025-05-15', trigger: 'MONTH_END' }).expect(201);
     const rows = await prisma.apportionedCost.findMany({ where: { cropId }, orderBy: { kind: 'asc' } });
     expect(rows.find((row) => row.kind === 'LEASE')?.amountPaise).toBe(4438395n);
     expect(rows.find((row) => row.kind === 'DEPRECIATION' && row.costHeadId === aeratorId)?.amountPaise).toBe(1807110n);
@@ -203,5 +210,17 @@ describe('authorization and stocking invariants (e2e)', () => {
     const second = await request(app.getHttpServer()).get(`/sync/pull?since=${encodeURIComponent(first.body.cursor)}&limit=2`).set(auth).expect(200);
     expect(second.body.changes.every((change: { entity: string }) => change.entity !== 'expense')).toBe(true);
     expect(second.body.cursor).toBe(second.body.snapshot);
+  });
+
+  it('rejects operator access to financial HTTP routes and out-of-scope writes', async () => {
+    const auth = { Authorization: `Bearer ${token(businessA, 'OPERATOR', false, [])}` };
+    await request(app.getHttpServer()).get('/finance/payables').set(auth).expect(403);
+    await request(app.getHttpServer()).get('/finance/reports/business-pnl').set(auth).expect(403);
+    const speciesId = randomUUID();
+    const feedItemId = randomUUID();
+    await prisma.species.create({ data: { id: speciesId, businessId: businessA, category: 'SHRIMP', name: `Scope-${speciesId}`, createdBy: actor, updatedBy: actor, deviceId: device } });
+    await prisma.feedItem.create({ data: { id: feedItemId, businessId: businessA, brand: 'Scope', feedType: 'STARTER', gradeCode: 'S', bagWeightKg: '25', createdBy: actor, updatedBy: actor, deviceId: device } });
+    const crop = await prisma.crop.create({ data: { id: randomUUID(), businessId: businessA, pondId: pondOther, code: 'SCOPE-CROP', speciesCategory: 'SHRIMP', status: 'ACTIVE', preparationStartDate: new Date(), stockingDate: new Date(), survivalAssumptionPct: '0', feedLoggingEnabled: true, createdBy: actor, updatedBy: actor, deviceId: device } });
+    await request(app.getHttpServer()).post(`/crops/${crop.id}/feed-logs`).set(auth).send({ logDate: '2026-08-01', mealSlot: 'AM', feedItemId, quantityKg: '1' }).expect(400);
   });
 });
