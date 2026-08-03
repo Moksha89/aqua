@@ -54,4 +54,16 @@ export class HarvestService {
       return pnl;
     });
   }
+
+  async checklist(cropId: string, ctx: Context) {
+    const crop = await this.prisma.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
+    if (!crop) throw new NotFoundException('Crop not found');
+    const steps = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION', 'FREEZE_PNL'];
+    return this.prisma.$transaction(async (tx) => {
+      for (const step of steps) {
+        await tx.cropClosureChecklist.upsert({ where: { id: `${cropId}-${step}` }, update: { status: 'PENDING', updatedBy: ctx.userId }, create: { id: `${cropId}-${step}`, businessId: ctx.businessId, cropId, step, status: 'PENDING', createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+      }
+      return tx.cropClosureChecklist.findMany({ where: { cropId, businessId: ctx.businessId }, orderBy: { step: 'asc' } });
+    });
+  }
 }

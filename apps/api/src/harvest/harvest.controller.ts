@@ -13,4 +13,5 @@ export class HarvestController {
   private ctx(r: AuthenticatedRequest) { return { businessId: r.user!.businessId!, userId: r.user!.id, deviceId: r.user!.deviceId }; }
   @Post(':id/harvests') harvest(@Param('id') id: string, @Body() b: HarvestDto, @Req() r: AuthenticatedRequest) { return this.harvests.harvest(id, b, this.ctx(r)); }
   @Post(':id/close') close(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.harvests.close(id, this.ctx(r)); }
+  @Post(':id/closure-checklist') checklist(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.harvests.checklist(id, this.ctx(r)); }
 }
