@@ -5,6 +5,8 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://aqua:aqua@localhost:5432/aqua?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
