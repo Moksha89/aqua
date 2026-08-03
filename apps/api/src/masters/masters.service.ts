@@ -61,6 +61,34 @@ export class MastersService {
     return after;
   }
 
+  async createLease(data: Record<string, unknown>, context: MasterContext): Promise<unknown> {
+    return this.prisma.$transaction(async (tx) => {
+      const lease = await tx.leaseAgreement.create({
+        data: { ...data, businessId: context.businessId, createdBy: context.userId, updatedBy: context.userId, deviceId: context.deviceId } as Prisma.LeaseAgreementUncheckedCreateInput,
+      });
+      const start = new Date(data.startDate as Date);
+      const end = new Date(data.endDate as Date);
+      const frequency = String(data.paymentFrequency).toUpperCase();
+      const months = frequency === 'MONTHLY' ? 1 : frequency === 'QUARTERLY' ? 3 : 12;
+      const periods: Date[] = [];
+      for (const due = new Date(start); due <= end; due.setMonth(due.getMonth() + months)) periods.push(new Date(due));
+      const annual = new Prisma.Decimal(String(data.ratePerAcrePerAnnumPaise)).mul(String(data.extentAcres));
+      const amount = BigInt(annual.div(Math.max(1, 12 / months)).toFixed(0));
+      await tx.leasePaymentSchedule.createMany({
+        data: periods.map((dueDate) => ({
+          businessId: context.businessId, leaseAgreementId: lease.id, dueDate, amountPaise: amount,
+          status: 'DUE', createdBy: context.userId, updatedBy: context.userId, deviceId: context.deviceId,
+        })),
+      });
+      await tx.auditLog.create({
+        data: { businessId: context.businessId, entity: 'leaseAgreement', entityId: lease.id, action: 'CREATE',
+          userId: context.userId, deviceId: context.deviceId, at: new Date(), before: Prisma.JsonNull,
+          after: lease as never, createdBy: context.userId, updatedBy: context.userId },
+      });
+      return lease;
+    });
+  }
+
   async update(delegate: Delegate, id: string, data: Record<string, unknown>, context: MasterContext): Promise<unknown> {
     const before = await delegate.findUnique({ where: { id, businessId: context.businessId } });
     const after = await delegate.update({

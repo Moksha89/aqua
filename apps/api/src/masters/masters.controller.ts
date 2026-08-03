@@ -99,6 +99,17 @@ export class AssetDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() disposalDate?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() disposalValuePaise?: string;
 }
+export class CostHeadDto {
+  @ApiProperty() @IsString() code!: string;
+  @ApiProperty() @IsString() name!: string;
+  @ApiProperty() @IsString() classification!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() defaultAllocationBasis?: string;
+}
+export class PreparationTemplateDto {
+  @ApiProperty() @IsString() speciesCategory!: string;
+  @ApiProperty() @IsString() name!: string;
+  @ApiProperty() items!: object[];
+}
 
 @UseGuards(JwtGuard)
 @Controller('masters')
@@ -140,7 +151,7 @@ export class MastersController {
   }
   @Post('lease-agreements')
   createLease(@Body() body: LeaseAgreementDto, @Req() req: AuthenticatedRequest) {
-    return this.masters.create(this.masters.leaseAgreement, {
+    return this.masters.createLease({
       landlordName: body.landlordName, landlordContact: body.landlordContact,
       extentAcres: body.extentAcres, ratePerAcrePerAnnumPaise: BigInt(body.ratePerAcrePerAnnumPaise),
       startDate: new Date(body.startDate), endDate: new Date(body.endDate),
@@ -228,6 +239,23 @@ export class MastersController {
       costPaise: BigInt(body.costPaise), salvagePct: body.salvagePct, usefulLifeYears: body.usefulLifeYears,
       disposalDate: body.disposalDate ? new Date(body.disposalDate) : undefined,
       disposalValuePaise: body.disposalValuePaise ? BigInt(body.disposalValuePaise) : undefined,
+    }, this.context(req));
+  }
+  @Get('cost-heads')
+  costHeads(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.costHead, this.user(req), false, true); }
+  @Get('preparation-templates')
+  preparationTemplates(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.preparationTemplate, this.user(req)); }
+  @Post('cost-heads')
+  createCostHead(@Body() body: CostHeadDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.costHead, {
+      code: body.code, name: body.name, classification: body.classification,
+      defaultAllocationBasis: body.defaultAllocationBasis,
+    }, this.context(req));
+  }
+  @Post('preparation-templates')
+  createPreparationTemplate(@Body() body: PreparationTemplateDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.preparationTemplate, {
+      speciesCategory: body.speciesCategory, name: body.name, items: body.items,
     }, this.context(req));
   }
 }
