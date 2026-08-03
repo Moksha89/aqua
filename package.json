@@ -1,0 +1,14 @@
+{
+  "name": "aqua",
+  "private": true,
+  "packageManager": "pnpm@9.15.5",
+  "engines": {
+    "node": ">=20 <21"
+  },
+  "scripts": {
+    "lint": "pnpm --filter @aqua/api lint",
+    "typecheck": "pnpm --filter @aqua/api typecheck",
+    "test": "pnpm --filter @aqua/api test",
+    "prisma:validate": "pnpm --filter @aqua/api prisma:validate"
+  }
+}

@@ -1,0 +1,1148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+enum PondStatus {
+  IDLE
+  UNDER_PREPARATION
+  STOCKED
+  HARVESTING
+  CLOSED
+}
+enum OwnershipType {
+  LEASED
+  OWN
+}
+enum CropStatus {
+  PLANNED
+  ACTIVE
+  HARVESTING
+  CLOSED
+}
+enum AllocationTarget {
+  POND_CROP
+  COMMON
+}
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PART_PAID
+}
+enum AssetCategory {
+  AERATOR
+  GENERATOR
+  PUMP
+  OTHER
+}
+enum ApportionedKind {
+  LEASE
+  DEPRECIATION
+  COMMON
+}
+enum AllocationRunTrigger {
+  MONTH_END
+  CLOSURE
+}
+enum AllocationStatus {
+  OPEN
+  ALLOCATED
+}
+enum HarvestType {
+  PARTIAL
+  FINAL
+}
+enum HarvestReason {
+  TARGET_SIZE
+  MARKET_RATE
+  DISEASE
+  SEASON_END
+  OTHER
+}
+enum HarvestBasis {
+  COUNT
+  GRADE
+}
+enum PnlStatus {
+  ESTIMATED
+  ACTUAL
+}
+
+model AeBusiness {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  mobile String?
+  state String?
+  district String?
+  village String?
+  language String
+  currency String @default("INR")
+  fyStartMonth Int @default(4)
+  businessType String?
+  gstin String?
+  pan String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model UserAccount {
+  id String @id @default(uuid()) @db.Uuid
+  mobile String @unique
+  name String
+  defaultLanguage String
+  status String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model UserBusinessRole {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  userId String @db.Uuid
+  role String
+  financialAccess Boolean @default(false)
+  pondScope String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Device {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String? @db.Uuid
+  userId String @db.Uuid
+  platform String
+  pushToken String?
+  lastSeenAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Farm {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  name String
+  address String?
+  lat Decimal? @db.Decimal(10,7)
+  lng Decimal? @db.Decimal(10,7)
+  totalExtentAcres Decimal? @db.Decimal(14,4)
+  waterSourceType String?
+  electricityServiceNumbers String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Pond {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  farmId String @db.Uuid
+  code String
+  name String
+  extentAcres Decimal @db.Decimal(10,4)
+  ownershipType OwnershipType
+  waterDepthM Decimal? @db.Decimal(10,3)
+  pondType String?
+  shape String?
+  geoBoundary Json?
+  status PondStatus
+  leaseAgreementId String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model LeaseAgreement {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  landlordName String
+  landlordContact String?
+  extentAcres Decimal @db.Decimal(14,4)
+  ratePerAcrePerAnnumPaise BigInt @map("rate_per_acre_per_annum_paise")
+  startDate DateTime
+  endDate DateTime
+  paymentFrequency String
+  advancePaise BigInt @default(0) @map("advance_paise")
+  advanceRefundable Boolean
+  escalationJson Json?
+  documentKey String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model LeasePond {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  leaseAgreementId String @db.Uuid
+  pondId String @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+  @@unique([leaseAgreementId, pondId])
+}
+model LeasePaymentSchedule {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  leaseAgreementId String @db.Uuid
+  dueDate DateTime
+  amountPaise BigInt @map("amount_paise")
+  status String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model LeasePayment {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  scheduleId String @db.Uuid
+  paidOn DateTime
+  amountPaise BigInt @map("amount_paise")
+  mode String
+  reference String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Species {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String? @db.Uuid
+  category String
+  name String
+  defaultDocDays Int?
+  defaultTargetSizeG Decimal? @db.Decimal(14,3)
+  defaultSurvivalPct Decimal? @db.Decimal(14,3)
+  waterParamRanges Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model FeedItem {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  brand String
+  feedType String
+  gradeCode String
+  bagWeightKg Decimal @db.Decimal(14,3)
+  supplierId String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model FeedRateHistory {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  feedItemId String @db.Uuid
+  effectiveFrom DateTime
+  ratePerKgPaise BigInt @map("rate_per_kg_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model MedicineItem {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  name String
+  category String
+  unit String
+  packSize Decimal? @db.Decimal(14,3)
+  supplierId String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model MedicineRateHistory {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  medicineItemId String @db.Uuid
+  effectiveFrom DateTime
+  ratePerUnitPaise BigInt @map("rate_per_unit_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Party {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  name String
+  type String[]
+  mobile String?
+  address String?
+  openingBalancePaise BigInt @default(0) @map("opening_balance_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model SupplierCreditLimit {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  partyId String @db.Uuid
+  limitPaise BigInt @map("limit_paise")
+  creditPeriodDays Int
+  effectiveFrom DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Labour {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  name String
+  mobile String?
+  engagementType String
+  defaultRatePaise BigInt @map("default_rate_paise")
+  rateBasis String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model AttendanceLog {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  labourId String @db.Uuid
+  pondId String? @db.Uuid
+  cropId String? @db.Uuid
+  workDate DateTime
+  days Decimal @db.Decimal(4,2)
+  amountPaise BigInt @map("amount_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Asset {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  name String
+  category AssetCategory
+  pondId String? @db.Uuid
+  purchaseDate DateTime
+  costPaise BigInt @map("cost_paise")
+  salvagePct Decimal @db.Decimal(5,2)
+  usefulLifeYears Decimal @db.Decimal(8,3)
+  disposalDate DateTime?
+  disposalValuePaise BigInt? @map("disposal_value_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model CostHead {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String? @db.Uuid
+  code String
+  name String
+  classification String
+  defaultAllocationBasis String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model MarketRateReference {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String? @db.Uuid
+  rateDate DateTime
+  region String
+  speciesId String @db.Uuid
+  basis HarvestBasis
+  key String
+  ratePerKgPaise BigInt @map("rate_per_kg_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Crop {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  pondId String @db.Uuid
+  code String
+  speciesCategory String
+  status CropStatus
+  preparationStartDate DateTime
+  stockingDate DateTime
+  weightedStockingDate DateTime?
+  expectedHarvestDate DateTime?
+  targetSizeG Decimal? @db.Decimal(14,3)
+  survivalAssumptionPct Decimal @db.Decimal(7,3)
+  feedLoggingEnabled Boolean
+  finalHarvestDate DateTime?
+  closedAt DateTime?
+  closedBy String? @db.Uuid
+  reopenedCount Int @default(0)
+  stockingFlags Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model CropSpeciesLine {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  speciesId String @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model StockingBatch {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  speciesId String @db.Uuid
+  stockedOn DateTime
+  quantityPieces Decimal @db.Decimal(14,3)
+  plStage String?
+  seedSizeG Decimal? @db.Decimal(14,3)
+  supplierPartyId String? @db.Uuid
+  rateBasis String
+  ratePaise BigInt @map("rate_paise")
+  seedCostPaise BigInt @map("seed_cost_paise")
+  transportCostPaise BigInt @map("transport_cost_paise")
+  acclimatisationNotes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model PreparationActivity {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  pondId String @db.Uuid
+  cropId String? @db.Uuid
+  templateItemId String? @db.Uuid
+  name String
+  startDate DateTime
+  completionDate DateTime?
+  labourCostPaise BigInt @map("labour_cost_paise")
+  materialCostPaise BigInt @map("material_cost_paise")
+  amountPaise BigInt @map("amount_paise")
+  payeePartyId String? @db.Uuid
+  attachmentKey String?
+  remarks String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model PreparationTemplate {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  speciesCategory String
+  name String
+  items Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model FeedLog {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  logDate DateTime
+  mealSlot String
+  feedItemId String @db.Uuid
+  quantityKg Decimal @db.Decimal(14,3)
+  bags Int?
+  looseKg Decimal? @db.Decimal(14,3)
+  feederLabourId String? @db.Uuid
+  appliedRatePaise BigInt? @map("applied_rate_paise")
+  remarks String?
+  photoKey String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model CheckTray {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  trayCode String
+  position String?
+  feedPlacedKg Decimal @db.Decimal(14,3)
+  checkIntervalMin Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model CheckTrayReading {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  checkTrayId String @db.Uuid
+  cropId String @db.Uuid
+  readAt DateTime
+  feedPlacedKg Decimal @db.Decimal(14,3)
+  residualCode String
+  residualWeightG Decimal? @db.Decimal(14,3)
+  gutFullness String?
+  colour String?
+  activity String?
+  moulting String?
+  deadSeen Int @default(0)
+  shellCondition String?
+  photoKey String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model GrowthSample {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  speciesId String? @db.Uuid
+  sampledOn DateTime
+  doc Int
+  animalsInSample Int
+  sampleWeightG Decimal @db.Decimal(14,3)
+  individualWeightsG Decimal[]
+  abwG Decimal @db.Decimal(14,3)
+  revisedSurvivalPct Decimal? @db.Decimal(7,3)
+  revisionReason String?
+  healthNotes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model WaterReading {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String? @db.Uuid
+  pondId String @db.Uuid
+  readAt DateTime
+  slot String
+  salinityPpt Decimal? @db.Decimal(14,3)
+  ph Decimal? @db.Decimal(14,3)
+  alkalinity Decimal? @db.Decimal(14,3)
+  hardness Decimal? @db.Decimal(14,3)
+  doMgl Decimal? @db.Decimal(14,3)
+  temperatureC Decimal? @db.Decimal(14,3)
+  ammonia Decimal? @db.Decimal(14,3)
+  nitrite Decimal? @db.Decimal(14,3)
+  transparencyCm Decimal? @db.Decimal(14,3)
+  vibrioTotal Int?
+  vibrioGreen Int?
+  planktonNote String?
+  labReportKey String?
+  source String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model MedicineApplication {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  appliedOn DateTime
+  medicineItemId String @db.Uuid
+  quantity Decimal @db.Decimal(14,3)
+  unit String
+  method String
+  reason String
+  costPaise BigInt @map("cost_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model HealthEvent {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  eventDate DateTime
+  doc Int
+  symptoms String[]
+  mortalityCount Int?
+  mortalityPct Decimal? @db.Decimal(7,3)
+  suspectedCause String?
+  labTested Boolean
+  labReportKey String?
+  treatment String?
+  technicianPartyId String? @db.Uuid
+  outcome String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Expense {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  expenseDate DateTime
+  costHeadId String @db.Uuid
+  allocationTarget AllocationTarget
+  pondId String? @db.Uuid
+  cropId String? @db.Uuid
+  commonPoolId String? @db.Uuid
+  amountPaise BigInt @map("amount_paise")
+  quantity Decimal? @db.Decimal(14,3)
+  ratePaise BigInt? @map("rate_paise")
+  partyId String? @db.Uuid
+  paymentStatus PaymentStatus
+  paidAmountPaise BigInt @default(0) @map("paid_amount_paise")
+  paymentMode String?
+  paymentReference String?
+  billKey String?
+  remarks String?
+  ratePending Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model Payment {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  partyId String @db.Uuid
+  paidOn DateTime
+  direction String
+  amountPaise BigInt @map("amount_paise")
+  mode String
+  reference String?
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model PaymentAllocation {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  paymentId String @db.Uuid
+  expenseId String? @db.Uuid
+  harvestEventId String? @db.Uuid
+  leaseScheduleId String? @db.Uuid
+  amountPaise BigInt @map("amount_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model CommonExpensePool {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  periodMonth DateTime
+  costHeadId String @db.Uuid
+  basis String
+  amountPaise BigInt @map("amount_paise")
+  status AllocationStatus
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model AllocationRun {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  periodStart DateTime
+  periodEnd DateTime
+  trigger AllocationRunTrigger
+  status AllocationStatus
+  executedAt DateTime?
+  executedBy String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model ApportionedCost {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  allocationRunId String? @db.Uuid
+  kind ApportionedKind
+  costHeadId String @db.Uuid
+  amountPaise BigInt @map("amount_paise")
+  fromDate DateTime
+  toDate DateTime
+  days Int
+  derivation Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model DepreciationSchedule {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  assetId String @db.Uuid
+  periodStart DateTime
+  periodEnd DateTime
+  dailyDepreciationPaise BigInt @map("daily_depreciation_paise")
+  method String @default("SLM")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model CropInputBalance {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  itemType String
+  itemId String @db.Uuid
+  qtyPurchased Decimal @db.Decimal(14,3)
+  qtyConsumed Decimal @db.Decimal(14,3)
+  qtyOnHand Decimal @db.Decimal(14,3)
+  weightedAvgRatePaise BigInt @map("weighted_avg_rate_paise")
+  carriedInQty Decimal @db.Decimal(14,3)
+  carriedInValuePaise BigInt @map("carried_in_value_paise")
+  locationId String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model HarvestEvent {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  harvestDate DateTime
+  doc Int
+  type HarvestType
+  buyerPartyId String? @db.Uuid
+  reason HarvestReason
+  sampleTaken Boolean
+  sampleCount Int?
+  sampleWeightG Decimal? @db.Decimal(14,3)
+  abwG Decimal? @db.Decimal(14,3)
+  rateCardId String? @db.Uuid
+  grossValuePaise BigInt @map("gross_value_paise")
+  deductionsPaise BigInt @map("deductions_paise")
+  netRealisationPaise BigInt @map("net_realisation_paise")
+  receivablePaise BigInt @map("receivable_paise")
+  receivableDueDate DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model HarvestLine {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  harvestEventId String @db.Uuid
+  speciesId String? @db.Uuid
+  basis HarvestBasis
+  key String
+  quantityKg Decimal @db.Decimal(14,3)
+  ratePerKgPaise BigInt @map("rate_per_kg_paise")
+  lineValuePaise BigInt @map("line_value_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model HarvestDeduction {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  harvestEventId String @db.Uuid
+  kind String
+  amountPaise BigInt @map("amount_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model ScrapSale {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String? @db.Uuid
+  pondId String? @db.Uuid
+  saleDate DateTime
+  item String
+  quantity Decimal @db.Decimal(14,3)
+  ratePaise BigInt @map("rate_paise")
+  buyerPartyId String? @db.Uuid
+  amountPaise BigInt @map("amount_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model CropPnl {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  version Int
+  generatedAt DateTime
+  generatedBy String @db.Uuid
+  payload Json
+  isCurrent Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+  @@unique([cropId, version])
+}
+model CropClosureChecklist {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  cropId String @db.Uuid
+  step String
+  status String
+  note String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model IdlePondCost {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  pondId String @db.Uuid
+  fromDate DateTime
+  toDate DateTime
+  days Int
+  leasePaise BigInt @map("lease_paise")
+  depreciationPaise BigInt @map("depreciation_paise")
+  otherPaise BigInt @map("other_paise")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  entity String
+  entityId String @db.Uuid
+  action String
+  userId String @db.Uuid
+  deviceId String @db.Uuid
+  at DateTime
+  before Json?
+  after Json?
+  reason String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model SyncConflict {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  entity String
+  entityId String @db.Uuid
+  class String
+  serverRev BigInt
+  clientPayload Json
+  serverPayload Json
+  status String
+  resolvedBy String? @db.Uuid
+  resolvedAt DateTime?
+  resolution String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model OutboxReceipt {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  deviceId String @db.Uuid
+  idempotencyKey String @unique
+  entity String
+  entityId String @db.Uuid
+  appliedRev BigInt
+  receivedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
+model BusinessTheme {
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @unique @db.Uuid
+  tokens Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String @db.Uuid
+  updatedBy String @db.Uuid
+  deviceId String @db.Uuid
+  rev BigInt @default(0)
+  voidedAt DateTime?
+  voidedBy String? @db.Uuid
+  voidReason String?
+}
