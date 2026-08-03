@@ -68,6 +68,37 @@ export class MedicineRateDto {
   @ApiProperty() @IsString() effectiveFrom!: string;
   @ApiProperty() @IsString() ratePerUnitPaise!: string;
 }
+export class PartyDto {
+  @ApiProperty() @IsString() name!: string;
+  @ApiProperty({ type: [String] }) @IsArray() @IsString({ each: true }) type!: string[];
+  @ApiProperty({ required: false }) @IsOptional() @IsString() mobile?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() address?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() openingBalancePaise?: string;
+}
+export class SupplierCreditDto {
+  @ApiProperty() @IsString() partyId!: string;
+  @ApiProperty() @IsString() limitPaise!: string;
+  @ApiProperty() @IsNumber() creditPeriodDays!: number;
+  @ApiProperty() @IsString() effectiveFrom!: string;
+}
+export class LabourDto {
+  @ApiProperty() @IsString() name!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() mobile?: string;
+  @ApiProperty() @IsString() engagementType!: string;
+  @ApiProperty() @IsString() defaultRatePaise!: string;
+  @ApiProperty() @IsString() rateBasis!: string;
+}
+export class AssetDto {
+  @ApiProperty() @IsString() name!: string;
+  @ApiProperty() @IsString() category!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() pondId?: string;
+  @ApiProperty() @IsString() purchaseDate!: string;
+  @ApiProperty() @IsString() costPaise!: string;
+  @ApiProperty() @IsNumber() salvagePct!: number;
+  @ApiProperty() @IsNumber() usefulLifeYears!: number;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() disposalDate?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() disposalValuePaise?: string;
+}
 
 @UseGuards(JwtGuard)
 @Controller('masters')
@@ -159,6 +190,44 @@ export class MastersController {
     return this.masters.create(this.masters.medicineRateHistory, {
       medicineItemId: body.medicineItemId, effectiveFrom: new Date(body.effectiveFrom),
       ratePerUnitPaise: BigInt(body.ratePerUnitPaise),
+    }, this.context(req));
+  }
+  @Get('parties')
+  parties(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.party, this.user(req)); }
+  @Get('supplier-credit-limits')
+  supplierCredits(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.supplierCreditLimit, this.user(req), false, true); }
+  @Get('labour')
+  labour(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.labour, this.user(req)); }
+  @Get('assets')
+  assets(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.asset, this.user(req), false, true); }
+  @Post('parties')
+  createParty(@Body() body: PartyDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.party, {
+      name: body.name, type: body.type, mobile: body.mobile, address: body.address,
+      openingBalancePaise: BigInt(body.openingBalancePaise ?? '0'),
+    }, this.context(req));
+  }
+  @Post('supplier-credit-limits')
+  createSupplierCredit(@Body() body: SupplierCreditDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.supplierCreditLimit, {
+      partyId: body.partyId, limitPaise: BigInt(body.limitPaise), creditPeriodDays: body.creditPeriodDays,
+      effectiveFrom: new Date(body.effectiveFrom),
+    }, this.context(req));
+  }
+  @Post('labour')
+  createLabour(@Body() body: LabourDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.labour, {
+      name: body.name, mobile: body.mobile, engagementType: body.engagementType,
+      defaultRatePaise: BigInt(body.defaultRatePaise), rateBasis: body.rateBasis,
+    }, this.context(req));
+  }
+  @Post('assets')
+  createAsset(@Body() body: AssetDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.asset, {
+      name: body.name, category: body.category, pondId: body.pondId, purchaseDate: new Date(body.purchaseDate),
+      costPaise: BigInt(body.costPaise), salvagePct: body.salvagePct, usefulLifeYears: body.usefulLifeYears,
+      disposalDate: body.disposalDate ? new Date(body.disposalDate) : undefined,
+      disposalValuePaise: body.disposalValuePaise ? BigInt(body.disposalValuePaise) : undefined,
     }, this.context(req));
   }
 }
