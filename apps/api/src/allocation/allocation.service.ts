@@ -27,7 +27,9 @@ export class AllocationService {
         if (pond.leaseAgreementId && occupancy > 0n) {
           const lease = await tx.leaseAgreement.findFirst({ where: { id: pond.leaseAgreementId, businessId: ctx.businessId, voidedAt: null } });
           if (lease) {
-            const result = leaseCost(paise(lease.ratePerAcrePerAnnumPaise), acres1e4(BigInt(Math.round(Number(lease.extentAcres) * 10_000))), occupancy);
+            const leaseExtent = Number(lease.extentAcres);
+            const acres = Number.isFinite(leaseExtent) ? leaseExtent : Number(pond.extentAcres);
+            const result = leaseCost(paise(lease.ratePerAcrePerAnnumPaise), acres1e4(BigInt(Math.round(acres * 10_000))), occupancy);
             await tx.apportionedCost.create({ data: { businessId: ctx.businessId, cropId: crop.id, allocationRunId: run.id, kind: 'LEASE', costHeadId: lease.id, amountPaise: result.value ?? 0n, fromDate: from, toDate: to, days: Number(occupancy), derivation: json(result), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
           }
         }

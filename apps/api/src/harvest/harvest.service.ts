@@ -83,6 +83,16 @@ export class HarvestService {
       const count = await this.prisma.harvestEvent.count({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
       if (!count) throw new BadRequestException('At least one harvest is required');
     }
+    if (step === 'ZERO_COST_HEADS') {
+      const [heads, expenses, allocated] = await Promise.all([
+        this.prisma.costHead.findMany({ where: { businessId: ctx.businessId, voidedAt: null, classification: 'DIRECT' } }),
+        this.prisma.expense.groupBy({ by: ['costHeadId'], where: { businessId: ctx.businessId, cropId, voidedAt: null }, _sum: { amountPaise: true } }),
+        this.prisma.apportionedCost.groupBy({ by: ['costHeadId'], where: { businessId: ctx.businessId, cropId, voidedAt: null }, _sum: { amountPaise: true } }),
+      ]);
+      const valued = new Set([...expenses, ...allocated].filter((row) => (row._sum.amountPaise ?? 0n) > 0n).map((row) => row.costHeadId));
+      const zero = heads.filter((head) => !valued.has(head.id)).map((head) => head.id);
+      if (zero.length > 0 && !note?.startsWith('ACK_ZERO:')) throw new BadRequestException(`Acknowledge zero-value cost heads: ${zero.join(',')}`);
+    }
     if (step === 'RECONCILE_FEED_STOCK' && note !== 'CARRY_FORWARD' && !note?.startsWith('WRITE_OFF:')) throw new BadRequestException('Choose CARRY_FORWARD or WRITE_OFF:<reason>');
     if (step === 'RECONCILE_FEED_STOCK') {
       await this.prisma.$transaction(async (tx) => {
