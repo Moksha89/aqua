@@ -75,4 +75,22 @@ export class FinanceService {
     const result = valueInput(rates, master ? paise(master.ratePerKgPaise) : undefined);
     return { rate: result.rate, ratePending: result.ratePending };
   }
+
+  async cashView(ctx: Context) {
+    const [payments, expenses] = await Promise.all([
+      this.prisma.payment.findMany({ where: { businessId: ctx.businessId, voidedAt: null }, orderBy: { paidOn: 'asc' } }),
+      this.prisma.expense.findMany({ where: { businessId: ctx.businessId, voidedAt: null, paymentStatus: { in: ['PAID', 'PART_PAID'] } }, orderBy: { expenseDate: 'asc' } }),
+    ]);
+    return { view: 'CASH', payments, expenses };
+  }
+
+  async profitabilityView(ctx: Context) {
+    const [crops, harvests, expenses, idle] = await Promise.all([
+      this.prisma.crop.findMany({ where: { businessId: ctx.businessId, voidedAt: null } }),
+      this.prisma.harvestEvent.findMany({ where: { businessId: ctx.businessId, voidedAt: null } }),
+      this.prisma.expense.findMany({ where: { businessId: ctx.businessId, voidedAt: null, ratePending: false } }),
+      this.prisma.idlePondCost.findMany({ where: { businessId: ctx.businessId, voidedAt: null } }),
+    ]);
+    return { view: 'PROFITABILITY', crops, harvests, expenses, idle };
+  }
 }

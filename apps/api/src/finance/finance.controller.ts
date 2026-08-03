@@ -21,4 +21,6 @@ export class FinanceController {
   @Get('receivables') receivables(@Req() r: AuthenticatedRequest) { return this.finance.receivables(this.ctx(r)); }
   @Get('suppliers/:id/headroom') headroom(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.finance.supplierHeadroom(id, this.ctx(r)); }
   @Get('crops/:cropId/input-value/:itemId') inputValue(@Param('cropId') cropId: string, @Param('itemId') itemId: string, @Req() r: AuthenticatedRequest) { return this.finance.valueInput(cropId, itemId, this.ctx(r)); }
+  @Get('reports/cash') cash(@Req() r: AuthenticatedRequest) { return this.finance.cashView(this.ctx(r)); }
+  @Get('reports/profitability') profitability(@Req() r: AuthenticatedRequest) { return this.finance.profitabilityView(this.ctx(r)); }
 }
