@@ -33,17 +33,27 @@ export class MastersService {
   get costHead(): Delegate { return this.prisma.costHead; }
   get preparationTemplate(): Delegate { return this.prisma.preparationTemplate; }
 
-  list(delegate: Delegate, user: ScopeUser, pond = false, financial = false): Promise<unknown> {
+  list(delegate: Delegate, user: ScopeUser, pond = false, financial = false, includeSystemRows = false): Promise<unknown> {
     if (financial) this.scope.assertFinancial(user);
+    const where = pond
+      ? this.scope.pondWhere(user)
+      : includeSystemRows
+        ? { OR: [{ businessId: user.businessId }, { businessId: null }], voidedAt: null }
+        : { businessId: user.businessId, voidedAt: null };
     return delegate.findMany({
-      where: pond ? this.scope.pondWhere(user) : { OR: [{ businessId: user.businessId }, { businessId: null }], voidedAt: null },
+      where,
     });
   }
 
-  get(delegate: Delegate, id: string, user: ScopeUser, pond = false, financial = false): Promise<unknown> {
+  get(delegate: Delegate, id: string, user: ScopeUser, pond = false, financial = false, includeSystemRows = false): Promise<unknown> {
     if (financial) this.scope.assertFinancial(user);
+    const where = pond
+      ? this.scope.pondWhere(user, id)
+      : includeSystemRows
+        ? { id, OR: [{ businessId: user.businessId }, { businessId: null }] }
+        : { id, businessId: user.businessId };
     return delegate.findUnique({
-      where: pond ? this.scope.pondWhere(user, id) : { id, OR: [{ businessId: user.businessId }, { businessId: null }] },
+      where,
     });
   }
 

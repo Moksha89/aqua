@@ -130,7 +130,7 @@ export class MastersController {
   @Get('lease-agreements')
   leases(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.leaseAgreement, this.user(req), false, true); }
   @Get('species')
-  species(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.species, this.user(req)); }
+  species(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.species, this.user(req), false, false, true); }
   @Get('farms/:id')
   farm(@Param('id') id: string, @Req() req: AuthenticatedRequest) { return this.masters.get(this.masters.farm, id, this.user(req)); }
   @Get('ponds/:id')
@@ -244,7 +244,7 @@ export class MastersController {
     }, this.context(req));
   }
   @Get('cost-heads')
-  costHeads(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.costHead, this.user(req), false, true); }
+  costHeads(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.costHead, this.user(req), false, true, true); }
   @Get('preparation-templates')
   preparationTemplates(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.preparationTemplate, this.user(req)); }
   @Post('cost-heads')
@@ -268,7 +268,7 @@ export class MastersController {
   @Get('supplier-credit-limits/:id') supplierCredit(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.supplierCreditLimit, id, this.user(r), false, true); }
   @Get('labour/:id') labourItem(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.labour, id, this.user(r)); }
   @Get('assets/:id') asset(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.asset, id, this.user(r), false, true); }
-  @Get('cost-heads/:id') costHead(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.costHead, id, this.user(r), false, true); }
+  @Get('cost-heads/:id') costHead(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.costHead, id, this.user(r), false, true, true); }
   @Get('preparation-templates/:id') preparationTemplate(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.preparationTemplate, id, this.user(r)); }
 
   @Patch('feed-items/:id') updateFeed(@Param('id') id: string, @Body() b: FeedItemDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.feedItem, id, b, this.context(r)); }

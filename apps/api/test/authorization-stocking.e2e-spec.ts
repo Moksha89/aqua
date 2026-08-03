@@ -226,4 +226,27 @@ describe('authorization and stocking invariants (e2e)', () => {
     const crop = await prisma.crop.create({ data: { id: randomUUID(), businessId: businessA, pondId: pondOther, code: 'SCOPE-CROP', speciesCategory: 'SHRIMP', status: 'ACTIVE', preparationStartDate: new Date(), stockingDate: new Date(), survivalAssumptionPct: '0', feedLoggingEnabled: true, createdBy: actor, updatedBy: actor, deviceId: device } });
     await request(app.getHttpServer()).post(`/crops/${crop.id}/feed-logs`).set(auth).send({ logDate: '2026-08-01', mealSlot: 'AM', feedItemId, quantityKg: '1' }).expect(400);
   });
+
+  it('serves every master list and farm detail endpoint for an admin', async () => {
+    const auth = { Authorization: `Bearer ${token(businessA, 'AE_OWNER', true, ['*'], adminUser)}` };
+    for (const path of [
+      '/masters/farms',
+      '/masters/ponds',
+      '/masters/lease-agreements',
+      '/masters/species',
+      '/masters/feed-items',
+      '/masters/feed-rate-history',
+      '/masters/medicine-items',
+      '/masters/medicine-rate-history',
+      '/masters/parties',
+      '/masters/supplier-credit-limits',
+      '/masters/labour',
+      '/masters/assets',
+      '/masters/cost-heads',
+      '/masters/preparation-templates',
+    ]) {
+      await request(app.getHttpServer()).get(path).set(auth).expect(200);
+    }
+    await request(app.getHttpServer()).get(`/masters/farms/${farmA}`).set(auth).expect(200);
+  });
 });
