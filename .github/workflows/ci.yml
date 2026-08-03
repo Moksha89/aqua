@@ -41,7 +41,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://aqua:aqua@localhost:5432/aqua?schema=public
+      DATABASE_URL: postgresql://aqua:aqua@localhost:5432/aqua_e2e?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -53,5 +53,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @aqua/api prisma:generate
+      - run: PGPASSWORD=aqua psql -h localhost -U aqua -d aqua -c 'CREATE DATABASE aqua_e2e'
       - run: pnpm --filter @aqua/api exec prisma migrate deploy --schema prisma/schema.prisma
       - run: pnpm --filter @aqua/api test:e2e
