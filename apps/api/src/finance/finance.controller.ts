@@ -23,5 +23,13 @@ export class FinanceController {
   @Get('crops/:cropId/input-value/:itemId') inputValue(@Param('cropId') cropId: string, @Param('itemId') itemId: string, @Req() r: AuthenticatedRequest) { return this.finance.valueInput(cropId, itemId, this.ctx(r)); }
   @Get('reports/cash') cash(@Req() r: AuthenticatedRequest) { return this.finance.cashView(this.ctx(r)); }
   @Get('reports/profitability') profitability(@Req() r: AuthenticatedRequest) { return this.finance.profitabilityView(this.ctx(r)); }
-  @Get('reports/:kind') report(@Param('kind') kind: string, @Req() r: AuthenticatedRequest) { return this.finance.report(kind, this.ctx(r)); }
+  @Get('reports/crop-summary') cropSummary(@Req() r: AuthenticatedRequest) { return this.finance.cropSummary(this.ctx(r)); }
+  @Get('reports/cost-sheet') costSheet(@Req() r: AuthenticatedRequest) { return this.finance.costSheet(this.ctx(r)); }
+  @Get('reports/estimate-vs-actual') estimateVsActual(@Req() r: AuthenticatedRequest) { return this.finance.estimateVsActual(this.ctx(r)); }
+  @Get('reports/pond-history') pondHistory(@Req() r: AuthenticatedRequest) { return this.finance.pondHistory(this.ctx(r)); }
+  @Get('reports/lifetime-profitability') lifetimeProfitability(@Req() r: AuthenticatedRequest) { return this.finance.lifetimeProfitability(this.ctx(r)); }
+  @Get('reports/business-pnl') businessPnl(@Req() r: AuthenticatedRequest) { return this.finance.businessPnl(this.ctx(r)); }
+  @Get('reports/cost-head-analysis') costHeadAnalysis(@Req() r: AuthenticatedRequest) { return this.finance.costHeadAnalysis(this.ctx(r)); }
+  @Get('reports/asset-register') assetRegister(@Req() r: AuthenticatedRequest) { return this.finance.assetRegister(this.ctx(r)); }
+  @Get('reports/lease-register') leaseRegister(@Req() r: AuthenticatedRequest) { return this.finance.leaseRegister(this.ctx(r)); }
 }

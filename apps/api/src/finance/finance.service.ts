@@ -94,26 +94,46 @@ export class FinanceService {
     return { view: 'PROFITABILITY', crops, harvests, expenses, idle };
   }
 
-  async report(kind: string, ctx: Context) {
-    const where = { businessId: ctx.businessId, voidedAt: null };
-    switch (kind) {
-      case 'crop-summary':
-      case 'cost-sheet':
-      case 'estimate-vs-actual':
-        return { kind, crops: await this.prisma.crop.findMany({ where }), pnl: await this.prisma.cropPnl.findMany({ where }) };
-      case 'pond-history':
-      case 'lifetime-profitability':
-        return { kind, ponds: await this.prisma.pond.findMany({ where }), idle: await this.prisma.idlePondCost.findMany({ where }) };
-      case 'business-pnl':
-        return { kind, pnl: await this.prisma.cropPnl.findMany({ where }) };
-      case 'cost-head-analysis':
-        return { kind, expenses: await this.prisma.expense.findMany({ where }) };
-      case 'asset-register':
-        return { kind, assets: await this.prisma.asset.findMany({ where }) };
-      case 'lease-register':
-        return { kind, leases: await this.prisma.leaseAgreement.findMany({ where }), schedules: await this.prisma.leasePaymentSchedule.findMany({ where }) };
-      default:
-        throw new NotFoundException('Report not found');
-    }
+  async cropSummary(ctx: Context) {
+    const crops = await this.prisma.crop.findMany({ where: { businessId: ctx.businessId, voidedAt: null } });
+    const harvests = await this.prisma.harvestEvent.findMany({ where: { businessId: ctx.businessId, voidedAt: null } });
+    return crops.map((crop) => ({ cropId: crop.id, harvestedPaise: harvests.filter((h) => h.cropId === crop.id).reduce((sum, h) => sum + h.netRealisationPaise, 0n), status: crop.status }));
+  }
+  async costSheet(ctx: Context) {
+    const [direct, apportioned] = await Promise.all([
+      this.prisma.expense.groupBy({ by: ['costHeadId'], where: { businessId: ctx.businessId, voidedAt: null, ratePending: false }, _sum: { amountPaise: true } }),
+      this.prisma.apportionedCost.groupBy({ by: ['costHeadId'], where: { businessId: ctx.businessId, voidedAt: null }, _sum: { amountPaise: true } }),
+    ]);
+    return { direct, apportioned };
+  }
+  async estimateVsActual(ctx: Context) {
+    const crops = await this.prisma.crop.findMany({ where: { businessId: ctx.businessId, voidedAt: null } });
+    return crops.map((crop) => ({ cropId: crop.id, estimatedHarvestDate: crop.expectedHarvestDate, actualHarvestDate: crop.finalHarvestDate }));
+  }
+  async pondHistory(ctx: Context) {
+    return this.prisma.pond.findMany({ where: { businessId: ctx.businessId, voidedAt: null }, select: { id: true, code: true, status: true } });
+  }
+  async lifetimeProfitability(ctx: Context) {
+    const [harvests, idle] = await Promise.all([this.prisma.harvestEvent.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { netRealisationPaise: true } }), this.prisma.idlePondCost.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { leasePaise: true, depreciationPaise: true, otherPaise: true } })]);
+    return { harvestRevenuePaise: harvests._sum.netRealisationPaise ?? 0n, idleCostPaise: (idle._sum.leasePaise ?? 0n) + (idle._sum.depreciationPaise ?? 0n) + (idle._sum.otherPaise ?? 0n) };
+  }
+  async businessPnl(ctx: Context) {
+    const [revenue, direct, allocated] = await Promise.all([
+      this.prisma.harvestEvent.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { netRealisationPaise: true } }),
+      this.prisma.expense.aggregate({ where: { businessId: ctx.businessId, voidedAt: null, ratePending: false }, _sum: { amountPaise: true } }),
+      this.prisma.apportionedCost.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { amountPaise: true } }),
+    ]);
+    const revenuePaise = revenue._sum.netRealisationPaise ?? 0n;
+    const costPaise = (direct._sum.amountPaise ?? 0n) + (allocated._sum.amountPaise ?? 0n);
+    return { revenuePaise, costPaise, netProfitPaise: revenuePaise - costPaise };
+  }
+  async costHeadAnalysis(ctx: Context) {
+    return this.prisma.expense.groupBy({ by: ['costHeadId'], where: { businessId: ctx.businessId, voidedAt: null, ratePending: false }, _sum: { amountPaise: true }, _count: { id: true } });
+  }
+  async assetRegister(ctx: Context) {
+    return this.prisma.asset.findMany({ where: { businessId: ctx.businessId, voidedAt: null }, select: { id: true, name: true, category: true, costPaise: true, purchaseDate: true, disposalDate: true } });
+  }
+  async leaseRegister(ctx: Context) {
+    return this.prisma.leaseAgreement.findMany({ where: { businessId: ctx.businessId, voidedAt: null }, select: { id: true, landlordName: true, extentAcres: true, ratePerAcrePerAnnumPaise: true, startDate: true, endDate: true, paymentFrequency: true } });
   }
 }
