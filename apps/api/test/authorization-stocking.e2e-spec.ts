@@ -172,4 +172,26 @@ describe('authorization and stocking invariants (e2e)', () => {
     expect(row.amountPaise).toBe(66065n);
     expect((row.derivation as { status: string }).status).toBe('ACTUAL');
   });
+
+  it('reproduces the BPD ₹66,200 worked example through HTTP allocation', async () => {
+    const leaseId = randomUUID();
+    const cropId = randomUUID();
+    const aeratorId = randomUUID();
+    const generatorId = randomUUID();
+    const extraPonds = [randomUUID(), randomUUID()];
+    await prisma.pond.createMany({ data: extraPonds.map((id, index) => ({ id, businessId: businessA, farmId: farmA, code: `EX${index}`, name: `Extra ${index}`, extentAcres: '1', ownershipType: 'OWN', status: 'IDLE', createdBy: actor, updatedBy: actor, deviceId: device })) });
+    await prisma.leaseAgreement.create({ data: { id: leaseId, businessId: businessA, landlordName: 'Worked example', extentAcres: '2', ratePerAcrePerAnnumPaise: 6000000n, startDate: new Date('2025-01-01'), endDate: new Date('2025-12-31'), paymentFrequency: 'ANNUAL', advancePaise: 0n, advanceRefundable: false, createdBy: actor, updatedBy: actor, deviceId: device } });
+    await prisma.pond.update({ where: { id: pondA }, data: { leaseAgreementId: leaseId } });
+    await prisma.asset.createMany({ data: [
+      { id: aeratorId, businessId: businessA, name: 'Aerators', category: 'AERATOR', pondId: pondA, purchaseDate: new Date('2024-01-01'), costPaise: 36000000n, salvagePct: '5', usefulLifeYears: '7', createdBy: actor, updatedBy: actor, deviceId: device },
+      { id: generatorId, businessId: businessA, name: 'Generator', category: 'GENERATOR', purchaseDate: new Date('2024-01-01'), costPaise: 45000000n, salvagePct: '10', usefulLifeYears: '10', createdBy: actor, updatedBy: actor, deviceId: device },
+    ] });
+    await prisma.crop.create({ data: { id: cropId, businessId: businessA, pondId: pondA, code: `BPD-${cropId}`, speciesCategory: 'SHRIMP', status: 'ACTIVE', preparationStartDate: new Date('2025-01-01'), stockingDate: new Date('2025-01-01'), survivalAssumptionPct: '0', feedLoggingEnabled: true, createdBy: actor, updatedBy: actor, deviceId: device } });
+    await request(app.getHttpServer()).post('/allocations/runs').set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'])}`).send({ periodStart: '2025-01-01', periodEnd: '2025-05-15', trigger: 'MONTH_END' }).expect(201);
+    const rows = await prisma.apportionedCost.findMany({ where: { cropId }, orderBy: { kind: 'asc' } });
+    expect(rows.find((row) => row.kind === 'LEASE')?.amountPaise).toBe(4438395n);
+    expect(rows.find((row) => row.kind === 'DEPRECIATION' && row.costHeadId === aeratorId)?.amountPaise).toBe(1807110n);
+    expect(rows.find((row) => row.kind === 'DEPRECIATION' && row.costHeadId === generatorId)?.amountPaise).toBe(374490n);
+    expect(rows.filter((row) => row.kind !== 'COMMON').reduce((sum, row) => sum + row.amountPaise, 0n)).toBe(6619995n);
+  });
 });

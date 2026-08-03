@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../platform/prisma.service';
-import { acres1e4, bp, commonAllocation, depreciationForWindow, days, leaseCost, paise } from '../rules-engine';
+import { acres1e4, bp, commonAllocation, depreciationDailyRate, depreciationForWindow, days, leaseCost, paise, sharedAssetDailyDepreciation } from '../rules-engine';
 type Context = { businessId: string; userId: string; deviceId: string };
 @Injectable()
 export class AllocationService {
@@ -27,13 +27,17 @@ export class AllocationService {
         if (pond.leaseAgreementId && occupancy > 0n) {
           const lease = await tx.leaseAgreement.findFirst({ where: { id: pond.leaseAgreementId, businessId: ctx.businessId, voidedAt: null } });
           if (lease) {
-            const result = leaseCost(paise(lease.ratePerAcrePerAnnumPaise), acres1e4(BigInt(Math.round(Number(pond.extentAcres) * 10_000))), occupancy);
+            const result = leaseCost(paise(lease.ratePerAcrePerAnnumPaise), acres1e4(BigInt(Math.round(Number(lease.extentAcres) * 10_000))), occupancy);
             await tx.apportionedCost.create({ data: { businessId: ctx.businessId, cropId: crop.id, allocationRunId: run.id, kind: 'LEASE', costHeadId: lease.id, amountPaise: result.value ?? 0n, fromDate: from, toDate: to, days: Number(occupancy), derivation: json(result), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
           }
         }
         for (const asset of assets.filter((item) => item.pondId === pond.id || item.pondId === null)) {
-          const result = depreciationForWindow({ costPaise: paise(asset.costPaise), salvagePct: bp(BigInt(Math.round(Number(asset.salvagePct) * 100))), usefulLifeYears: BigInt(Math.round(Number(asset.usefulLifeYears))), purchaseDate: asset.purchaseDate, disposalDate: asset.disposalDate ?? undefined }, from, to);
-          await tx.apportionedCost.create({ data: { businessId: ctx.businessId, cropId: crop.id, allocationRunId: run.id, kind: 'DEPRECIATION', costHeadId: asset.id, amountPaise: result.value ?? 0n, fromDate: from, toDate: to, days: Number(occupancy), derivation: json(result), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+          const window = { costPaise: paise(asset.costPaise), salvagePct: bp(BigInt(Math.round(Number(asset.salvagePct) * 100))), usefulLifeYears: BigInt(Math.round(Number(asset.usefulLifeYears))), purchaseDate: asset.purchaseDate, disposalDate: asset.disposalDate ?? undefined };
+          const result = asset.pondId === null
+            ? sharedAssetDailyDepreciation(depreciationDailyRate(window).value ?? paise(0n), BigInt(Math.round(Number(pond.extentAcres) * 10_000)), totalExtent)
+            : depreciationForWindow(window, from, to);
+          const total = asset.pondId === null ? (result.value ?? 0n) * occupancy : result.value ?? 0n;
+          await tx.apportionedCost.create({ data: { businessId: ctx.businessId, cropId: crop.id, allocationRunId: run.id, kind: 'DEPRECIATION', costHeadId: asset.id, amountPaise: total, fromDate: from, toDate: to, days: Number(occupancy), derivation: json(result), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
         }
         for (const pool of pools) {
           const result = commonAllocation({ commonCostPaise: paise(pool.amountPaise), basisValue: BigInt(Math.round(Number(pond.extentAcres) * 10_000)), totalBasisValue: totalExtent, activeDays: occupancy, daysInPeriod: days(periodStart, periodEnd) });
