@@ -60,9 +60,11 @@ export class SyncService {
     this.scope.pondWhere(user);
     const pondIds = user.role === 'OPERATOR' && !user.pondScope.includes('*') ? user.pondScope : undefined;
     const cropWhere = { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot }, ...(pondIds ? { pondId: { in: pondIds } } : {}) };
+    const scopedCrops = pondIds ? await this.prisma.crop.findMany({ where: { businessId: user.businessId, voidedAt: null, pondId: { in: pondIds } }, select: { id: true } }) : [];
+    const scopedCropIds = pondIds ? scopedCrops.map((crop) => crop.id) : undefined;
     const [crops, feedLogs, waterReadings, expenses, theme] = await Promise.all([
       this.prisma.crop.findMany({ where: cropWhere, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
-      this.prisma.feedLog.findMany({ where: { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot }, ...(pondIds ? { crop: { pondId: { in: pondIds } } } : {}) }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
+      this.prisma.feedLog.findMany({ where: { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot }, ...(scopedCropIds ? { cropId: { in: scopedCropIds } } : {}) }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
       this.prisma.waterReading.findMany({ where: { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot }, ...(pondIds ? { pondId: { in: pondIds } } : {}) }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
       user.role === 'OPERATOR' && !user.financialAccess ? Promise.resolve([]) : this.prisma.expense.findMany({ where: { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot } }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
       this.prisma.businessTheme.findUnique({ where: { businessId: user.businessId } }),

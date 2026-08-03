@@ -11,7 +11,7 @@ export class SyncController {
   private user(r: AuthenticatedRequest) { return { userId: r.user!.id, businessId: r.user!.businessId!, role: r.user!.role!, financialAccess: r.user!.financialAccess, pondScope: r.user!.pondScope, deviceId: r.user!.deviceId }; }
   @Get('pull')
   @ApiResponse({ status: 200, description: 'Paged changes and active theme' })
-  pull(@Query() query: SyncPullQueryDto, @Req() request: AuthenticatedRequest) { return this.service.pull(query.since, query.limit, this.user(request)); }
+  pull(@Query() query: SyncPullQueryDto, @Req() request: AuthenticatedRequest) { return this.service.pull(query.since, Number(query.limit ?? 100), this.user(request)); }
   @Post('push')
   @ApiBody({ type: SyncPushDto })
   push(@Req() request: AuthenticatedRequest, @Body() body: SyncPushDto) { return this.service.push(body, this.user(request)); }

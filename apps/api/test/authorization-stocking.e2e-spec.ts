@@ -194,4 +194,14 @@ describe('authorization and stocking invariants (e2e)', () => {
     expect(rows.find((row) => row.kind === 'DEPRECIATION' && row.costHeadId === generatorId)?.amountPaise).toBe(374490n);
     expect(rows.filter((row) => row.kind !== 'COMMON').reduce((sum, row) => sum + row.amountPaise, 0n)).toBe(6619995n);
   });
+
+  it('serves a scoped sync pull with a stable cursor over HTTP', async () => {
+    const auth = { Authorization: `Bearer ${token(businessA, 'OPERATOR', false, [pondA])}` };
+    const first = await request(app.getHttpServer()).get('/sync/pull?limit=2').set(auth).expect(200);
+    expect(first.body.cursor).toBe(first.body.snapshot);
+    await prisma.waterReading.create({ data: { id: randomUUID(), businessId: businessA, pondId: pondA, readAt: new Date(), slot: 'AM', source: 'MANUAL', createdBy: actor, updatedBy: actor, deviceId: device } });
+    const second = await request(app.getHttpServer()).get(`/sync/pull?since=${encodeURIComponent(first.body.cursor)}&limit=2`).set(auth).expect(200);
+    expect(second.body.changes.every((change: { entity: string }) => change.entity !== 'expense')).toBe(true);
+    expect(second.body.cursor).toBe(second.body.snapshot);
+  });
 });
