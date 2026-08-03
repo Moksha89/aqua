@@ -21,7 +21,7 @@ export class JwtGuard implements CanActivate {
     const header = request.headers.authorization;
     if (!header?.startsWith('Bearer ')) throw new UnauthorizedException('Bearer token required');
     const identity = this.auth.verifyAccessToken(header.slice(7));
-    const businessId = request.headers['x-business-id']?.toString();
+    const businessId = identity.businessId;
     const role = businessId
       ? await this.prisma.userBusinessRole.findFirst({
           where: { userId: identity.sub, businessId, voidedAt: null },

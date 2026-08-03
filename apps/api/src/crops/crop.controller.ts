@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { AuthenticatedRequest } from '../auth/jwt.guard';
 import { IsArray, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CropService } from './crop.service';
@@ -23,16 +24,16 @@ export class CropController {
   constructor(private readonly crops: CropService) {}
 
   @Get(':id/water-readiness')
-  readiness(@Param('id') id: string, @Headers('x-species-id') speciesId: string) {
-    return this.crops.readiness(id, speciesId);
+  readiness(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
+    return this.crops.readiness(id, request.query.speciesId as string);
   }
 
   @Post(':id/stock')
-  stock(@Param('id') id: string, @Body() body: StockDto, @Headers() headers: Record<string, string>) {
+  stock(@Param('id') id: string, @Body() body: StockDto, @Req() request: AuthenticatedRequest) {
     return this.crops.stock(id, body, {
-      businessId: headers['x-business-id'] ?? '',
-      userId: headers['x-user-id'] ?? '',
-      deviceId: headers['x-device-id'] ?? '',
+      businessId: request.user!.businessId!,
+      userId: request.user!.id,
+      deviceId: request.user!.deviceId,
     });
   }
 }

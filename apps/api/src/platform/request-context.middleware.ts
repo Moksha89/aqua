@@ -7,12 +7,11 @@ export class RequestContextMiddleware implements NestMiddleware {
   constructor(private readonly context: RequestContext) {}
 
   use(request: Request, _response: Response, next: NextFunction): void {
-    const headers = request.headers;
     this.context.run(
       {
-        userId: this.header(headers['x-user-id']),
-        businessId: this.header(headers['x-business-id']),
-        deviceId: this.header(headers['x-device-id']),
+        userId: undefined,
+        businessId: undefined,
+        deviceId: undefined,
       },
       next,
     );
