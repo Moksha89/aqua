@@ -1,3 +1,4 @@
+export * from './envelope';
 export * from './scales';
 export * from './occupancy';
 export * from './costs';
