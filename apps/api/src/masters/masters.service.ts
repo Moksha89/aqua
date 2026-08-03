@@ -36,14 +36,14 @@ export class MastersService {
   list(delegate: Delegate, user: ScopeUser, pond = false, financial = false): Promise<unknown> {
     if (financial) this.scope.assertFinancial(user);
     return delegate.findMany({
-      where: pond ? this.scope.pondWhere(user) : { businessId: user.businessId, voidedAt: null },
+      where: pond ? this.scope.pondWhere(user) : { OR: [{ businessId: user.businessId }, { businessId: null }], voidedAt: null },
     });
   }
 
   get(delegate: Delegate, id: string, user: ScopeUser, pond = false, financial = false): Promise<unknown> {
     if (financial) this.scope.assertFinancial(user);
     return delegate.findUnique({
-      where: pond ? this.scope.pondWhere(user, id) : { id, businessId: user.businessId },
+      where: pond ? this.scope.pondWhere(user, id) : { id, OR: [{ businessId: user.businessId }, { businessId: null }] },
     });
   }
 

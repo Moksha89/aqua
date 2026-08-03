@@ -23,18 +23,13 @@ const heads = [
 async function main() {
   const actor = randomUUID();
   for (const name of ['Vannamei', 'Tiger', 'Rohu', 'Katla', 'Pangasius']) {
-    await prisma.species.upsert({
-      where: { id: name.toLowerCase() },
-      update: { waterParamRanges: ranges },
-      create: { id: randomUUID(), businessId: null, category: name === 'Rohu' || name === 'Katla' ? 'FISH' : 'SHRIMP', name, waterParamRanges: ranges, createdBy: actor, updatedBy: actor, deviceId: actor },
-    });
+    const existing = await prisma.species.findFirst({ where: { businessId: null, name } });
+    if (existing) await prisma.species.update({ where: { id: existing.id }, data: { waterParamRanges: ranges, updatedBy: actor } });
+    else await prisma.species.create({ data: { id: randomUUID(), businessId: null, category: name === 'Rohu' || name === 'Katla' ? 'FISH' : 'SHRIMP', name, waterParamRanges: ranges, createdBy: actor, updatedBy: actor, deviceId: actor } });
   }
   for (const [code, name, classification] of heads) {
-    await prisma.costHead.upsert({
-      where: { id: code.toLowerCase() },
-      update: {},
-      create: { id: randomUUID(), businessId: null, code, name, classification, createdBy: actor, updatedBy: actor, deviceId: actor },
-    });
+    const existing = await prisma.costHead.findFirst({ where: { businessId: null, code } });
+    if (!existing) await prisma.costHead.create({ data: { id: randomUUID(), businessId: null, code, name, classification, createdBy: actor, updatedBy: actor, deviceId: actor } });
   }
   const businessId = process.env.SEED_BUSINESS_ID;
   if (businessId) {

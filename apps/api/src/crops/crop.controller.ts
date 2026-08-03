@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/jwt.guard';
-import { IsArray, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CropService } from './crop.service';
 import { JwtGuard } from '../auth/jwt.guard';
@@ -23,7 +23,7 @@ class PreparationDto {
   @IsString() labourCostPaise!: string;
   @IsString() materialCostPaise!: string;
   @IsString() amountPaise!: string;
-  @IsString() remarks?: string;
+  @IsOptional() @IsString() remarks?: string;
 }
 
 @UseGuards(JwtGuard)

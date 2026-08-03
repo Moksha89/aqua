@@ -147,7 +147,7 @@ export class MastersController {
   createPond(@Body() body: PondDto, @Req() req: AuthenticatedRequest) {
     return this.masters.create(this.masters.pond, {
       farmId: body.farmId, code: body.code, name: body.name, extentAcres: body.extentAcres,
-      ownershipType: body.ownershipType, waterDepthM: body.waterDepthM, pondType: body.pondType, shape: body.shape,
+      ownershipType: body.ownershipType, waterDepthM: body.waterDepthM, pondType: body.pondType, shape: body.shape, status: 'IDLE',
     }, this.context(req));
   }
   @Post('lease-agreements')
