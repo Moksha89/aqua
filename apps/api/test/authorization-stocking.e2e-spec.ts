@@ -36,6 +36,13 @@ describe('authorization and stocking invariants (e2e)', () => {
     app.useGlobalInterceptors(new JsonSerialiserInterceptor());
     await app.init();
     prisma = app.get(PrismaService);
+    await prisma.$executeRawUnsafe(`
+      TRUNCATE TABLE
+        "audit_log", "crop_species_line", "stocking_batch", "preparation_activity",
+        "crop", "pond", "farm", "cost_head", "user_business_role", "user_account",
+        "ae_business", "device"
+      CASCADE
+    `);
     await prisma.aeBusiness.createMany({
       data: [
         { id: businessA, name: 'A', language: 'en', createdBy: actor, updatedBy: actor, deviceId: device },

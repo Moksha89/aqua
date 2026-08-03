@@ -72,6 +72,7 @@ enum PnlStatus {
 }
 
 model AeBusiness {
+  @@map("ae_business")
   id String @id @default(uuid()) @db.Uuid
   name String
   mobile String?
@@ -95,6 +96,7 @@ model AeBusiness {
   voidReason String?
 }
 model UserAccount {
+  @@map("user_account")
   id String @id @default(uuid()) @db.Uuid
   mobile String @unique
   name String
@@ -111,6 +113,7 @@ model UserAccount {
   voidReason String?
 }
 model OtpChallenge {
+  @@map("otp_challenge")
   id String @id @default(uuid()) @db.Uuid
   mobile String
   codeHash String
@@ -122,6 +125,7 @@ model OtpChallenge {
   createdAt DateTime @default(now())
 }
 model RefreshToken {
+  @@map("refresh_token")
   id String @id @default(uuid()) @db.Uuid
   userId String @db.Uuid
   deviceId String @db.Uuid
@@ -133,6 +137,7 @@ model RefreshToken {
   replacedById String? @db.Uuid
 }
 model UserBusinessRole {
+  @@map("user_business_role")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   userId String @db.Uuid
@@ -150,6 +155,7 @@ model UserBusinessRole {
   voidReason String?
 }
 model Device {
+  @@map("device")
   id String @id @default(uuid()) @db.Uuid
   businessId String? @db.Uuid
   userId String @db.Uuid
@@ -167,6 +173,7 @@ model Device {
   voidReason String?
 }
 model Farm {
+  @@map("farm")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   name String
@@ -187,6 +194,7 @@ model Farm {
   voidReason String?
 }
 model Pond {
+  @@map("pond")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   farmId String @db.Uuid
@@ -211,6 +219,7 @@ model Pond {
   voidReason String?
 }
 model LeaseAgreement {
+  @@map("lease_agreement")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   landlordName String
@@ -235,6 +244,7 @@ model LeaseAgreement {
   voidReason String?
 }
 model LeasePond {
+  @@map("lease_pond")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   leaseAgreementId String @db.Uuid
@@ -251,6 +261,7 @@ model LeasePond {
   @@unique([leaseAgreementId, pondId])
 }
 model LeasePaymentSchedule {
+  @@map("lease_payment_schedule")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   leaseAgreementId String @db.Uuid
@@ -268,6 +279,7 @@ model LeasePaymentSchedule {
   voidReason String?
 }
 model LeasePayment {
+  @@map("lease_payment")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   scheduleId String @db.Uuid
@@ -286,6 +298,7 @@ model LeasePayment {
   voidReason String?
 }
 model Species {
+  @@map("species")
   id String @id @default(uuid()) @db.Uuid
   businessId String? @db.Uuid
   category String
@@ -305,6 +318,7 @@ model Species {
   voidReason String?
 }
 model FeedItem {
+  @@map("feed_item")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   brand String
@@ -323,6 +337,7 @@ model FeedItem {
   voidReason String?
 }
 model FeedRateHistory {
+  @@map("feed_rate_history")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   feedItemId String @db.Uuid
@@ -339,6 +354,7 @@ model FeedRateHistory {
   voidReason String?
 }
 model MedicineItem {
+  @@map("medicine_item")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   name String
@@ -357,6 +373,7 @@ model MedicineItem {
   voidReason String?
 }
 model MedicineRateHistory {
+  @@map("medicine_rate_history")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   medicineItemId String @db.Uuid
@@ -373,6 +390,7 @@ model MedicineRateHistory {
   voidReason String?
 }
 model Party {
+  @@map("party")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   name String
@@ -391,6 +409,7 @@ model Party {
   voidReason String?
 }
 model SupplierCreditLimit {
+  @@map("supplier_credit_limit")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   partyId String @db.Uuid
@@ -408,6 +427,7 @@ model SupplierCreditLimit {
   voidReason String?
 }
 model Labour {
+  @@map("labour")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   name String
@@ -426,6 +446,7 @@ model Labour {
   voidReason String?
 }
 model AttendanceLog {
+  @@map("attendance_log")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   labourId String @db.Uuid
@@ -445,6 +466,7 @@ model AttendanceLog {
   voidReason String?
 }
 model Asset {
+  @@map("asset")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   name String
@@ -467,6 +489,7 @@ model Asset {
   voidReason String?
 }
 model CostHead {
+  @@map("cost_head")
   id String @id @default(uuid()) @db.Uuid
   businessId String? @db.Uuid
   code String
@@ -484,6 +507,7 @@ model CostHead {
   voidReason String?
 }
 model MarketRateReference {
+  @@map("market_rate_reference")
   id String @id @default(uuid()) @db.Uuid
   businessId String? @db.Uuid
   rateDate DateTime
@@ -503,6 +527,7 @@ model MarketRateReference {
   voidReason String?
 }
 model Crop {
+  @@map("crop")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   pondId String @db.Uuid
@@ -532,6 +557,7 @@ model Crop {
   voidReason String?
 }
 model CropSpeciesLine {
+  @@map("crop_species_line")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -547,6 +573,7 @@ model CropSpeciesLine {
   voidReason String?
 }
 model StockingBatch {
+  @@map("stocking_batch")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -572,6 +599,7 @@ model StockingBatch {
   voidReason String?
 }
 model PreparationActivity {
+  @@map("preparation_activity")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   pondId String @db.Uuid
@@ -597,6 +625,7 @@ model PreparationActivity {
   voidReason String?
 }
 model PreparationTemplate {
+  @@map("preparation_template")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   speciesCategory String
@@ -613,6 +642,7 @@ model PreparationTemplate {
   voidReason String?
 }
 model FeedLog {
+  @@map("feed_log")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -637,6 +667,7 @@ model FeedLog {
   voidReason String?
 }
 model CheckTray {
+  @@map("check_tray")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -655,6 +686,7 @@ model CheckTray {
   voidReason String?
 }
 model CheckTrayReading {
+  @@map("check_tray_reading")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   checkTrayId String @db.Uuid
@@ -681,6 +713,7 @@ model CheckTrayReading {
   voidReason String?
 }
 model GrowthSample {
+  @@map("growth_sample")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -705,6 +738,7 @@ model GrowthSample {
   voidReason String?
 }
 model WaterReading {
+  @@map("water_reading")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String? @db.Uuid
@@ -736,6 +770,7 @@ model WaterReading {
   voidReason String?
 }
 model MedicineApplication {
+  @@map("medicine_application")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -757,6 +792,7 @@ model MedicineApplication {
   voidReason String?
 }
 model HealthEvent {
+  @@map("health_event")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -782,6 +818,7 @@ model HealthEvent {
   voidReason String?
 }
 model Expense {
+  @@map("expense")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   expenseDate DateTime
@@ -812,6 +849,7 @@ model Expense {
   voidReason String?
 }
 model Payment {
+  @@map("payment")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   partyId String @db.Uuid
@@ -832,6 +870,7 @@ model Payment {
   voidReason String?
 }
 model PaymentAllocation {
+  @@map("payment_allocation")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   paymentId String @db.Uuid
@@ -850,6 +889,7 @@ model PaymentAllocation {
   voidReason String?
 }
 model CommonExpensePool {
+  @@map("common_expense_pool")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   periodMonth DateTime
@@ -868,6 +908,7 @@ model CommonExpensePool {
   voidReason String?
 }
 model AllocationRun {
+  @@map("allocation_run")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   periodStart DateTime
@@ -887,6 +928,7 @@ model AllocationRun {
   voidReason String?
 }
 model ApportionedCost {
+  @@map("apportioned_cost")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -909,6 +951,7 @@ model ApportionedCost {
   voidReason String?
 }
 model DepreciationSchedule {
+  @@map("depreciation_schedule")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   assetId String @db.Uuid
@@ -927,6 +970,7 @@ model DepreciationSchedule {
   voidReason String?
 }
 model CropInputBalance {
+  @@map("crop_input_balance")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -950,6 +994,7 @@ model CropInputBalance {
   voidReason String?
 }
 model HarvestEvent {
+  @@map("harvest_event")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -979,6 +1024,7 @@ model HarvestEvent {
   voidReason String?
 }
 model HarvestLine {
+  @@map("harvest_line")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   harvestEventId String @db.Uuid
@@ -999,6 +1045,7 @@ model HarvestLine {
   voidReason String?
 }
 model HarvestDeduction {
+  @@map("harvest_deduction")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   harvestEventId String @db.Uuid
@@ -1015,6 +1062,7 @@ model HarvestDeduction {
   voidReason String?
 }
 model ScrapSale {
+  @@map("scrap_sale")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String? @db.Uuid
@@ -1036,6 +1084,7 @@ model ScrapSale {
   voidReason String?
 }
 model CropPnl {
+  @@map("crop_pnl")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -1056,6 +1105,7 @@ model CropPnl {
   @@unique([cropId, version])
 }
 model CropClosureChecklist {
+  @@map("crop_closure_checklist")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   cropId String @db.Uuid
@@ -1073,6 +1123,7 @@ model CropClosureChecklist {
   voidReason String?
 }
 model IdlePondCost {
+  @@map("idle_pond_cost")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   pondId String @db.Uuid
@@ -1093,6 +1144,7 @@ model IdlePondCost {
   voidReason String?
 }
 model AuditLog {
+  @@map("audit_log")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   entity String
@@ -1114,6 +1166,7 @@ model AuditLog {
   voidReason String?
 }
 model SyncConflict {
+  @@map("sync_conflict")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   entity String
@@ -1137,6 +1190,7 @@ model SyncConflict {
   voidReason String?
 }
 model OutboxReceipt {
+  @@map("outbox_receipt")
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
   deviceId String @db.Uuid
@@ -1155,6 +1209,7 @@ model OutboxReceipt {
   voidReason String?
 }
 model BusinessTheme {
+  @@map("business_theme")
   id String @id @default(uuid()) @db.Uuid
   businessId String @unique @db.Uuid
   tokens Json
