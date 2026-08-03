@@ -1,0 +1,51 @@
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { abwPlausibility, bp, harvestAbw, massMg } from '../rules-engine';
+import { PrismaService } from '../platform/prisma.service';
+
+type Context = { businessId: string; userId: string; deviceId: string };
+type Line = { speciesId?: string; basis: 'COUNT' | 'GRADE'; key: string; quantityKg: string; ratePerKgPaise: string };
+type HarvestInput = { harvestDate: string; doc: number; type: 'PARTIAL' | 'FINAL'; reason: 'TARGET_SIZE' | 'MARKET_RATE' | 'DISEASE' | 'SEASON_END' | 'OTHER'; sampleTaken: boolean; sampleCount?: number; sampleWeightG?: string; buyerPartyId?: string; receivableDueDate?: string; lines: Line[]; deductions?: Array<{ kind: string; amountPaise: string }> };
+
+@Injectable()
+export class HarvestService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async harvest(cropId: string, body: HarvestInput, ctx: Context) {
+    if (!body.lines.length) throw new BadRequestException('Harvest lines are required');
+    if (new Set(body.lines.map((line) => line.ratePerKgPaise)).size > 1) throw new BadRequestException('A harvest uses one dated rate card; blended rates are not allowed');
+    if (body.sampleTaken && (!body.sampleCount || !body.sampleWeightG)) throw new BadRequestException('Sample count and weight are required');
+    if (!body.sampleTaken && (body.sampleCount !== undefined || body.sampleWeightG !== undefined)) throw new BadRequestException('Do not provide sample values when sample was not taken');
+    return this.prisma.$transaction(async (tx) => {
+      const crop = await tx.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
+      if (!crop) throw new NotFoundException('Crop not found');
+      const previous = await tx.growthSample.findFirst({ where: { cropId, voidedAt: null }, orderBy: { sampledOn: 'desc' } });
+      const sampleWeightMg = body.sampleTaken ? BigInt(Math.round(Number(body.sampleWeightG) * 1000)) : 0n;
+      const sampleAbw = harvestAbw(body.sampleTaken, massMg(sampleWeightMg), BigInt(body.sampleCount ?? 0));
+      const plausible = previous && sampleAbw.value !== null ? abwPlausibility(massMg(BigInt(Math.round(Number(previous.abwG) * 1000))), sampleAbw.value, bp(5_000n)) : null;
+      if (plausible && plausible.value === false) throw new BadRequestException('Harvest ABW is implausible against the last growth sample');
+      const gross = body.lines.reduce((sum, line) => sum + BigInt(Math.round(Number(line.quantityKg) * Number(line.ratePerKgPaise))), 0n);
+      const deductions = (body.deductions ?? []).reduce((sum, item) => sum + BigInt(item.amountPaise), 0n);
+      const event = await tx.harvestEvent.create({ data: { businessId: ctx.businessId, cropId, harvestDate: new Date(body.harvestDate), doc: body.doc, type: body.type, reason: body.reason, buyerPartyId: body.buyerPartyId, sampleTaken: body.sampleTaken, sampleCount: body.sampleTaken ? body.sampleCount : null, sampleWeightG: body.sampleTaken ? new Prisma.Decimal(body.sampleWeightG!) : null, abwG: sampleAbw.value === null ? null : new Prisma.Decimal(Number(sampleAbw.value) / 1000), rateCardId: null, grossValuePaise: gross, deductionsPaise: deductions, netRealisationPaise: gross - deductions, receivablePaise: gross - deductions, receivableDueDate: body.receivableDueDate ? new Date(body.receivableDueDate) : null, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+      await tx.harvestLine.createMany({ data: body.lines.map((line) => ({ businessId: ctx.businessId, harvestEventId: event.id, speciesId: line.speciesId, basis: line.basis, key: line.key, quantityKg: new Prisma.Decimal(line.quantityKg), ratePerKgPaise: BigInt(line.ratePerKgPaise), lineValuePaise: BigInt(Math.round(Number(line.quantityKg) * Number(line.ratePerKgPaise))), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId })) });
+      if (body.deductions?.length) await tx.harvestDeduction.createMany({ data: body.deductions.map((item) => ({ businessId: ctx.businessId, harvestEventId: event.id, kind: item.kind, amountPaise: BigInt(item.amountPaise), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId })) });
+      await tx.crop.update({ where: { id: cropId }, data: { status: body.type === 'FINAL' ? 'CLOSED' : 'HARVESTING', finalHarvestDate: body.type === 'FINAL' ? new Date(body.harvestDate) : undefined, closedAt: body.type === 'FINAL' ? new Date() : undefined, closedBy: body.type === 'FINAL' ? ctx.userId : undefined } });
+      if (body.type === 'FINAL') await tx.pond.update({ where: { id: crop.pondId }, data: { status: 'IDLE', updatedBy: ctx.userId } });
+      return { ...event, survival: sampleAbw.value === null ? { value: null, status: 'NOT_DETERMINABLE' } : { value: null, status: 'ACTUAL' }, plausibility: plausible };
+    });
+  }
+
+  async close(cropId: string, ctx: Context) {
+    return this.prisma.$transaction(async (tx) => {
+      const crop = await tx.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
+      if (!crop) throw new NotFoundException('Crop not found');
+      const previous = await tx.cropPnl.findFirst({ where: { cropId, isCurrent: true }, orderBy: { version: 'desc' } });
+      if (previous) await tx.cropPnl.update({ where: { id: previous.id }, data: { isCurrent: false } });
+      const version = (previous?.version ?? 0) + 1;
+      const pnl = await tx.cropPnl.create({ data: { businessId: ctx.businessId, cropId, version, generatedAt: new Date(), generatedBy: ctx.userId, payload: { status: 'FROZEN', source: 'closure' }, isCurrent: true, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+      await tx.crop.update({ where: { id: cropId }, data: { status: 'CLOSED', closedAt: new Date(), closedBy: ctx.userId } });
+      await tx.pond.update({ where: { id: crop.pondId }, data: { status: 'IDLE', updatedBy: ctx.userId } });
+      return pnl;
+    });
+  }
+}
