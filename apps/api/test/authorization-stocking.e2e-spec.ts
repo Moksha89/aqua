@@ -155,6 +155,8 @@ describe('authorization and stocking invariants (e2e)', () => {
     await request(app.getHttpServer()).post('/finance/expenses').set(auth).send({ expenseDate: '2026-07-11', costHeadId, allocationTarget: 'POND_CROP', pondId: pondA, cropId, amountPaise: '1000' }).expect(201);
     await request(app.getHttpServer()).post(`/crops/${cropId}/harvests`).set(auth).send({ harvestDate: '2026-08-10', doc: 31, type: 'PARTIAL', reason: 'MARKET_RATE', sampleTaken: true, sampleCount: 10, sampleWeightG: '1.2', lines: [{ basis: 'COUNT', key: 'ALL', quantityKg: '0.5', ratePerKgPaise: '200' }] }).expect(201);
     await request(app.getHttpServer()).post(`/crops/${cropId}/harvests`).set(auth).send({ harvestDate: '2026-09-10', doc: 62, type: 'FINAL', reason: 'SEASON_END', sampleTaken: true, sampleCount: 10, sampleWeightG: '1.5', lines: [{ basis: 'COUNT', key: 'ALL', quantityKg: '0.5', ratePerKgPaise: '200' }] }).expect(201);
+    await request(app.getHttpServer()).post(`/crops/${cropId}/feed-logs`).set(auth).send({ logDate: '2026-09-11', mealSlot: 'MORNING', feedItemId, quantityKg: '1' }).expect(400);
+    await request(app.getHttpServer()).post('/finance/expenses').set(auth).send({ expenseDate: '2026-09-11', costHeadId, allocationTarget: 'POND_CROP', pondId: pondA, cropId, amountPaise: '1000' }).expect(400);
     await request(app.getHttpServer()).post(`/crops/${cropId}/closure-checklist`).set(auth).expect(201);
     for (const step of ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION']) {
       await request(app.getHttpServer()).post(`/crops/${cropId}/closure-checklist/${step}`).set(auth).send({ note: step === 'RECONCILE_FEED_STOCK' ? 'CARRY_FORWARD' : step === 'ZERO_COST_HEADS' ? 'ACK_ZERO:all-reviewed' : 'complete' }).expect(201);
@@ -166,6 +168,7 @@ describe('authorization and stocking invariants (e2e)', () => {
     expect(crop.preparationStartDate.toISOString()).toBe('2026-07-01T00:00:00.000Z');
     expect(crop.status).toBe('CLOSED');
     expect((await prisma.pond.findUniqueOrThrow({ where: { id: pondA } })).status).toBe('IDLE');
+    await request(app.getHttpServer()).post(`/crops/${cropId}/close`).set(auth).expect(201);
   });
 
   it('computes the lease allocation through HTTP', async () => {
