@@ -44,6 +44,30 @@ export class SpeciesDto {
   @ApiProperty({ required: false }) @IsOptional() @IsNumber() defaultSurvivalPct?: number;
   @ApiProperty({ required: false }) @IsOptional() waterParamRanges?: object;
 }
+export class FeedItemDto {
+  @ApiProperty() @IsString() brand!: string;
+  @ApiProperty() @IsString() feedType!: string;
+  @ApiProperty() @IsString() gradeCode!: string;
+  @ApiProperty() @IsNumber() bagWeightKg!: number;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() supplierId?: string;
+}
+export class FeedRateDto {
+  @ApiProperty() @IsString() feedItemId!: string;
+  @ApiProperty() @IsString() effectiveFrom!: string;
+  @ApiProperty() @IsString() ratePerKgPaise!: string;
+}
+export class MedicineItemDto {
+  @ApiProperty() @IsString() name!: string;
+  @ApiProperty() @IsString() category!: string;
+  @ApiProperty() @IsString() unit!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsNumber() packSize?: number;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() supplierId?: string;
+}
+export class MedicineRateDto {
+  @ApiProperty() @IsString() medicineItemId!: string;
+  @ApiProperty() @IsString() effectiveFrom!: string;
+  @ApiProperty() @IsString() ratePerUnitPaise!: string;
+}
 
 @UseGuards(JwtGuard)
 @Controller('masters')
@@ -99,6 +123,42 @@ export class MastersController {
       category: body.category, name: body.name, defaultDocDays: body.defaultDocDays,
       defaultTargetSizeG: body.defaultTargetSizeG, defaultSurvivalPct: body.defaultSurvivalPct,
       waterParamRanges: body.waterParamRanges,
+    }, this.context(req));
+  }
+  @Get('feed-items')
+  feedItems(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.feedItem, this.user(req)); }
+  @Get('feed-rate-history')
+  feedRates(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.feedRateHistory, this.user(req)); }
+  @Get('medicine-items')
+  medicineItems(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.medicineItem, this.user(req)); }
+  @Get('medicine-rate-history')
+  medicineRates(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.medicineRateHistory, this.user(req)); }
+  @Post('feed-items')
+  createFeed(@Body() body: FeedItemDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.feedItem, {
+      brand: body.brand, feedType: body.feedType, gradeCode: body.gradeCode,
+      bagWeightKg: body.bagWeightKg, supplierId: body.supplierId,
+    }, this.context(req));
+  }
+  @Post('feed-rate-history')
+  createFeedRate(@Body() body: FeedRateDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.feedRateHistory, {
+      feedItemId: body.feedItemId, effectiveFrom: new Date(body.effectiveFrom),
+      ratePerKgPaise: BigInt(body.ratePerKgPaise),
+    }, this.context(req));
+  }
+  @Post('medicine-items')
+  createMedicine(@Body() body: MedicineItemDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.medicineItem, {
+      name: body.name, category: body.category, unit: body.unit,
+      packSize: body.packSize, supplierId: body.supplierId,
+    }, this.context(req));
+  }
+  @Post('medicine-rate-history')
+  createMedicineRate(@Body() body: MedicineRateDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.medicineRateHistory, {
+      medicineItemId: body.medicineItemId, effectiveFrom: new Date(body.effectiveFrom),
+      ratePerUnitPaise: BigInt(body.ratePerUnitPaise),
     }, this.context(req));
   }
 }

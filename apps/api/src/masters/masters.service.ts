@@ -22,6 +22,16 @@ export class MastersService {
   get pond(): Delegate { return this.prisma.pond; }
   get leaseAgreement(): Delegate { return this.prisma.leaseAgreement; }
   get species(): Delegate { return this.prisma.species; }
+  get feedItem(): Delegate { return this.prisma.feedItem; }
+  get feedRateHistory(): Delegate { return this.prisma.feedRateHistory; }
+  get medicineItem(): Delegate { return this.prisma.medicineItem; }
+  get medicineRateHistory(): Delegate { return this.prisma.medicineRateHistory; }
+  get party(): Delegate { return this.prisma.party; }
+  get supplierCreditLimit(): Delegate { return this.prisma.supplierCreditLimit; }
+  get labour(): Delegate { return this.prisma.labour; }
+  get asset(): Delegate { return this.prisma.asset; }
+  get costHead(): Delegate { return this.prisma.costHead; }
+  get preparationTemplate(): Delegate { return this.prisma.preparationTemplate; }
 
   list(delegate: Delegate, user: ScopeUser, pond = false, financial = false): Promise<unknown> {
     if (financial) this.scope.assertFinancial(user);
