@@ -1,15 +1,16 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Request } from 'express';
+import { UserRole } from './roles';
 
 export type AuthRequest = Request & {
-  user?: { role?: string; financialAccess?: boolean; pondScope?: string[] };
+  user?: { role?: UserRole; financialAccess?: boolean; pondScope?: string[] };
 };
 
 @Injectable()
 export class FinancialAccessGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<AuthRequest>();
-    if (!request.user?.financialAccess && request.user?.role !== 'AE_OWNER') {
+    if (!request.user?.financialAccess && request.user?.role !== UserRole.OWNER) {
       throw new ForbiddenException('Financial access is not enabled');
     }
     return true;
@@ -18,7 +19,7 @@ export class FinancialAccessGuard implements CanActivate {
 
 @Injectable()
 export class RoleGuard implements CanActivate {
-  constructor(private readonly roles: string[]) {}
+  constructor(private readonly roles: UserRole[]) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<AuthRequest>();
@@ -30,4 +31,4 @@ export class RoleGuard implements CanActivate {
 }
 
 export const pondIsInScope = (pondId: string, scope: string[], role?: string): boolean =>
-  role === 'AE_OWNER' || scope.includes('*') || scope.includes(pondId);
+  role === UserRole.OWNER || scope.includes('*') || scope.includes(pondId);

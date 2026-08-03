@@ -1,7 +1,8 @@
 import { SyncService } from './sync.service';
 import { DEFAULT_BUSINESS_THEME } from '../theme/theme.defaults';
 
-const ctx = { businessId: 'b', userId: 'u', deviceId: 'd', role: 'AE_OWNER', financialAccess: true, pondScope: ['p1'] };
+import { UserRole } from '../auth/roles';
+const ctx = { businessId: 'b', userId: 'u', deviceId: 'd', role: UserRole.OWNER, financialAccess: true, pondScope: ['p1'] };
 
 describe('SyncService', () => {
   it('replays a record as a duplicate', async () => {
@@ -36,7 +37,7 @@ describe('SyncService', () => {
       crop: { findMany: jest.fn().mockResolvedValue([]) }, feedLog: { findMany: jest.fn().mockResolvedValue([]) }, waterReading: { findMany: jest.fn().mockResolvedValue([]) }, expense: { findMany: jest.fn() }, businessTheme: { findUnique: jest.fn().mockResolvedValue({ tokens: DEFAULT_BUSINESS_THEME, updatedAt: new Date(), rev: 1n }) },
     };
     const service = new SyncService(prisma as never, { pondWhere: jest.fn() } as never);
-    const result = await service.pull(undefined, 100, { ...ctx, role: 'OPERATOR', financialAccess: false });
+    const result = await service.pull(undefined, 100, { ...ctx, role: UserRole.OPERATOR, financialAccess: false });
     expect(result.changes).not.toHaveProperty('expenses');
     expect(prisma.expense.findMany).not.toHaveBeenCalled();
     expect(result.theme).toBeTruthy();
@@ -64,7 +65,7 @@ describe('SyncService', () => {
     };
     const scope = { pondWhere: jest.fn().mockReturnValue({ businessId: 'b' }) };
     const service = new SyncService(prisma as never, scope as never);
-    const result = await service.pull(undefined, 2, { ...ctx, role: 'AE_OWNER' });
+    const result = await service.pull(undefined, 2, { ...ctx, role: UserRole.OWNER });
     expect(result.changes.map((change) => change.entity)).toEqual(['feedLog', 'crop']);
     expect(result.cursor).toBe(result.snapshot);
     expect(scope.pondWhere).toHaveBeenCalled();

@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
 import { MasterContext, MastersService } from './masters.service';
+import { UserRole } from '../auth/roles';
 
 export class FarmDto {
   @ApiProperty() @IsString() name!: string;
@@ -118,7 +119,7 @@ export class MastersController {
   constructor(private readonly masters: MastersService) {}
   private user(req: AuthenticatedRequest) {
     const u = req.user!;
-    return { userId: u.id, businessId: u.businessId!, role: u.role ?? 'OPERATOR', financialAccess: u.financialAccess, pondScope: u.pondScope };
+    return { userId: u.id, businessId: u.businessId!, role: (u.role ?? UserRole.OPERATOR) as UserRole, financialAccess: u.financialAccess, pondScope: u.pondScope };
   }
   private context(req: AuthenticatedRequest): MasterContext {
     return { businessId: req.user!.businessId!, userId: req.user!.id, deviceId: req.user!.deviceId };

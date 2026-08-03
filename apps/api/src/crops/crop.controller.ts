@@ -4,6 +4,7 @@ import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CropService } from './crop.service';
 import { JwtGuard } from '../auth/jwt.guard';
+import { UserRole } from '../auth/roles';
 
 class BatchDto {
   @IsString() speciesId!: string;
@@ -41,26 +42,34 @@ export class CropController {
     return this.crops.stock(id, body, {
       businessId: request.user!.businessId!,
       userId: request.user!.id,
+      role: request.user!.role ?? UserRole.OPERATOR,
+      financialAccess: request.user!.financialAccess,
+      pondScope: request.user!.pondScope,
       deviceId: request.user!.deviceId,
     });
   }
 
   @Get(':id/preparations')
   preparations(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
-    return this.crops.preparations(id, request.user!.businessId!);
+    return this.crops.preparations(id, {
+      userId: request.user!.id, businessId: request.user!.businessId!, role: request.user!.role ?? UserRole.OPERATOR,
+      financialAccess: request.user!.financialAccess, pondScope: request.user!.pondScope,
+    });
   }
 
   @Post(':id/preparations')
   createPreparation(@Param('id') id: string, @Body() body: PreparationDto, @Req() request: AuthenticatedRequest) {
     return this.crops.createPreparation(id, body, {
-      businessId: request.user!.businessId!, userId: request.user!.id, deviceId: request.user!.deviceId,
+      businessId: request.user!.businessId!, userId: request.user!.id, role: request.user!.role ?? UserRole.OPERATOR,
+      financialAccess: request.user!.financialAccess, pondScope: request.user!.pondScope, deviceId: request.user!.deviceId,
     });
   }
 
   @Post('/crops/:cropId/stock-date')
   updateStockingDate(@Param('cropId') cropId: string, @Body('stockingDate') stockingDate: string, @Body('reason') reason: string, @Req() request: AuthenticatedRequest) {
     return this.crops.updateStockingDate(cropId, stockingDate, reason, {
-      businessId: request.user!.businessId!, userId: request.user!.id, deviceId: request.user!.deviceId,
+      businessId: request.user!.businessId!, userId: request.user!.id, role: request.user!.role ?? UserRole.OPERATOR,
+      financialAccess: request.user!.financialAccess, pondScope: request.user!.pondScope, deviceId: request.user!.deviceId,
     });
   }
 }

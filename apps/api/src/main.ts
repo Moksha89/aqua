@@ -11,6 +11,16 @@ import { AuditInterceptor } from './platform/audit.interceptor';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api/v1');
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:3001')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: false,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

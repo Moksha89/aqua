@@ -2,8 +2,9 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { abw, massMg } from '../rules-engine';
 import { PrismaService } from '../platform/prisma.service';
+import { QueryScope, ScopeUser } from '../authorization/query-scope';
 
-type Context = { businessId: string; userId: string; deviceId: string; role?: string; pondScope?: string[] };
+type Context = ScopeUser & { deviceId: string };
 type WaterInput = { cropId?: string; readAt: string; slot: string; source: string; salinityPpt?: string; ph?: string; alkalinity?: string; hardness?: string; doMgl?: string; temperatureC?: string; ammonia?: string; nitrite?: string; transparencyCm?: string };
 type MedicineInput = { appliedOn: string; medicineItemId: string; quantity: string; unit: string; method: string; reason: string; costPaise: string };
 type HealthInput = { eventDate: string; doc: number; symptoms: string[]; mortalityCount?: number; labTested: boolean };
@@ -11,7 +12,7 @@ type AttendanceInput = { labourId: string; pondId?: string; cropId?: string; wor
 
 @Injectable()
 export class OperationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly scope: QueryScope) {}
 
   private async crop(cropId: string, businessId: string) {
     const crop = await this.prisma.crop.findFirst({ where: { id: cropId, businessId, voidedAt: null } });
@@ -22,7 +23,7 @@ export class OperationsService {
   private async writableCrop(cropId: string, ctx: Context) {
     const crop = await this.crop(cropId, ctx.businessId);
     if (crop.status === 'CLOSED') throw new BadRequestException('Closed crops are read-only');
-    if (ctx.role !== 'AE_OWNER' && !(ctx.pondScope ?? []).includes('*') && !(ctx.pondScope ?? []).includes(crop.pondId)) throw new BadRequestException('Pond is outside assigned scope');
+    this.scope.assertPondScope(ctx, crop.pondId);
     return crop;
   }
 
@@ -78,7 +79,7 @@ export class OperationsService {
   }
 
   async water(pondId: string, body: WaterInput, ctx: Context) {
-    if (ctx.role !== 'AE_OWNER' && !(ctx.pondScope ?? []).includes('*') && !(ctx.pondScope ?? []).includes(pondId)) throw new BadRequestException('Pond is outside assigned scope');
+    this.scope.assertPondScope(ctx, pondId);
     if (body.cropId) await this.writableCrop(body.cropId, ctx);
     return this.prisma.waterReading.create({ data: { businessId: ctx.businessId, pondId, cropId: body.cropId, readAt: new Date(body.readAt), slot: body.slot, source: body.source, salinityPpt: body.salinityPpt ? new Prisma.Decimal(body.salinityPpt) : undefined, ph: body.ph ? new Prisma.Decimal(body.ph) : undefined, alkalinity: body.alkalinity ? new Prisma.Decimal(body.alkalinity) : undefined, hardness: body.hardness ? new Prisma.Decimal(body.hardness) : undefined, doMgl: body.doMgl ? new Prisma.Decimal(body.doMgl) : undefined, temperatureC: body.temperatureC ? new Prisma.Decimal(body.temperatureC) : undefined, ammonia: body.ammonia ? new Prisma.Decimal(body.ammonia) : undefined, nitrite: body.nitrite ? new Prisma.Decimal(body.nitrite) : undefined, transparencyCm: body.transparencyCm ? new Prisma.Decimal(body.transparencyCm) : undefined, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
   }
@@ -95,7 +96,7 @@ export class OperationsService {
 
   async attendance(body: AttendanceInput, ctx: Context) {
     if (body.cropId) await this.writableCrop(body.cropId, ctx);
-    if (body.pondId && ctx.role !== 'AE_OWNER' && !(ctx.pondScope ?? []).includes('*') && !(ctx.pondScope ?? []).includes(body.pondId)) throw new BadRequestException('Pond is outside assigned scope');
+    if (body.pondId) this.scope.assertPondScope(ctx, body.pondId);
     return this.prisma.attendanceLog.create({ data: { businessId: ctx.businessId, labourId: body.labourId, pondId: body.pondId, cropId: body.cropId, workDate: new Date(body.workDate), days: new Prisma.Decimal(body.days), amountPaise: BigInt(body.amountPaise), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
   }
 }

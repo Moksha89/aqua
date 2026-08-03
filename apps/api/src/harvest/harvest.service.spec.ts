@@ -1,4 +1,7 @@
 import { HarvestService } from './harvest.service';
+import { UserRole } from '../auth/roles';
+import { AllocationService } from '../allocation/allocation.service';
+import { QueryScope } from '../authorization/query-scope';
 
 describe('HarvestService closure sequence', () => {
   it('freezes a new P&L version and closes the pond', async () => {
@@ -16,8 +19,8 @@ describe('HarvestService closure sequence', () => {
       pond: { update: jest.fn().mockResolvedValue({}) },
     };
     const prisma = { $transaction: jest.fn((fn: (value: typeof tx) => unknown) => fn(tx)) };
-    const service = new HarvestService(prisma as never);
-    const result = await service.close('crop', { businessId: 'business', userId: 'user', deviceId: 'device' });
+    const service = new HarvestService(prisma as never, {} as AllocationService, { assertPondScope: jest.fn() } as unknown as QueryScope);
+    const result = await service.close('crop', { businessId: 'business', userId: 'user', role: UserRole.OWNER, financialAccess: true, pondScope: ['*'], deviceId: 'device' });
     expect(result).toEqual({ id: 'new', version: 3, isCurrent: true });
     expect(tx.cropPnl.update).toHaveBeenCalledWith({ where: { id: 'old' }, data: { isCurrent: false } });
     expect(tx.cropPnl.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ version: 3, isCurrent: true }) }));
@@ -27,7 +30,7 @@ describe('HarvestService closure sequence', () => {
 
   it('rejects writes to a closed crop', async () => {
     const prisma = { $transaction: jest.fn((fn: (value: unknown) => unknown) => fn({ crop: { findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED' }) } })) };
-    const service = new HarvestService(prisma as never);
-    await expect(service.harvest('crop', { harvestDate: '2026-01-01', doc: 1, type: 'FINAL', reason: 'OTHER', sampleTaken: false, lines: [{ basis: 'GRADE', key: 'A', quantityKg: '1', ratePerKgPaise: '100' }] }, { businessId: 'business', userId: 'user', deviceId: 'device' })).rejects.toThrow('Closed crops are read-only');
+    const service = new HarvestService(prisma as never, {} as AllocationService, { assertPondScope: jest.fn() } as unknown as QueryScope);
+    await expect(service.harvest('crop', { harvestDate: '2026-01-01', doc: 1, type: 'FINAL', reason: 'OTHER', sampleTaken: false, lines: [{ basis: 'GRADE', key: 'A', quantityKg: '1', ratePerKgPaise: '100' }] }, { businessId: 'business', userId: 'user', role: UserRole.OWNER, financialAccess: true, pondScope: ['*'], deviceId: 'device' })).rejects.toThrow('Closed crops are read-only');
   });
 });

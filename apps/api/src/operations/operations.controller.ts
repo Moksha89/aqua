@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
 import { OperationsService } from './operations.service';
+import { UserRole } from '../auth/roles';
 
 class FeedDto { @ApiProperty() @IsString() logDate!: string; @ApiProperty() @IsString() mealSlot!: string; @ApiProperty() @IsString() feedItemId!: string; @ApiProperty() @IsString() quantityKg!: string; @ApiProperty({ required: false }) @IsOptional() @IsNumber() bags?: number; @ApiProperty({ required: false }) @IsOptional() @IsString() looseKg?: string; @ApiProperty({ required: false }) @IsOptional() @IsString() remarks?: string; }
 class FeedBulkDto { @ApiProperty({ type: [FeedDto] }) @IsArray() rows!: FeedDto[]; }
@@ -19,7 +20,7 @@ class AttendanceDto { @ApiProperty() @IsString() labourId!: string; @ApiProperty
 @Controller('crops')
 export class OperationsController {
   constructor(private readonly operations: OperationsService) {}
-  private ctx(r: AuthenticatedRequest) { return { businessId: r.user!.businessId!, userId: r.user!.id, deviceId: r.user!.deviceId, role: r.user!.role, pondScope: r.user!.pondScope }; }
+  private ctx(r: AuthenticatedRequest) { return { businessId: r.user!.businessId!, userId: r.user!.id, deviceId: r.user!.deviceId, role: r.user!.role ?? UserRole.OPERATOR, financialAccess: r.user!.financialAccess, pondScope: r.user!.pondScope }; }
   @Post(':id/feed-logs') feed(@Param('id') id: string, @Body() body: FeedDto, @Req() r: AuthenticatedRequest) { return this.operations.feed(id, body, this.ctx(r)); }
   @Post(':id/feed-logs/bulk') bulk(@Param('id') id: string, @Body() body: FeedBulkDto, @Req() r: AuthenticatedRequest) { return this.operations.feedBulk(id, body.rows, this.ctx(r)); }
   @Post(':id/feed-logs/same-as-yesterday') same(@Param('id') id: string, @Body() body: SameYesterdayDto, @Req() r: AuthenticatedRequest) { return this.operations.feedSameAsYesterday(id, body.date, this.ctx(r)); }

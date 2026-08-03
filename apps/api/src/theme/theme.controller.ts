@@ -5,6 +5,7 @@ import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
 import { RoleGuard } from '../auth/roles.guard';
 import { ThemeService } from './theme.service';
 
+import { UserRole } from '../auth/roles';
 class ThemeDto {
   @ApiProperty({ type: Object })
   @IsObject()
@@ -20,9 +21,9 @@ export class ThemeController {
   @ApiResponse({ status: 200, description: 'Active business theme' })
   get(@Req() r: AuthenticatedRequest) { return this.service.get(this.ctx(r)); }
   @Put()
-  @UseGuards(new RoleGuard(['AE_OWNER', 'AE_ADMIN']))
+  @UseGuards(new RoleGuard([UserRole.OWNER, UserRole.ADMIN]))
   update(@Body() body: ThemeDto, @Req() r: AuthenticatedRequest) { return this.service.update(body.tokens, this.ctx(r)); }
   @Post('reset')
-  @UseGuards(new RoleGuard(['AE_OWNER', 'AE_ADMIN']))
+  @UseGuards(new RoleGuard([UserRole.OWNER, UserRole.ADMIN]))
   reset(@Req() r: AuthenticatedRequest) { return this.service.reset(this.ctx(r)); }
 }

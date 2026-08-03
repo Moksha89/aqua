@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, CropStatus, PondStatus } from '@prisma/client';
 import { PrismaService } from '../platform/prisma.service';
+import { QueryScope, ScopeUser } from '../authorization/query-scope';
 
 type BatchInput = {
   speciesId: string;
@@ -12,17 +13,19 @@ type BatchInput = {
   plStage?: string;
 };
 
-type Context = { businessId: string; userId: string; deviceId: string };
+type Context = ScopeUser & { deviceId: string };
 
 @Injectable()
 export class CropService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly scope: QueryScope) {}
 
-  async preparations(pondId: string, businessId: string) {
-    return this.prisma.preparationActivity.findMany({ where: { pondId, businessId, voidedAt: null, cropId: null } });
+  async preparations(pondId: string, user: ScopeUser) {
+    this.scope.assertPondScope(user, pondId);
+    return this.prisma.preparationActivity.findMany({ where: { pondId, businessId: user.businessId, voidedAt: null, cropId: null } });
   }
 
   async createPreparation(pondId: string, body: { name: string; startDate: string; labourCostPaise: string; materialCostPaise: string; amountPaise: string; remarks?: string }, ctx: Context) {
+    this.scope.assertPondScope({ ...ctx, role: ctx.role, financialAccess: ctx.financialAccess, pondScope: ctx.pondScope }, pondId);
     return this.prisma.preparationActivity.create({
       data: {
         businessId: ctx.businessId, pondId, cropId: null, name: body.name, startDate: new Date(body.startDate),

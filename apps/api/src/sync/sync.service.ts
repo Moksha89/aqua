@@ -5,6 +5,7 @@ import { PrismaService } from '../platform/prisma.service';
 import { abw, massMg } from '../rules-engine';
 import { SyncPushDto } from './sync.dto';
 
+import { UserRole } from '../auth/roles';
 type Context = ScopeUser & { deviceId: string };
 const financial = new Set(['expense', 'payment', 'harvestEvent', 'harvestLine', 'attendanceLog', 'medicineApplication']);
 const asJson = (value: unknown) => JSON.parse(JSON.stringify(value, (_key, item) => typeof item === 'bigint' ? item.toString() : item)) as Prisma.InputJsonValue;
@@ -73,7 +74,7 @@ export class SyncService {
     const cursor = since ? new Date(since) : new Date(0);
     const snapshot = new Date();
     this.scope.pondWhere(user);
-    const pondIds = user.role === 'OPERATOR' && !user.pondScope.includes('*') ? user.pondScope : undefined;
+    const pondIds = user.role === UserRole.OPERATOR && !user.pondScope.includes('*') ? user.pondScope : undefined;
     const cropWhere = { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot }, ...(pondIds ? { pondId: { in: pondIds } } : {}) };
     const scopedCrops = pondIds ? await this.prisma.crop.findMany({ where: { businessId: user.businessId, voidedAt: null, pondId: { in: pondIds } }, select: { id: true } }) : [];
     const scopedCropIds = pondIds ? scopedCrops.map((crop) => crop.id) : undefined;
@@ -81,14 +82,14 @@ export class SyncService {
       this.prisma.crop.findMany({ where: cropWhere, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
       this.prisma.feedLog.findMany({ where: { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot }, ...(scopedCropIds ? { cropId: { in: scopedCropIds } } : {}) }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
       this.prisma.waterReading.findMany({ where: { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot }, ...(pondIds ? { pondId: { in: pondIds } } : {}) }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
-      user.role === 'OPERATOR' && !user.financialAccess ? Promise.resolve([]) : this.prisma.expense.findMany({ where: { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot } }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
+      user.role === UserRole.OPERATOR && !user.financialAccess ? Promise.resolve([]) : this.prisma.expense.findMany({ where: { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot } }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: limit }),
       this.prisma.businessTheme.findUnique({ where: { businessId: user.businessId } }),
     ]);
     const changes = [
       ...crops.map((record) => ({ entity: 'crop', record })),
       ...feedLogs.map((record) => ({ entity: 'feedLog', record })),
       ...waterReadings.map((record) => ({ entity: 'waterReading', record })),
-      ...(user.role === 'OPERATOR' && !user.financialAccess ? [] : expenses.map((record) => ({ entity: 'expense', record }))),
+      ...(user.role === UserRole.OPERATOR && !user.financialAccess ? [] : expenses.map((record) => ({ entity: 'expense', record }))),
     ].sort((a, b) => a.record.updatedAt.getTime() - b.record.updatedAt.getTime() || a.record.id.localeCompare(b.record.id));
     return { snapshot: snapshot.toISOString(), cursor: snapshot.toISOString(), hasMore: changes.length > limit, changes: changes.slice(0, limit), theme: theme ? { tokens: theme.tokens, updatedAt: theme.updatedAt, revision: theme.rev } : null };
   }
@@ -105,7 +106,7 @@ export class SyncService {
   private async applyRecord(tx: Prisma.TransactionClient, record: SyncPushDto['records'][number], ctx: Context) {
     const prior = await tx.outboxReceipt.findUnique({ where: { idempotencyKey: record.idempotencyKey } });
     if (prior) return { id: record.id, status: 'duplicate' };
-    if (financial.has(record.entity) && !ctx.financialAccess && ctx.role !== 'AE_OWNER') return { id: record.id, status: 'rejected', reason: 'Financial access is not enabled' };
+    if (financial.has(record.entity) && !ctx.financialAccess && ctx.role !== UserRole.OWNER) return { id: record.id, status: 'rejected', reason: 'Financial access is not enabled' };
     const payload = record.payload;
     const normalized = record.entity === 'feedLog' ? safeFeedLog(payload) : record.entity === 'waterReading' ? safeWaterReading(payload) : record.entity === 'expense' ? safeExpense(payload) : record.entity === 'growthSample' ? safeGrowthSample(payload) : record.entity === 'checkTrayReading' ? safeTrayReading(payload) : record.entity === 'medicineApplication' ? safeMedicine(payload) : record.entity === 'healthEvent' ? safeHealth(payload) : record.entity === 'attendanceLog' ? safeAttendance(payload) : record.entity === 'payment' ? safePayment(payload) : record.entity === 'harvestEvent' ? safeHarvestEvent(payload) : record.entity === 'harvestLine' ? safeHarvestLine(payload) : safePreparation(payload);
     const cropId = typeof payload.cropId === 'string' ? payload.cropId : undefined;
