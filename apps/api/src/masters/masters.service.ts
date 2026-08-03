@@ -43,7 +43,7 @@ export class MastersService {
   get(delegate: Delegate, id: string, user: ScopeUser, pond = false, financial = false): Promise<unknown> {
     if (financial) this.scope.assertFinancial(user);
     return delegate.findUnique({
-      where: pond ? { id, ...this.scope.pondWhere(user) } : { id, businessId: user.businessId },
+      where: pond ? this.scope.pondWhere(user, id) : { id, businessId: user.businessId },
     });
   }
 

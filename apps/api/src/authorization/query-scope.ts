@@ -26,9 +26,11 @@ export class QueryScope {
     }
     return {
       businessId: user.businessId,
-      ...(user.role === 'OPERATOR' && !user.pondScope.includes('*')
-      ? { pondId: { in: user.pondScope } }
-        : pondId ? { pondId } : {}),
+      ...(pondId
+        ? { id: pondId }
+        : user.role === 'OPERATOR' && !user.pondScope.includes('*')
+          ? { id: { in: user.pondScope } }
+          : {}),
     };
   }
 }
