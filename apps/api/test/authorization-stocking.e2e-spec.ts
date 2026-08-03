@@ -148,6 +148,10 @@ describe('authorization and stocking invariants (e2e)', () => {
     await request(app.getHttpServer()).post('/finance/expenses').set(auth).send({ expenseDate: '2026-07-11', costHeadId, allocationTarget: 'POND_CROP', pondId: pondA, cropId, amountPaise: '1000' }).expect(201);
     await request(app.getHttpServer()).post(`/crops/${cropId}/harvests`).set(auth).send({ harvestDate: '2026-08-10', doc: 31, type: 'PARTIAL', reason: 'MARKET_RATE', sampleTaken: true, sampleCount: 10, sampleWeightG: '1.2', lines: [{ basis: 'COUNT', key: 'ALL', quantityKg: '0.5', ratePerKgPaise: '200' }] }).expect(201);
     await request(app.getHttpServer()).post(`/crops/${cropId}/harvests`).set(auth).send({ harvestDate: '2026-09-10', doc: 62, type: 'FINAL', reason: 'SEASON_END', sampleTaken: true, sampleCount: 10, sampleWeightG: '1.5', lines: [{ basis: 'COUNT', key: 'ALL', quantityKg: '0.5', ratePerKgPaise: '200' }] }).expect(201);
+    await request(app.getHttpServer()).post(`/crops/${cropId}/closure-checklist`).set(auth).expect(201);
+    for (const step of ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION']) {
+      await request(app.getHttpServer()).post(`/crops/${cropId}/closure-checklist/${step}`).set(auth).send({ note: step === 'RECONCILE_FEED_STOCK' ? 'CARRY_FORWARD' : 'complete' }).expect(201);
+    }
     const pnl = await request(app.getHttpServer()).post(`/crops/${cropId}/close`).set(auth).expect(201);
     expect(pnl.body.isCurrent).toBe(true);
     expect(pnl.body.payload.status).toBe('FROZEN');
@@ -155,5 +159,17 @@ describe('authorization and stocking invariants (e2e)', () => {
     expect(crop.preparationStartDate.toISOString()).toBe('2026-07-01T00:00:00.000Z');
     expect(crop.status).toBe('CLOSED');
     expect((await prisma.pond.findUniqueOrThrow({ where: { id: pondA } })).status).toBe('IDLE');
+  });
+
+  it('computes the lease allocation through HTTP', async () => {
+    const leaseId = randomUUID();
+    const cropId = randomUUID();
+    await prisma.leaseAgreement.create({ data: { id: leaseId, businessId: businessA, landlordName: 'BPD landlord', extentAcres: '1', ratePerAcrePerAnnumPaise: 66200n, startDate: new Date('2026-01-01'), endDate: new Date('2026-12-31'), paymentFrequency: 'ANNUAL', advancePaise: 0n, advanceRefundable: false, createdBy: actor, updatedBy: actor, deviceId: device } });
+    await prisma.pond.update({ where: { id: pondA }, data: { leaseAgreementId: leaseId } });
+    await prisma.crop.create({ data: { id: cropId, businessId: businessA, pondId: pondA, code: `ALLOC-${cropId}`, speciesCategory: 'SHRIMP', status: 'ACTIVE', preparationStartDate: new Date('2026-01-01'), stockingDate: new Date('2026-01-01'), survivalAssumptionPct: '0', feedLoggingEnabled: true, createdBy: actor, updatedBy: actor, deviceId: device } });
+    await request(app.getHttpServer()).post('/allocations/runs').set('Authorization', `Bearer ${token(businessA, 'AE_OWNER', true, ['*'])}`).send({ periodStart: '2026-01-01', periodEnd: '2026-12-31', trigger: 'MONTH_END' }).expect(201);
+    const row = await prisma.apportionedCost.findFirstOrThrow({ where: { cropId, kind: 'LEASE' }, orderBy: { createdAt: 'desc' } });
+    expect(row.amountPaise).toBe(66065n);
+    expect((row.derivation as { status: string }).status).toBe('ACTUAL');
   });
 });

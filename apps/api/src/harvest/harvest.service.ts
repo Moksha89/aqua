@@ -66,7 +66,9 @@ export class HarvestService {
     const steps = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION', 'FREEZE_PNL'];
     return this.prisma.$transaction(async (tx) => {
       for (const step of steps) {
-        await tx.cropClosureChecklist.upsert({ where: { id: `${cropId}-${step}` }, update: { status: 'PENDING', updatedBy: ctx.userId }, create: { id: `${cropId}-${step}`, businessId: ctx.businessId, cropId, step, status: 'PENDING', createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+        const existing = await tx.cropClosureChecklist.findFirst({ where: { businessId: ctx.businessId, cropId, step, voidedAt: null } });
+        if (existing) await tx.cropClosureChecklist.update({ where: { id: existing.id }, data: { status: 'PENDING', updatedBy: ctx.userId } });
+        else await tx.cropClosureChecklist.create({ data: { businessId: ctx.businessId, cropId, step, status: 'PENDING', createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
       }
       return tx.cropClosureChecklist.findMany({ where: { cropId, businessId: ctx.businessId }, orderBy: { step: 'asc' } });
     });
