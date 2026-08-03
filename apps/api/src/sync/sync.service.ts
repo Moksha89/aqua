@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { QueryScope, ScopeUser } from '../authorization/query-scope';
 import { PrismaService } from '../platform/prisma.service';
+import { abw, massMg } from '../rules-engine';
 import { SyncPushDto } from './sync.dto';
 
 type Context = ScopeUser & { deviceId: string };
@@ -49,7 +50,12 @@ const safeExpense = (payload: Record<string, unknown>) => ({
   remarks: typeof payload.remarks === 'string' ? payload.remarks : undefined,
   ratePending: payload.ratePending === true,
 });
-const safeGrowthSample = (p: Record<string, unknown>) => ({ cropId: text(p, 'cropId'), sampledOn: new Date(text(p, 'sampledOn')), doc: Number(p.doc), animalsInSample: Number(p.animalsInSample), sampleWeightG: decimal(p, 'sampleWeightG'), speciesId: typeof p.speciesId === 'string' ? p.speciesId : undefined, individualWeightsG: Array.isArray(p.individualWeightsG) ? p.individualWeightsG.map(String) : [], abwG: decimal(p, 'abwG'), healthNotes: typeof p.healthNotes === 'string' ? p.healthNotes : undefined });
+const safeGrowthSample = (p: Record<string, unknown>) => {
+  const animalsInSample = Number(p.animalsInSample);
+  const sampleWeightG = decimal(p, 'sampleWeightG');
+  const computedAbw = abw(massMg(BigInt(Math.round(Number(sampleWeightG.toString()) * 1000)),), BigInt(animalsInSample));
+  return { cropId: text(p, 'cropId'), sampledOn: new Date(text(p, 'sampledOn')), doc: Number(p.doc), animalsInSample, sampleWeightG, speciesId: typeof p.speciesId === 'string' ? p.speciesId : undefined, individualWeightsG: Array.isArray(p.individualWeightsG) ? p.individualWeightsG.map(String) : [], abwG: new Prisma.Decimal(Number(computedAbw.value ?? 0) / 1000), healthNotes: typeof p.healthNotes === 'string' ? p.healthNotes : undefined };
+};
 const safeTrayReading = (p: Record<string, unknown>) => ({ checkTrayId: text(p, 'checkTrayId'), cropId: text(p, 'cropId'), readAt: new Date(text(p, 'readAt')), feedPlacedKg: decimal(p, 'feedPlacedKg'), residualCode: text(p, 'residualCode'), residualWeightG: p.residualWeightG === undefined ? undefined : decimal(p, 'residualWeightG'), gutFullness: typeof p.gutFullness === 'string' ? p.gutFullness : undefined, colour: typeof p.colour === 'string' ? p.colour : undefined, activity: typeof p.activity === 'string' ? p.activity : undefined, moulting: typeof p.moulting === 'string' ? p.moulting : undefined, deadSeen: typeof p.deadSeen === 'number' ? p.deadSeen : undefined });
 const safeMedicine = (p: Record<string, unknown>) => ({ cropId: text(p, 'cropId'), appliedOn: new Date(text(p, 'appliedOn')), medicineItemId: text(p, 'medicineItemId'), quantity: decimal(p, 'quantity'), unit: text(p, 'unit'), method: text(p, 'method'), reason: text(p, 'reason'), costPaise: BigInt(text(p, 'costPaise')) });
 const safeHealth = (p: Record<string, unknown>) => ({ cropId: text(p, 'cropId'), eventDate: new Date(text(p, 'eventDate')), doc: Number(p.doc), symptoms: Array.isArray(p.symptoms) ? p.symptoms.map(String) : [], mortalityCount: typeof p.mortalityCount === 'number' ? p.mortalityCount : undefined, labTested: p.labTested === true, suspectedCause: typeof p.suspectedCause === 'string' ? p.suspectedCause : undefined, treatment: typeof p.treatment === 'string' ? p.treatment : undefined });
