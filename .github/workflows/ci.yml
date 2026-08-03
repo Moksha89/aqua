@@ -17,7 +17,39 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @aqua/api prisma:generate
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm prisma:validate
       - run: pnpm test -- --runInBand
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: aqua
+          POSTGRES_PASSWORD: aqua
+          POSTGRES_DB: aqua
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aqua -d aqua"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://aqua:aqua@localhost:5432/aqua?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @aqua/api prisma:generate
+      - run: pnpm --filter @aqua/api prisma migrate deploy
+      - run: pnpm --filter @aqua/api test:e2e

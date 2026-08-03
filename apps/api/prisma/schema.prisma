@@ -110,6 +110,28 @@ model UserAccount {
   voidedBy String? @db.Uuid
   voidReason String?
 }
+model OtpChallenge {
+  id String @id @default(uuid()) @db.Uuid
+  mobile String
+  codeHash String
+  purpose String
+  expiresAt DateTime
+  consumedAt DateTime?
+  attemptCount Int @default(0)
+  deviceId String? @db.Uuid
+  createdAt DateTime @default(now())
+}
+model RefreshToken {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  deviceId String @db.Uuid
+  tokenHash String @unique
+  issuedAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  revokedReason String?
+  replacedById String? @db.Uuid
+}
 model UserBusinessRole {
   id String @id @default(uuid()) @db.Uuid
   businessId String @db.Uuid
