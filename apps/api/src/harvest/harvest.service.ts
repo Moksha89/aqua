@@ -19,6 +19,7 @@ export class HarvestService {
     return this.prisma.$transaction(async (tx) => {
       const crop = await tx.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
       if (!crop) throw new NotFoundException('Crop not found');
+      if (crop.status === 'CLOSED') throw new BadRequestException('Closed crops are read-only');
       const previous = await tx.growthSample.findFirst({ where: { cropId, voidedAt: null }, orderBy: { sampledOn: 'desc' } });
       const sampleWeightMg = body.sampleTaken ? BigInt(Math.round(Number(body.sampleWeightG) * 1000)) : 0n;
       const sampleAbw = harvestAbw(body.sampleTaken, massMg(sampleWeightMg), BigInt(body.sampleCount ?? 0));
@@ -64,6 +65,20 @@ export class HarvestService {
         await tx.cropClosureChecklist.upsert({ where: { id: `${cropId}-${step}` }, update: { status: 'PENDING', updatedBy: ctx.userId }, create: { id: `${cropId}-${step}`, businessId: ctx.businessId, cropId, step, status: 'PENDING', createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
       }
       return tx.cropClosureChecklist.findMany({ where: { cropId, businessId: ctx.businessId }, orderBy: { step: 'asc' } });
+    });
+  }
+
+  async reopen(cropId: string, reason: string, ctx: Context) {
+    if (!reason.trim()) throw new BadRequestException('A reason is required');
+    return this.prisma.$transaction(async (tx) => {
+      const crop = await tx.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
+      if (!crop) throw new NotFoundException('Crop not found');
+      const current = await tx.cropPnl.findFirst({ where: { cropId, isCurrent: true }, orderBy: { version: 'desc' } });
+      if (current) await tx.cropPnl.update({ where: { id: current.id }, data: { isCurrent: false } });
+      const pnl = await tx.cropPnl.create({ data: { businessId: ctx.businessId, cropId, version: (current?.version ?? 0) + 1, generatedAt: new Date(), generatedBy: ctx.userId, payload: { status: 'REOPENED', reason }, isCurrent: true, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+      await tx.crop.update({ where: { id: cropId }, data: { status: 'HARVESTING', closedAt: null, closedBy: null, reopenedCount: { increment: 1 }, updatedBy: ctx.userId } });
+      await tx.auditLog.create({ data: { businessId: ctx.businessId, entity: 'Crop', entityId: cropId, action: 'REOPEN', userId: ctx.userId, deviceId: ctx.deviceId, at: new Date(), before: { status: 'CLOSED' }, after: { status: 'HARVESTING', pnlVersion: pnl.version }, reason, createdBy: ctx.userId, updatedBy: ctx.userId } });
+      return pnl;
     });
   }
 }
