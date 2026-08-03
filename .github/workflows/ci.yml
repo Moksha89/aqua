@@ -18,8 +18,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @aqua/api prisma:generate
+      - run: pnpm --filter @aqua/web generate:api || true
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm build
       - run: pnpm prisma:validate
       - run: pnpm test -- --runInBand
   e2e:

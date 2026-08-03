@@ -1,0 +1,27 @@
+{
+  "name": "@aqua/web",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "generate:api": "openapi-typescript ${API_OPENAPI_URL:-http://localhost:3000/api-json} -o src/lib/api.generated.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.62.8",
+    "next": "14.2.21",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.21",
+    "openapi-typescript": "7.6.1",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.7.2"
+  }
+}

@@ -3,8 +3,8 @@ import { IsArray, IsIn, IsObject, IsOptional, IsString, IsUUID, Max, Min, IsInt 
 
 export class SyncRecordDto {
   @ApiProperty({ enum: ['feedLog', 'waterReading', 'expense'] })
-  @IsIn(['feedLog', 'waterReading', 'expense'])
-  entity!: 'feedLog' | 'waterReading' | 'expense';
+  @IsIn(['feedLog', 'waterReading', 'expense', 'growthSample', 'checkTrayReading', 'medicineApplication', 'healthEvent', 'attendanceLog', 'payment', 'harvestEvent', 'harvestLine', 'preparationActivity'])
+  entity!: 'feedLog' | 'waterReading' | 'expense' | 'growthSample' | 'checkTrayReading' | 'medicineApplication' | 'healthEvent' | 'attendanceLog' | 'payment' | 'harvestEvent' | 'harvestLine' | 'preparationActivity';
   @ApiProperty()
   @IsUUID()
   id!: string;
