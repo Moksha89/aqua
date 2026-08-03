@@ -93,4 +93,27 @@ export class FinanceService {
     ]);
     return { view: 'PROFITABILITY', crops, harvests, expenses, idle };
   }
+
+  async report(kind: string, ctx: Context) {
+    const where = { businessId: ctx.businessId, voidedAt: null };
+    switch (kind) {
+      case 'crop-summary':
+      case 'cost-sheet':
+      case 'estimate-vs-actual':
+        return { kind, crops: await this.prisma.crop.findMany({ where }), pnl: await this.prisma.cropPnl.findMany({ where }) };
+      case 'pond-history':
+      case 'lifetime-profitability':
+        return { kind, ponds: await this.prisma.pond.findMany({ where }), idle: await this.prisma.idlePondCost.findMany({ where }) };
+      case 'business-pnl':
+        return { kind, pnl: await this.prisma.cropPnl.findMany({ where }) };
+      case 'cost-head-analysis':
+        return { kind, expenses: await this.prisma.expense.findMany({ where }) };
+      case 'asset-register':
+        return { kind, assets: await this.prisma.asset.findMany({ where }) };
+      case 'lease-register':
+        return { kind, leases: await this.prisma.leaseAgreement.findMany({ where }), schedules: await this.prisma.leasePaymentSchedule.findMany({ where }) };
+      default:
+        throw new NotFoundException('Report not found');
+    }
+  }
 }
