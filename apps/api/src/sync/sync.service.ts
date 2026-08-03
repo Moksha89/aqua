@@ -57,6 +57,7 @@ export class SyncService {
   async pull(since: string | undefined, limit: number, user: Context) {
     const cursor = since ? new Date(since) : new Date(0);
     const snapshot = new Date();
+    this.scope.pondWhere(user);
     const pondIds = user.role === 'OPERATOR' && !user.pondScope.includes('*') ? user.pondScope : undefined;
     const cropWhere = { businessId: user.businessId, voidedAt: null, updatedAt: { gt: cursor, lte: snapshot }, ...(pondIds ? { pondId: { in: pondIds } } : {}) };
     const [crops, feedLogs, waterReadings, expenses, theme] = await Promise.all([
