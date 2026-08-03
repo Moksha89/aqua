@@ -18,4 +18,9 @@ export class RequestContext {
   get(): RequestContextValue {
     return storage.getStore() ?? {};
   }
+
+  set(value: RequestContextValue): void {
+    const current = storage.getStore();
+    if (current) Object.assign(current, value);
+  }
 }

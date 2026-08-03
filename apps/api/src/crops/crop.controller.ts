@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Headers, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
 import { IsArray, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CropService } from './crop.service';
+import { JwtGuard } from '../auth/jwt.guard';
 
 class BatchDto {
   @IsString() speciesId!: string;
@@ -16,6 +17,7 @@ class StockDto {
   @IsArray() @ValidateNested({ each: true }) @Type(() => BatchDto) batches!: BatchDto[];
 }
 
+@UseGuards(JwtGuard)
 @Controller('ponds')
 export class CropController {
   constructor(private readonly crops: CropService) {}

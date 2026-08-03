@@ -118,4 +118,23 @@ export class AuthService {
       .digest('base64url');
     return `${encoded}.${signature}`;
   }
+
+  verifyAccessToken(token: string): { sub: string; deviceId: string } {
+    const [encoded, signature] = token.split('.');
+    if (!encoded || !signature) throw new UnauthorizedException('Invalid access token');
+    const expected = createHmac('sha256', process.env.JWT_SECRET ?? 'development-secret')
+      .update(encoded)
+      .digest('base64url');
+    if (expected !== signature) throw new UnauthorizedException('Invalid access token');
+    const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString()) as {
+      sub?: string;
+      deviceId?: string;
+      type?: string;
+      exp?: number;
+    };
+    if (!payload.sub || !payload.deviceId || payload.type !== 'access' || !payload.exp || payload.exp < Date.now()) {
+      throw new UnauthorizedException('Expired access token');
+    }
+    return { sub: payload.sub, deviceId: payload.deviceId };
+  }
 }
