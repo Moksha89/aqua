@@ -12,9 +12,10 @@ import { OperationsModule } from './operations/operations.module';
 import { FinanceModule } from './finance/finance.module';
 import { HarvestModule } from './harvest/harvest.module';
 import { AllocationModule } from './allocation/allocation.module';
+import { ThemeModule } from './theme/theme.module';
 
 @Module({
-  imports: [PrismaModule, HealthModule, AuthModule, CropModule, AuthorizationModule, MastersModule, OperationsModule, FinanceModule, HarvestModule, AllocationModule],
+  imports: [PrismaModule, HealthModule, AuthModule, CropModule, AuthorizationModule, MastersModule, OperationsModule, FinanceModule, HarvestModule, AllocationModule, ThemeModule],
   providers: [AuditInterceptor],
 })
 export class AppModule {
