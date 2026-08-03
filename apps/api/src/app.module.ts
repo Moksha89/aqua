@@ -9,9 +9,10 @@ import { AuditInterceptor } from './platform/audit.interceptor';
 import { PrismaModule } from './platform/prisma.module';
 import { RequestContextMiddleware } from './platform/request-context.middleware';
 import { OperationsModule } from './operations/operations.module';
+import { FinanceModule } from './finance/finance.module';
 
 @Module({
-  imports: [PrismaModule, HealthModule, AuthModule, CropModule, AuthorizationModule, MastersModule, OperationsModule],
+  imports: [PrismaModule, HealthModule, AuthModule, CropModule, AuthorizationModule, MastersModule, OperationsModule, FinanceModule],
   providers: [AuditInterceptor],
 })
 export class AppModule {

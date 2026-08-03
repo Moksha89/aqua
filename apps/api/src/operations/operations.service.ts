@@ -4,6 +4,10 @@ import { abw, massMg } from '../rules-engine';
 import { PrismaService } from '../platform/prisma.service';
 
 type Context = { businessId: string; userId: string; deviceId: string };
+type WaterInput = { cropId?: string; readAt: string; slot: string; source: string; salinityPpt?: string; ph?: string; alkalinity?: string; hardness?: string; doMgl?: string; temperatureC?: string; ammonia?: string; nitrite?: string; transparencyCm?: string };
+type MedicineInput = { appliedOn: string; medicineItemId: string; quantity: string; unit: string; method: string; reason: string; costPaise: string };
+type HealthInput = { eventDate: string; doc: number; symptoms: string[]; mortalityCount?: number; labTested: boolean };
+type AttendanceInput = { labourId: string; pondId?: string; cropId?: string; workDate: string; days: string; amountPaise: string };
 
 @Injectable()
 export class OperationsService {
@@ -66,21 +70,21 @@ export class OperationsService {
     return this.prisma.growthSample.create({ data: { businessId: ctx.businessId, cropId, speciesId: body.speciesId, sampledOn: new Date(body.sampledOn), doc: body.doc, animalsInSample: body.animalsInSample, sampleWeightG: new Prisma.Decimal(body.sampleWeightG), individualWeightsG: [], abwG: new Prisma.Decimal(Number(result.value ?? 0) / 1000), healthNotes: body.healthNotes, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
   }
 
-  async water(pondId: string, body: Record<string, unknown>, ctx: Context) {
-    return this.prisma.waterReading.create({ data: { businessId: ctx.businessId, pondId, cropId: body.cropId as string | undefined, readAt: new Date(body.readAt as string), slot: body.slot as string, source: body.source as string, ...Object.fromEntries(['salinityPpt','ph','alkalinity','hardness','doMgl','temperatureC','ammonia','nitrite','transparencyCm'].filter((key) => body[key] !== undefined).map((key) => [key, new Prisma.Decimal(String(body[key]))])), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+  async water(pondId: string, body: WaterInput, ctx: Context) {
+    return this.prisma.waterReading.create({ data: { businessId: ctx.businessId, pondId, cropId: body.cropId, readAt: new Date(body.readAt), slot: body.slot, source: body.source, salinityPpt: body.salinityPpt ? new Prisma.Decimal(body.salinityPpt) : undefined, ph: body.ph ? new Prisma.Decimal(body.ph) : undefined, alkalinity: body.alkalinity ? new Prisma.Decimal(body.alkalinity) : undefined, hardness: body.hardness ? new Prisma.Decimal(body.hardness) : undefined, doMgl: body.doMgl ? new Prisma.Decimal(body.doMgl) : undefined, temperatureC: body.temperatureC ? new Prisma.Decimal(body.temperatureC) : undefined, ammonia: body.ammonia ? new Prisma.Decimal(body.ammonia) : undefined, nitrite: body.nitrite ? new Prisma.Decimal(body.nitrite) : undefined, transparencyCm: body.transparencyCm ? new Prisma.Decimal(body.transparencyCm) : undefined, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
   }
 
-  async medicine(cropId: string, body: Record<string, unknown>, ctx: Context) {
+  async medicine(cropId: string, body: MedicineInput, ctx: Context) {
     await this.crop(cropId, ctx.businessId);
-    return this.prisma.medicineApplication.create({ data: { businessId: ctx.businessId, cropId, appliedOn: new Date(body.appliedOn as string), medicineItemId: body.medicineItemId as string, quantity: new Prisma.Decimal(String(body.quantity)), unit: body.unit as string, method: body.method as string, reason: body.reason as string, costPaise: BigInt(String(body.costPaise)), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+    return this.prisma.medicineApplication.create({ data: { businessId: ctx.businessId, cropId, appliedOn: new Date(body.appliedOn), medicineItemId: body.medicineItemId, quantity: new Prisma.Decimal(body.quantity), unit: body.unit, method: body.method, reason: body.reason, costPaise: BigInt(body.costPaise), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
   }
 
-  async health(cropId: string, body: Record<string, unknown>, ctx: Context) {
+  async health(cropId: string, body: HealthInput, ctx: Context) {
     await this.crop(cropId, ctx.businessId);
-    return this.prisma.healthEvent.create({ data: { businessId: ctx.businessId, cropId, eventDate: new Date(body.eventDate as string), doc: Number(body.doc), symptoms: body.symptoms as string[], mortalityCount: body.mortalityCount as number | undefined, labTested: Boolean(body.labTested), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+    return this.prisma.healthEvent.create({ data: { businessId: ctx.businessId, cropId, eventDate: new Date(body.eventDate), doc: body.doc, symptoms: body.symptoms, mortalityCount: body.mortalityCount, labTested: body.labTested, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
   }
 
-  async attendance(body: Record<string, unknown>, ctx: Context) {
-    return this.prisma.attendanceLog.create({ data: { businessId: ctx.businessId, labourId: body.labourId as string, pondId: body.pondId as string | undefined, cropId: body.cropId as string | undefined, workDate: new Date(body.workDate as string), days: new Prisma.Decimal(String(body.days)), amountPaise: BigInt(String(body.amountPaise)), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
+  async attendance(body: AttendanceInput, ctx: Context) {
+    return this.prisma.attendanceLog.create({ data: { businessId: ctx.businessId, labourId: body.labourId, pondId: body.pondId, cropId: body.cropId, workDate: new Date(body.workDate), days: new Prisma.Decimal(body.days), amountPaise: BigInt(body.amountPaise), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
   }
 }
