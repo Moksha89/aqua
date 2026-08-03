@@ -117,6 +117,25 @@ export const actualSurvival = (totalHarvestedWeightKg: bigint, harvestAbwG: bigi
 export const harvestAbw = (sampleTaken: boolean, sampleWeightG: bigint, sampleCount: bigint): Derived<bigint> =>
   !sampleTaken ? envelope<bigint>(null, 'g', 'NOT_DETERMINABLE', 'sample_weight_g / sample_count', { sampleTaken }, ['Harvest sample was skipped']) : abw(sampleWeightG, sampleCount);
 
+export const projectedHarvestDate = (sampleDate: Date, currentAbwG: bigint, targetSizeG: bigint, adgMgPerDay: bigint): Derived<Date> => {
+  if (adgMgPerDay <= 0n || targetSizeG <= currentAbwG) {
+    return envelope<Date>(null, 'date', 'NOT_DETERMINABLE', 'sampleDate + (targetAbw − currentAbw) / ADG', { sampleDate: sampleDate.toISOString(), currentAbwG, targetSizeG, adgMgPerDay }, ['Target must exceed current ABW and ADG must be positive']);
+  }
+  const days = (targetSizeG - currentAbwG) * 1000n / adgMgPerDay;
+  const result = new Date(sampleDate.getTime());
+  result.setUTCDate(result.getUTCDate() + Number(days));
+  return envelope(result, 'date', 'ESTIMATED', 'sampleDate + (targetAbw − currentAbw) / ADG', { sampleDate: sampleDate.toISOString(), currentAbwG, targetSizeG, adgMgPerDay }, ['Calculate remaining growth days', 'Add days to sample date']);
+};
+
+export const abwPlausibility = (previousAbwG: bigint, currentAbwG: bigint, maxChangePct: bigint): Derived<boolean> => {
+  const difference = currentAbwG >= previousAbwG ? currentAbwG - previousAbwG : previousAbwG - currentAbwG;
+  const plausible = previousAbwG > 0n && difference * 100n <= previousAbwG * maxChangePct;
+  return envelope(plausible, 'boolean', 'ACTUAL', '|currentAbw − previousAbw| / previousAbw ≤ maxChangePct', { previousAbwG, currentAbwG, maxChangePct }, ['Compare absolute ABW change with configured threshold']);
+};
+
+export const idleDayReconciliation = (calendarDays: bigint, cropOccupancyDays: bigint, idleDays: bigint): Derived<boolean> =>
+  envelope(calendarDays === cropOccupancyDays + idleDays, 'boolean', 'ACTUAL', 'Σ crop occupancy days + Σ idle days = calendar days', { calendarDays, cropOccupancyDays, idleDays }, ['Sum occupied and idle days', 'Compare with calendar days']);
+
 export type PnlInput = { grossRevenuePaise: bigint; directCostsPaise: bigint; timeApportionedPaise: bigint; harvestedKg: bigint; pondAcres: bigint };
 export const pnl = (input: PnlInput): Record<string, Derived<bigint>> => {
   const grossMargin = input.grossRevenuePaise - input.directCostsPaise;
