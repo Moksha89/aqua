@@ -18,6 +18,31 @@ type Context = { businessId: string; userId: string; deviceId: string };
 export class CropService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async preparations(pondId: string, businessId: string) {
+    return this.prisma.preparationActivity.findMany({ where: { pondId, businessId, voidedAt: null, cropId: null } });
+  }
+
+  async createPreparation(pondId: string, body: { name: string; startDate: string; labourCostPaise: string; materialCostPaise: string; amountPaise: string; remarks?: string }, ctx: Context) {
+    return this.prisma.preparationActivity.create({
+      data: {
+        businessId: ctx.businessId, pondId, cropId: null, name: body.name, startDate: new Date(body.startDate),
+        labourCostPaise: BigInt(body.labourCostPaise), materialCostPaise: BigInt(body.materialCostPaise),
+        amountPaise: BigInt(body.amountPaise), remarks: body.remarks, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId,
+      },
+    });
+  }
+
+  async updateStockingDate(cropId: string, stockingDate: string, reason: string, ctx: Context) {
+    if (!reason.trim()) throw new BadRequestException('A reason is required');
+    const crop = await this.prisma.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
+    if (!crop) throw new NotFoundException('Crop not found');
+    const line = await this.prisma.cropSpeciesLine.findFirst({ where: { cropId } });
+    const species = line ? await this.prisma.species.findUnique({ where: { id: line.speciesId } }) : null;
+    const date = new Date(stockingDate);
+    const expected = species?.defaultDocDays ? new Date(date.getTime() + species.defaultDocDays * 86400000) : null;
+    return this.prisma.crop.update({ where: { id: cropId }, data: { stockingDate: date, expectedHarvestDate: expected, updatedBy: ctx.userId } });
+  }
+
   async readiness(pondId: string, speciesId: string) {
     const [species, reading] = await Promise.all([
       this.prisma.species.findUnique({ where: { id: speciesId } }),

@@ -17,6 +17,14 @@ class StockDto {
   @IsString() speciesCategory!: string;
   @IsArray() @ValidateNested({ each: true }) @Type(() => BatchDto) batches!: BatchDto[];
 }
+class PreparationDto {
+  @IsString() name!: string;
+  @IsString() startDate!: string;
+  @IsString() labourCostPaise!: string;
+  @IsString() materialCostPaise!: string;
+  @IsString() amountPaise!: string;
+  @IsString() remarks?: string;
+}
 
 @UseGuards(JwtGuard)
 @Controller('ponds')
@@ -34,6 +42,25 @@ export class CropController {
       businessId: request.user!.businessId!,
       userId: request.user!.id,
       deviceId: request.user!.deviceId,
+    });
+  }
+
+  @Get(':id/preparations')
+  preparations(@Param('id') id: string, @Req() request: AuthenticatedRequest) {
+    return this.crops.preparations(id, request.user!.businessId!);
+  }
+
+  @Post(':id/preparations')
+  createPreparation(@Param('id') id: string, @Body() body: PreparationDto, @Req() request: AuthenticatedRequest) {
+    return this.crops.createPreparation(id, body, {
+      businessId: request.user!.businessId!, userId: request.user!.id, deviceId: request.user!.deviceId,
+    });
+  }
+
+  @Post('/crops/:cropId/stock-date')
+  updateStockingDate(@Param('cropId') cropId: string, @Body('stockingDate') stockingDate: string, @Body('reason') reason: string, @Req() request: AuthenticatedRequest) {
+    return this.crops.updateStockingDate(cropId, stockingDate, reason, {
+      businessId: request.user!.businessId!, userId: request.user!.id, deviceId: request.user!.deviceId,
     });
   }
 }
