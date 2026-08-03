@@ -8,7 +8,7 @@
   "scripts": {
     "lint": "pnpm --filter @aqua/api lint",
     "typecheck": "pnpm --filter @aqua/api typecheck",
-    "test": "pnpm --filter @aqua/api test",
-    "prisma:validate": "pnpm --filter @aqua/api prisma:validate"
+    "test": "pnpm --filter @aqua/api exec jest --runInBand",
+    "prisma:validate": "DATABASE_URL=postgresql://aqua:aqua@localhost:5432/aqua?schema=public pnpm --filter @aqua/api prisma:validate"
   }
 }
