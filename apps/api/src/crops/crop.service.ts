@@ -86,6 +86,7 @@ export class CropService {
           preparationStartDate: firstDate,
           stockingDate: firstDate,
           weightedStockingDate: weighted,
+          estimatedSurvivors: BigInt(totalQty),
           survivalAssumptionPct: new Prisma.Decimal(0),
           feedLoggingEnabled: true,
           stockingFlags: {

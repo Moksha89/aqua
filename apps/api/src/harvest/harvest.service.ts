@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { abwPlausibility, bp, harvestAbw, massMg } from '../rules-engine';
+import { abwPlausibility, animalsHarvested, bp, harvestAbw, massMg, partialHarvestSurvivors, weightG } from '../rules-engine';
 import { PrismaService } from '../platform/prisma.service';
 
 type Context = { businessId: string; userId: string; deviceId: string };
@@ -29,6 +29,12 @@ export class HarvestService {
       const event = await tx.harvestEvent.create({ data: { businessId: ctx.businessId, cropId, harvestDate: new Date(body.harvestDate), doc: body.doc, type: body.type, reason: body.reason, buyerPartyId: body.buyerPartyId, sampleTaken: body.sampleTaken, sampleCount: body.sampleTaken ? body.sampleCount : null, sampleWeightG: body.sampleTaken ? new Prisma.Decimal(body.sampleWeightG!) : null, abwG: sampleAbw.value === null ? null : new Prisma.Decimal(Number(sampleAbw.value) / 1000), rateCardId: null, grossValuePaise: gross, deductionsPaise: deductions, netRealisationPaise: gross - deductions, receivablePaise: gross - deductions, receivableDueDate: body.receivableDueDate ? new Date(body.receivableDueDate) : null, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
       await tx.harvestLine.createMany({ data: body.lines.map((line) => ({ businessId: ctx.businessId, harvestEventId: event.id, speciesId: line.speciesId, basis: line.basis, key: line.key, quantityKg: new Prisma.Decimal(line.quantityKg), ratePerKgPaise: BigInt(line.ratePerKgPaise), lineValuePaise: BigInt(Math.round(Number(line.quantityKg) * Number(line.ratePerKgPaise))), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId })) });
       if (body.deductions?.length) await tx.harvestDeduction.createMany({ data: body.deductions.map((item) => ({ businessId: ctx.businessId, harvestEventId: event.id, kind: item.kind, amountPaise: BigInt(item.amountPaise), createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId })) });
+      if (body.type === 'PARTIAL') {
+        const harvestedWeightG = body.lines.reduce((sum, line) => sum + Number(line.quantityKg) * 1000, 0);
+        const harvestedAnimals = sampleAbw.value === null ? 0n : (animalsHarvested(weightG(BigInt(Math.round(harvestedWeightG))), sampleAbw.value).value ?? 0n);
+        const reduced = partialHarvestSurvivors(crop.estimatedSurvivors ?? 0n, harvestedAnimals).value ?? 0n;
+        await tx.crop.update({ where: { id: cropId }, data: { estimatedSurvivors: reduced < 0n ? 0n : reduced, standingBiomassG: crop.standingBiomassG === null ? undefined : new Prisma.Decimal(Math.max(0, Number(crop.standingBiomassG) - harvestedWeightG)) } });
+      }
       await tx.crop.update({ where: { id: cropId }, data: { status: body.type === 'FINAL' ? 'CLOSED' : 'HARVESTING', finalHarvestDate: body.type === 'FINAL' ? new Date(body.harvestDate) : undefined, closedAt: body.type === 'FINAL' ? new Date() : undefined, closedBy: body.type === 'FINAL' ? ctx.userId : undefined } });
       if (body.type === 'FINAL') await tx.pond.update({ where: { id: crop.pondId }, data: { status: 'IDLE', updatedBy: ctx.userId } });
       return { ...event, survival: sampleAbw.value === null ? { value: null, status: 'NOT_DETERMINABLE' } : { value: null, status: 'ACTUAL' }, plausibility: plausible };

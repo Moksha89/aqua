@@ -538,6 +538,8 @@ model Crop {
   stockingDate DateTime
   weightedStockingDate DateTime?
   expectedHarvestDate DateTime?
+  standingBiomassG Decimal? @db.Decimal(18,3)
+  estimatedSurvivors BigInt?
   targetSizeG Decimal? @db.Decimal(14,3)
   survivalAssumptionPct Decimal @db.Decimal(7,3)
   feedLoggingEnabled Boolean
