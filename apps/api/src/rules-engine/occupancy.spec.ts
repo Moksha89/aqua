@@ -1,6 +1,13 @@
 import { idleDayReconciliation, idleWindows, occupancyDays } from './index';
 
 describe('occupancy and idle windows', () => {
+  it('serialises bigint and Date derivation inputs as JSON', () => {
+    const derivation = occupancyDays(new Date('2024-02-29Z'), new Date('2024-03-01Z'));
+    expect(() => JSON.stringify(derivation)).not.toThrow();
+    expect(JSON.parse(JSON.stringify(derivation)).derivation.inputs.from).toBe(
+      '2024-02-29T00:00:00.000Z',
+    );
+  });
   it('uses inclusive single-day and leap-year boundaries', () => {
     expect(occupancyDays(new Date('2024-02-29Z'), new Date('2024-02-29Z')).value).toBe(1n);
     expect(occupancyDays(new Date('2024-02-28Z'), new Date('2024-03-01Z')).value).toBe(3n);

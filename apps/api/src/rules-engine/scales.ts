@@ -5,7 +5,14 @@ export type WeightG = Brand<bigint, 'WeightG'>;
 export type Acres1e4 = Brand<bigint, 'Acres1e4'>;
 export type Bp = Brand<bigint, 'Bp'>;
 export type Ratio1e4 = Brand<bigint, 'Ratio1e4'>;
-export const SCALES = { money: 100, massMg: 1, weightG: 1, acres: 10_000, percentageBp: 10_000, ratio: 10_000 } as const;
+export const SCALES = {
+  money: 100,
+  massMg: 1,
+  weightG: 1,
+  acres: 10_000,
+  percentageBp: 10_000,
+  ratio: 10_000,
+} as const;
 export const paise = (value: bigint): Paise => value as Paise;
 export const massMg = (value: bigint): MassMg => value as MassMg;
 export const weightG = (value: bigint): WeightG => value as WeightG;
