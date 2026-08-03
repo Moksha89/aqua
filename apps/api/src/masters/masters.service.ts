@@ -47,7 +47,7 @@ export class MastersService {
     });
   }
 
-  async create(delegate: Delegate, data: Record<string, unknown>, context: MasterContext): Promise<unknown> {
+  async create(delegate: Delegate, data: object, context: MasterContext): Promise<unknown> {
     const after = await delegate.create({
       data: {
         ...data,
@@ -69,9 +69,21 @@ export class MastersService {
       const start = new Date(data.startDate as Date);
       const end = new Date(data.endDate as Date);
       const frequency = String(data.paymentFrequency).toUpperCase();
-      const months = frequency === 'MONTHLY' ? 1 : frequency === 'QUARTERLY' ? 3 : 12;
+      if (frequency === 'CUSTOM') {
+        const rows = (data.customSchedule as Array<{ dueDate: string; amountPaise: string }> | undefined) ?? [];
+        await tx.leasePaymentSchedule.createMany({
+          data: rows.map((row) => ({
+            businessId: context.businessId, leaseAgreementId: lease.id, dueDate: new Date(row.dueDate),
+            amountPaise: BigInt(row.amountPaise), status: 'DUE', createdBy: context.userId,
+            updatedBy: context.userId, deviceId: context.deviceId,
+          })),
+        });
+        return lease;
+      }
+      const months = frequency === 'HALF_YEARLY' ? 6 : 12;
       const periods: Date[] = [];
       for (const due = new Date(start); due <= end; due.setMonth(due.getMonth() + months)) periods.push(new Date(due));
+      // Escalation is retained for audit/history; v1 schedule generation does not apply it.
       const annual = new Prisma.Decimal(String(data.ratePerAcrePerAnnumPaise)).mul(String(data.extentAcres));
       const amount = BigInt(annual.div(Math.max(1, 12 / months)).toFixed(0));
       await tx.leasePaymentSchedule.createMany({
@@ -89,7 +101,7 @@ export class MastersService {
     });
   }
 
-  async update(delegate: Delegate, id: string, data: Record<string, unknown>, context: MasterContext): Promise<unknown> {
+  async update(delegate: Delegate, id: string, data: object, context: MasterContext): Promise<unknown> {
     const before = await delegate.findUnique({ where: { id, businessId: context.businessId } });
     const after = await delegate.update({
       where: { id, businessId: context.businessId },

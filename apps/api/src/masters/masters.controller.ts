@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
@@ -35,6 +35,7 @@ export class LeaseAgreementDto {
   @ApiProperty() @IsBoolean() advanceRefundable!: boolean;
   @ApiProperty({ required: false }) @IsOptional() escalationJson?: object;
   @ApiProperty({ required: false }) @IsOptional() @IsString() documentKey?: string;
+  @ApiProperty({ required: false, type: Array }) @IsOptional() customSchedule?: Array<{ dueDate: string; amountPaise: string }>;
 }
 export class SpeciesDto {
   @ApiProperty() @IsString() category!: string;
@@ -157,6 +158,7 @@ export class MastersController {
       startDate: new Date(body.startDate), endDate: new Date(body.endDate),
       paymentFrequency: body.paymentFrequency, advancePaise: BigInt(body.advancePaise),
       advanceRefundable: body.advanceRefundable, escalationJson: body.escalationJson, documentKey: body.documentKey,
+      customSchedule: body.customSchedule,
     }, this.context(req));
   }
   @Post('species')
@@ -258,4 +260,25 @@ export class MastersController {
       speciesCategory: body.speciesCategory, name: body.name, items: body.items,
     }, this.context(req));
   }
+  @Get('feed-items/:id') feedItem(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.feedItem, id, this.user(r)); }
+  @Get('feed-rate-history/:id') feedRate(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.feedRateHistory, id, this.user(r)); }
+  @Get('medicine-items/:id') medicineItem(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.medicineItem, id, this.user(r)); }
+  @Get('medicine-rate-history/:id') medicineRate(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.medicineRateHistory, id, this.user(r)); }
+  @Get('parties/:id') party(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.party, id, this.user(r)); }
+  @Get('supplier-credit-limits/:id') supplierCredit(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.supplierCreditLimit, id, this.user(r), false, true); }
+  @Get('labour/:id') labourItem(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.labour, id, this.user(r)); }
+  @Get('assets/:id') asset(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.asset, id, this.user(r), false, true); }
+  @Get('cost-heads/:id') costHead(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.costHead, id, this.user(r), false, true); }
+  @Get('preparation-templates/:id') preparationTemplate(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.masters.get(this.masters.preparationTemplate, id, this.user(r)); }
+
+  @Patch('feed-items/:id') updateFeed(@Param('id') id: string, @Body() b: FeedItemDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.feedItem, id, b, this.context(r)); }
+  @Patch('feed-rate-history/:id') updateFeedRate(@Param('id') id: string, @Body() b: FeedRateDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.feedRateHistory, id, b, this.context(r)); }
+  @Patch('medicine-items/:id') updateMedicine(@Param('id') id: string, @Body() b: MedicineItemDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.medicineItem, id, b, this.context(r)); }
+  @Patch('medicine-rate-history/:id') updateMedicineRate(@Param('id') id: string, @Body() b: MedicineRateDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.medicineRateHistory, id, b, this.context(r)); }
+  @Patch('parties/:id') updateParty(@Param('id') id: string, @Body() b: PartyDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.party, id, b, this.context(r)); }
+  @Patch('supplier-credit-limits/:id') updateSupplierCredit(@Param('id') id: string, @Body() b: SupplierCreditDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.supplierCreditLimit, id, b, this.context(r)); }
+  @Patch('labour/:id') updateLabour(@Param('id') id: string, @Body() b: LabourDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.labour, id, b, this.context(r)); }
+  @Patch('assets/:id') updateAsset(@Param('id') id: string, @Body() b: AssetDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.asset, id, b, this.context(r)); }
+  @Patch('cost-heads/:id') updateCostHead(@Param('id') id: string, @Body() b: CostHeadDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.costHead, id, b, this.context(r)); }
+  @Patch('preparation-templates/:id') updatePreparationTemplate(@Param('id') id: string, @Body() b: PreparationTemplateDto, @Req() r: AuthenticatedRequest) { return this.masters.update(this.masters.preparationTemplate, id, b, this.context(r)); }
 }
