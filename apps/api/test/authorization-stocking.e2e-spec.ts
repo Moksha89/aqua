@@ -150,7 +150,7 @@ describe('authorization and stocking invariants (e2e)', () => {
     await request(app.getHttpServer()).post(`/crops/${cropId}/harvests`).set(auth).send({ harvestDate: '2026-09-10', doc: 62, type: 'FINAL', reason: 'SEASON_END', sampleTaken: true, sampleCount: 10, sampleWeightG: '1.5', lines: [{ basis: 'COUNT', key: 'ALL', quantityKg: '0.5', ratePerKgPaise: '200' }] }).expect(201);
     await request(app.getHttpServer()).post(`/crops/${cropId}/closure-checklist`).set(auth).expect(201);
     for (const step of ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION']) {
-      await request(app.getHttpServer()).post(`/crops/${cropId}/closure-checklist/${step}`).set(auth).send({ note: step === 'RECONCILE_FEED_STOCK' ? 'CARRY_FORWARD' : 'complete' }).expect(201);
+      await request(app.getHttpServer()).post(`/crops/${cropId}/closure-checklist/${step}`).set(auth).send({ note: step === 'RECONCILE_FEED_STOCK' ? 'CARRY_FORWARD' : step === 'ZERO_COST_HEADS' ? 'ACK_ZERO:all-reviewed' : 'complete' }).expect(201);
     }
     const pnl = await request(app.getHttpServer()).post(`/crops/${cropId}/close`).set(auth).expect(201);
     expect(pnl.body.isCurrent).toBe(true);
