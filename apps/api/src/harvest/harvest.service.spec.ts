@@ -12,6 +12,7 @@ describe('HarvestService closure sequence', () => {
         update: jest.fn().mockResolvedValue({}),
         create: jest.fn().mockResolvedValue({ id: 'new', version: 3, isCurrent: true }),
       },
+      cropClosureChecklist: { findMany: jest.fn().mockResolvedValue(['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION'].map((step) => ({ step, status: 'COMPLETED' }))) },
       pond: { update: jest.fn().mockResolvedValue({}) },
     };
     const prisma = { $transaction: jest.fn((fn: (value: typeof tx) => unknown) => fn(tx)) };

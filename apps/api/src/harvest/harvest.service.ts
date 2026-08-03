@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { abwPlausibility, animalsHarvested, bp, harvestAbw, massMg, partialHarvestSurvivors, weightG } from '../rules-engine';
 import { PrismaService } from '../platform/prisma.service';
+import { AllocationService } from '../allocation/allocation.service';
 
 type Context = { businessId: string; userId: string; deviceId: string };
 type Line = { speciesId?: string; basis: 'COUNT' | 'GRADE'; key: string; quantityKg: string; ratePerKgPaise: string };
@@ -9,7 +10,7 @@ type HarvestInput = { harvestDate: string; doc: number; type: 'PARTIAL' | 'FINAL
 
 @Injectable()
 export class HarvestService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly allocations?: AllocationService) {}
 
   async harvest(cropId: string, body: HarvestInput, ctx: Context) {
     if (!body.lines.length) throw new BadRequestException('Harvest lines are required');
@@ -46,6 +47,9 @@ export class HarvestService {
     return this.prisma.$transaction(async (tx) => {
       const crop = await tx.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
       if (!crop) throw new NotFoundException('Crop not found');
+      const checklist = await tx.cropClosureChecklist.findMany({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
+      const required = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION'];
+      if (required.some((step) => checklist.find((item) => item.step === step)?.status !== 'COMPLETED')) throw new BadRequestException('Closure checklist is incomplete');
       const previous = await tx.cropPnl.findFirst({ where: { cropId, isCurrent: true }, orderBy: { version: 'desc' } });
       if (previous) await tx.cropPnl.update({ where: { id: previous.id }, data: { isCurrent: false } });
       const version = (previous?.version ?? 0) + 1;
@@ -66,6 +70,23 @@ export class HarvestService {
       }
       return tx.cropClosureChecklist.findMany({ where: { cropId, businessId: ctx.businessId }, orderBy: { step: 'asc' } });
     });
+  }
+
+  async executeStep(cropId: string, step: string, note: string | undefined, ctx: Context) {
+    const valid = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION'];
+    if (!valid.includes(step)) throw new BadRequestException('Unknown closure step');
+    const crop = await this.prisma.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
+    if (!crop) throw new NotFoundException('Crop not found');
+    if (step === 'CONFIRM_HARVESTS') {
+      const count = await this.prisma.harvestEvent.count({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
+      if (!count) throw new BadRequestException('At least one harvest is required');
+    }
+    if (step === 'RECONCILE_FEED_STOCK' && note !== 'CARRY_FORWARD' && !note?.startsWith('WRITE_OFF:')) throw new BadRequestException('Choose CARRY_FORWARD or WRITE_OFF:<reason>');
+    if (step === 'POST_OCCUPANCY_COSTS' || step === 'CLOSURE_ALLOCATION') {
+      if (!this.allocations) throw new BadRequestException('Allocation service unavailable');
+      await this.allocations.run({ periodStart: crop.preparationStartDate.toISOString(), periodEnd: (crop.finalHarvestDate ?? new Date()).toISOString(), trigger: 'CLOSURE' }, ctx);
+    }
+    return this.prisma.cropClosureChecklist.updateMany({ where: { cropId, businessId: ctx.businessId, step }, data: { status: 'COMPLETED', note, updatedBy: ctx.userId } });
   }
 
   async reopen(cropId: string, reason: string, ctx: Context) {
