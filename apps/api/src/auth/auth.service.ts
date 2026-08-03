@@ -107,6 +107,33 @@ export class AuthService {
     };
   }
 
+  async registerDevice(userId: string, input: { deviceId: string; platform: string; pushToken?: string }) {
+    return this.prisma.device.upsert({
+      where: { id: input.deviceId },
+      create: {
+        id: input.deviceId,
+        userId,
+        platform: input.platform,
+        pushToken: input.pushToken,
+        createdBy: userId,
+        updatedBy: userId,
+        deviceId: input.deviceId,
+      },
+      update: { platform: input.platform, pushToken: input.pushToken, lastSeenAt: new Date() },
+    });
+  }
+
+  async switchBusiness(userId: string, deviceId: string, businessId: string) {
+    const role = await this.prisma.userBusinessRole.findFirst({
+      where: { userId, businessId, voidedAt: null },
+    });
+    if (!role) throw new UnauthorizedException('User is not linked to this business');
+    return {
+      businessId,
+      accessToken: this.token({ sub: userId, deviceId, businessId, type: 'access' }),
+    };
+  }
+
   private hash(value: string): string {
     return createHash('sha256').update(value).digest('hex');
   }

@@ -1,6 +1,7 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { IsString, Length } from 'class-validator';
 import { AuthService } from './auth.service';
+import { AuthenticatedRequest, JwtGuard } from './jwt.guard';
 
 class OtpRequestDto {
   @IsString()
@@ -17,6 +18,11 @@ class OtpVerifyDto {
 
   @IsString()
   deviceId!: string;
+}
+class DeviceDto {
+  @IsString() deviceId!: string;
+  @IsString() platform!: string;
+  @IsString() pushToken?: string;
 }
 
 @Controller('auth')
@@ -36,5 +42,20 @@ export class AuthController {
   @Post('refresh')
   refresh(@Body('refreshToken') refreshToken: string): ReturnType<AuthService['refresh']> {
     return this.auth.refresh(refreshToken);
+  }
+
+  @Post('devices')
+  @UseGuards(JwtGuard)
+  registerDevice(@Req() request: AuthenticatedRequest, @Body() body: DeviceDto) {
+    return this.auth.registerDevice(request.user!.id, body);
+  }
+
+  @Post('business/switch')
+  @UseGuards(JwtGuard)
+  switchBusiness(
+    @Req() request: AuthenticatedRequest,
+    @Body('businessId') businessId: string,
+  ) {
+    return this.auth.switchBusiness(request.user!.id, request.user!.deviceId, businessId);
   }
 }
