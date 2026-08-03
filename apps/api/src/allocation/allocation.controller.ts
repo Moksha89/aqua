@@ -2,10 +2,11 @@ import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString } from 'class-validator';
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
+import { FinancialAccessGuard } from '../auth/roles.guard';
 import { AllocationService } from './allocation.service';
 class RunDto { @ApiProperty() @IsString() periodStart!: string; @ApiProperty() @IsString() periodEnd!: string; @ApiProperty({ required: false }) @IsOptional() @IsIn(['MONTH_END','CLOSURE']) trigger?: 'MONTH_END'|'CLOSURE'; }
 class IdleDto { @ApiProperty() @IsString() pondId!: string; @ApiProperty() @IsString() fromDate!: string; @ApiProperty() @IsString() toDate!: string; }
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, FinancialAccessGuard)
 @Controller('allocations')
 export class AllocationController {
   constructor(private readonly allocations: AllocationService) {}
