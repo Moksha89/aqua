@@ -55,12 +55,12 @@ export class HarvestService {
       if (!crop) throw new NotFoundException('Crop not found');
       if (crop.status === 'CLOSED') {
         const frozen = await tx.cropPnl.findFirst({ where: { cropId, businessId: ctx.businessId, isCurrent: true }, orderBy: { version: 'desc' } });
-        if (frozen) return frozen;
+        if (frozen) return { cropId, status: 'CLOSED', pnlFrozen: true, pnl: frozen };
       }
       const checklist = await tx.cropClosureChecklist.findMany({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
       const required = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION'];
       if (required.some((step) => checklist.find((item) => item.step === step)?.status !== 'COMPLETED')) {
-        if (crop.status === 'CLOSED') return { cropId, status: 'CLOSED', pnlFrozen: false };
+        if (crop.status === 'CLOSED') return { cropId, status: 'CLOSED', pnlFrozen: false, pnl: null };
         throw new BadRequestException('Closure checklist is incomplete');
       }
       const previous = await tx.cropPnl.findFirst({ where: { cropId, isCurrent: true }, orderBy: { version: 'desc' } });
@@ -69,7 +69,7 @@ export class HarvestService {
       const pnl = await tx.cropPnl.create({ data: { businessId: ctx.businessId, cropId, version, generatedAt: new Date(), generatedBy: ctx.userId, payload: { status: 'FROZEN', source: 'closure' }, isCurrent: true, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
       await tx.crop.update({ where: { id: cropId }, data: { status: 'CLOSED', closedAt: new Date(), closedBy: ctx.userId } });
       await tx.pond.update({ where: { id: crop.pondId }, data: { status: 'IDLE', updatedBy: ctx.userId } });
-      return pnl;
+      return { cropId, status: 'CLOSED', pnlFrozen: true, pnl };
     });
   }
 
@@ -102,14 +102,21 @@ export class HarvestService {
         this.prisma.expense.groupBy({ by: ['costHeadId'], where: { businessId: ctx.businessId, cropId, voidedAt: null }, _sum: { amountPaise: true } }),
         this.prisma.apportionedCost.groupBy({ by: ['costHeadId'], where: { businessId: ctx.businessId, cropId, voidedAt: null }, _sum: { amountPaise: true } }),
       ]);
+      if (expenses.length === 0 && allocated.length === 0) {
+        return this.prisma.cropClosureChecklist.updateMany({ where: { cropId, businessId: ctx.businessId, step }, data: { status: 'COMPLETED', note, updatedBy: ctx.userId } });
+      }
       const valued = new Set([...expenses, ...allocated].filter((row) => (row._sum.amountPaise ?? 0n) > 0n).map((row) => row.costHeadId));
       const zero = heads.filter((head) => !valued.has(head.id)).map((head) => head.id);
       if (zero.length > 0 && !note?.startsWith('ACK_ZERO:')) throw new BadRequestException(`Acknowledge zero-value cost heads: ${zero.join(',')}`);
     }
-    if (step === 'RECONCILE_FEED_STOCK' && note !== 'CARRY_FORWARD' && !note?.startsWith('WRITE_OFF:')) throw new BadRequestException('Choose CARRY_FORWARD or WRITE_OFF:<reason>');
     if (step === 'RECONCILE_FEED_STOCK') {
+      const balances = await this.prisma.cropInputBalance.findMany({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
+      const hasStock = balances.some((balance) => !new Prisma.Decimal(balance.qtyOnHand).isZero());
+      if (!hasStock) {
+        return this.prisma.cropClosureChecklist.updateMany({ where: { cropId, businessId: ctx.businessId, step }, data: { status: 'COMPLETED', note, updatedBy: ctx.userId } });
+      }
+      if (note !== 'CARRY_FORWARD' && !note?.startsWith('WRITE_OFF:')) throw new BadRequestException('Choose CARRY_FORWARD or WRITE_OFF:<reason>');
       await this.prisma.$transaction(async (tx) => {
-        const balances = await tx.cropInputBalance.findMany({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
         for (const balance of balances) {
           const quantity = new Prisma.Decimal(balance.qtyOnHand);
           if (quantity.isZero()) continue;

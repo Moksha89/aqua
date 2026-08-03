@@ -184,8 +184,9 @@ describe('authorization and stocking invariants (e2e)', () => {
       await request(app.getHttpServer()).post(`/crops/${cropId}/closure-checklist/${step}`).set(auth).send({ note: step === 'RECONCILE_FEED_STOCK' ? 'CARRY_FORWARD' : step === 'ZERO_COST_HEADS' ? 'ACK_ZERO:all-reviewed' : 'complete' }).expect(201);
     }
     const pnl = await request(app.getHttpServer()).post(`/crops/${cropId}/close`).set(auth).expect(201);
-    expect(pnl.body.isCurrent).toBe(true);
-    expect(pnl.body.payload.status).toBe('FROZEN');
+    expect(pnl.body.pnlFrozen).toBe(true);
+    expect(pnl.body.pnl.isCurrent).toBe(true);
+    expect(pnl.body.pnl.payload.status).toBe('FROZEN');
     const crop = await prisma.crop.findUniqueOrThrow({ where: { id: cropId } });
     expect(crop.preparationStartDate.toISOString()).toBe('2026-07-01T00:00:00.000Z');
     expect(crop.status).toBe('CLOSED');

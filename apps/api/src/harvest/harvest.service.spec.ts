@@ -21,7 +21,7 @@ describe('HarvestService closure sequence', () => {
     const prisma = { $transaction: jest.fn((fn: (value: typeof tx) => unknown) => fn(tx)) };
     const service = new HarvestService(prisma as never, {} as AllocationService, { assertPondScope: jest.fn() } as unknown as QueryScope);
     const result = await service.close('crop', { businessId: 'business', userId: 'user', role: UserRole.OWNER, financialAccess: true, pondScope: ['*'], deviceId: 'device' });
-    expect(result).toEqual({ id: 'new', version: 3, isCurrent: true });
+    expect(result).toEqual({ cropId: 'crop', status: 'CLOSED', pnlFrozen: true, pnl: { id: 'new', version: 3, isCurrent: true } });
     expect(tx.cropPnl.update).toHaveBeenCalledWith({ where: { id: 'old' }, data: { isCurrent: false } });
     expect(tx.cropPnl.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ version: 3, isCurrent: true }) }));
     expect(tx.crop.update).toHaveBeenCalled();
@@ -32,5 +32,23 @@ describe('HarvestService closure sequence', () => {
     const prisma = { $transaction: jest.fn((fn: (value: unknown) => unknown) => fn({ crop: { findFirst: jest.fn().mockResolvedValue({ status: 'CLOSED' }) } })) };
     const service = new HarvestService(prisma as never, {} as AllocationService, { assertPondScope: jest.fn() } as unknown as QueryScope);
     await expect(service.harvest('crop', { harvestDate: '2026-01-01', doc: 1, type: 'FINAL', reason: 'OTHER', sampleTaken: false, lines: [{ basis: 'GRADE', key: 'A', quantityKg: '1', ratePerKgPaise: '100' }] }, { businessId: 'business', userId: 'user', role: UserRole.OWNER, financialAccess: true, pondScope: ['*'], deviceId: 'device' })).rejects.toThrow('Closed crops are read-only');
+  });
+
+  it('completes empty cost-head and feed-stock steps without acknowledgements', async () => {
+    const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const prisma = {
+      crop: { findFirst: jest.fn().mockResolvedValue({ id: 'crop', businessId: 'business', preparationStartDate: new Date() }) },
+      costHead: { findMany: jest.fn().mockResolvedValue([{ id: 'head' }]) },
+      expense: { groupBy: jest.fn().mockResolvedValue([]) },
+      apportionedCost: { groupBy: jest.fn().mockResolvedValue([]) },
+      cropInputBalance: { findMany: jest.fn().mockResolvedValue([]) },
+      cropClosureChecklist: { updateMany },
+    };
+    const service = new HarvestService(prisma as never, {} as AllocationService, { assertPondScope: jest.fn() } as unknown as QueryScope);
+    const ctx = { businessId: 'business', userId: 'user', role: UserRole.OWNER, financialAccess: true, pondScope: ['*'], deviceId: 'device' };
+
+    await expect(service.executeStep('crop', 'ZERO_COST_HEADS', undefined, ctx)).resolves.toEqual({ count: 1 });
+    await expect(service.executeStep('crop', 'RECONCILE_FEED_STOCK', undefined, ctx)).resolves.toEqual({ count: 1 });
+    expect(updateMany).toHaveBeenCalledTimes(2);
   });
 });
