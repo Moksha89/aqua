@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './platform/http-exception.filter';
 import { JsonSerialiserInterceptor } from './platform/json-serialiser.interceptor';
+import { AuditInterceptor } from './platform/audit.interceptor';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -18,7 +19,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new JsonSerialiserInterceptor());
+  app.useGlobalInterceptors(new JsonSerialiserInterceptor(), app.get(AuditInterceptor));
   const config = new DocumentBuilder()
     .setTitle('AE Farm & Financial Management API')
     .setDescription('Offline-first aqua farm operations and finance API')
