@@ -4,6 +4,7 @@ import { abwPlausibility, animalsHarvested, bp, harvestAbw, massMg, partialHarve
 import { PrismaService } from '../platform/prisma.service';
 import { AllocationService } from '../allocation/allocation.service';
 import { QueryScope, ScopeUser } from '../authorization/query-scope';
+import type { CloseCropResponseDto } from './harvest.controller';
 
 type Context = ScopeUser & { deviceId: string };
 type Line = { speciesId?: string; basis: 'COUNT' | 'GRADE'; key: string; quantityKg: string; ratePerKgPaise: string };
@@ -49,7 +50,7 @@ export class HarvestService {
     });
   }
 
-  async close(cropId: string, ctx: Context) {
+  async close(cropId: string, ctx: Context): Promise<CloseCropResponseDto> {
     return this.prisma.$transaction(async (tx) => {
       const crop = await tx.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
       if (!crop) throw new NotFoundException('Crop not found');
@@ -117,7 +118,8 @@ export class HarvestService {
       }
       if (note !== 'CARRY_FORWARD' && !note?.startsWith('WRITE_OFF:')) throw new BadRequestException('Choose CARRY_FORWARD or WRITE_OFF:<reason>');
       await this.prisma.$transaction(async (tx) => {
-        for (const balance of balances) {
+        const currentBalances = await tx.cropInputBalance.findMany({ where: { cropId, businessId: ctx.businessId, voidedAt: null } });
+        for (const balance of currentBalances) {
           const quantity = new Prisma.Decimal(balance.qtyOnHand);
           if (quantity.isZero()) continue;
           const value = BigInt(Math.round(Number(quantity) * Number(balance.weightedAvgRatePaise)));
