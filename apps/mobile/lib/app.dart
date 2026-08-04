@@ -330,6 +330,11 @@ class _PondsTabState extends ConsumerState<PondsTab> {
   Widget build(BuildContext context) => StreamBuilder<List<LocalPond>>(stream: ref.read(databaseProvider).watchPonds(), builder: (context, snapshot) {
         final ponds = snapshot.data ?? [];
           return _Page(title: 'My Ponds / నా చెరువులు', children: [
+            OutlinedButton.icon(
+              onPressed: () => repository.refreshPonds().then((_) => setState(() => loadError = null)).catchError((error) => setState(() => loadError = error.toString())),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh ponds / చెరువులు రిఫ్రెష్ చేయండి'),
+            ),
             if (loadError != null) Text(loadError!),
             if (ponds.isEmpty) const Text('No ponds cached yet. Connect once to load them.'),
             for (final pond in ponds)
@@ -486,7 +491,25 @@ class _MoneyTabState extends ConsumerState<MoneyTab> {
 class MoreTab extends StatelessWidget {
   const MoreTab({super.key});
   @override
-  Widget build(BuildContext context) => const _Page(title: 'More / మరిన్ని', children: [Text('Settings, language and sync status')]);
+  Widget build(BuildContext context) => Consumer(builder: (context, ref, _) => StreamBuilder<List<SyncConflict>>(
+        stream: ref.read(databaseProvider).select(ref.read(databaseProvider).syncConflicts).watch(),
+        builder: (context, snapshot) {
+          final conflicts = snapshot.data ?? [];
+          return _Page(title: 'More / మరిన్ని', children: [
+            const Text('Settings, language and sync status'),
+            const SizedBox(height: 20),
+            if (conflicts.isEmpty) const Text('No conflicts / విభేదాలు లేవు'),
+            for (final conflict in conflicts)
+              Card(
+                child: ListTile(
+                  title: Text(conflict.policy == 'FINANCIAL_REQUIRES_RESOLUTION' ? 'Financial record needs review / ఆర్థిక నమోదు పరిశీలించండి' : 'Operational record updated / ఆపరేషనల్ నమోదు నవీకరించబడింది'),
+                  subtitle: Text(conflict.entityType),
+                  trailing: conflict.policy == 'FINANCIAL_REQUIRES_RESOLUTION' ? const Icon(Icons.warning_amber) : const Icon(Icons.info_outline),
+                ),
+              ),
+          ]);
+        },
+      ));
 }
 
 class _Page extends StatelessWidget {
