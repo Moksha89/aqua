@@ -16,7 +16,8 @@ class FarmRepository {
 
   Future<void> refreshPonds() async {
     final response = await sync.get('/masters/ponds');
-    if (response == null || response.statusCode < 200 || response.statusCode >= 300) return;
+    if (response == null) throw StateError('Ponds unavailable offline');
+    if (response.statusCode < 200 || response.statusCode >= 300) throw StateError(response.body);
     final rows = (jsonDecode(response.body) as List<dynamic>).whereType<Map<String, dynamic>>().map((pond) {
       final crop = pond['activeCrop'];
       return LocalPondsCompanion.insert(

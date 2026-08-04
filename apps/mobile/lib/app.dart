@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:uuid/uuid.dart';
 
 import 'data/farm_repository.dart';
+import 'data/attachment_repository.dart';
 import 'data/local_database.dart';
 import 'data/sync_client.dart';
 import 'data/theme_repository.dart';
@@ -239,6 +242,7 @@ class ShellScreen extends ConsumerStatefulWidget {
 class _ShellScreenState extends ConsumerState<ShellScreen> with WidgetsBindingObserver {
   int tab = 0;
   late SyncClient sync;
+  late AttachmentRepository attachments;
 
   @override
   void initState() {
@@ -246,6 +250,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> with WidgetsBindingOb
     WidgetsBinding.instance.addObserver(this);
     final app = ref.read(appStateProvider);
     sync = SyncClient(ref.read(databaseProvider), baseUrl: apiBaseUrl, accessToken: app.accessToken);
+    attachments = AttachmentRepository(ref.read(databaseProvider), baseUrl: apiBaseUrl, accessToken: app.accessToken!);
     _syncNow();
   }
 
@@ -263,6 +268,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> with WidgetsBindingOb
   Future<void> _syncNow() async {
     await sync.push();
     await sync.pull();
+    await attachments.retryPending();
   }
 
   @override
@@ -311,18 +317,24 @@ class PondsTab extends ConsumerStatefulWidget {
 
 class _PondsTabState extends ConsumerState<PondsTab> {
   late final FarmRepository repository;
+  String? loadError;
   @override
   void initState() {
     super.initState();
     final db = ref.read(databaseProvider);
     final app = ref.read(appStateProvider);
     repository = FarmRepository(db, SyncClient(db, baseUrl: apiBaseUrl, accessToken: app.accessToken), baseUrl: apiBaseUrl);
-    repository.refreshPonds();
+    repository.refreshPonds().catchError((error) => setState(() => loadError = error.toString()));
   }
   @override
   Widget build(BuildContext context) => StreamBuilder<List<LocalPond>>(stream: ref.read(databaseProvider).watchPonds(), builder: (context, snapshot) {
         final ponds = snapshot.data ?? [];
-          return _Page(title: 'My Ponds / నా చెరువులు', children: ponds.isEmpty ? const [Text('No ponds cached yet. Connect once to load them.')] : [for (final pond in ponds) Card(child: ListTile(title: Text('${pond.name} · ${pond.code}'), subtitle: Text('${pond.attention} ${pond.attentionReason ?? ''}'), leading: const Icon(Icons.water), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PondDetailScreen(pond: pond)))))]);
+          return _Page(title: 'My Ponds / నా చెరువులు', children: [
+            if (loadError != null) Text(loadError!),
+            if (ponds.isEmpty) const Text('No ponds cached yet. Connect once to load them.'),
+            for (final pond in ponds)
+              Card(child: ListTile(title: Text('${pond.name} · ${pond.code}'), subtitle: Text('${pond.attention} ${pond.attentionReason ?? ''}'), leading: const Icon(Icons.water), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PondDetailScreen(pond: pond))))),
+          ]);
       });
 }
 
@@ -378,24 +390,58 @@ class _DailyEntryTabState extends ConsumerState<DailyEntryTab> {
   String kind = 'FEED';
   String? pondId;
   final quantity = TextEditingController();
+  final remarks = TextEditingController();
+  final speech = SpeechToText();
+  bool listening = false;
   String message = '';
+  bool defaultsLoaded = false;
+
+  Future<void> loadPrevious(String id) async {
+    if (defaultsLoaded) return;
+    final entry = await ref.read(databaseProvider).latestEntry(id, kind);
+    if (entry != null) {
+      final payload = jsonDecode(entry.payloadJson);
+      if (payload is Map && payload['quantityKg'] != null) quantity.text = payload['quantityKg'].toString();
+      if (payload is Map && payload['remarks'] != null) remarks.text = payload['remarks'].toString();
+    }
+    defaultsLoaded = true;
+  }
   @override
   Widget build(BuildContext context) => _Page(title: 'Daily Entry / రోజువారీ నమోదు', children: [
         StreamBuilder<List<LocalPond>>(stream: ref.read(databaseProvider).watchPonds(), builder: (context, snapshot) {
           final ponds = snapshot.data ?? [];
           pondId ??= ponds.isEmpty ? null : ponds.first.id;
+          if (pondId != null) loadPrevious(pondId!);
           return DropdownButtonFormField<String>(value: pondId, items: [for (final pond in ponds) DropdownMenuItem(value: pond.id, child: Text(pond.name))], onChanged: (value) => setState(() => pondId = value), decoration: const InputDecoration(labelText: 'Pond / చెరువు', border: OutlineInputBorder()));
         }),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(value: kind, items: const [DropdownMenuItem(value: 'FEED', child: Text('Feed / ఆహారం')), DropdownMenuItem(value: 'GROWTH', child: Text('Growth sample / వృద్ధి')), DropdownMenuItem(value: 'WATER', child: Text('Water / నీరు')), DropdownMenuItem(value: 'MEDICINE', child: Text('Medicine / మందు')), DropdownMenuItem(value: 'HEALTH', child: Text('Health event / ఆరోగ్యం')), DropdownMenuItem(value: 'CHECK_TRAY', child: Text('Check tray / చెక్ ట్రే'))], onChanged: (value) => setState(() => kind = value!), decoration: const InputDecoration(labelText: 'Entry type', border: OutlineInputBorder())),
+        OutlinedButton.icon(onPressed: pondId == null ? null : () async {
+          defaultsLoaded = false;
+          await loadPrevious(pondId!);
+          setState(() => message = 'Same as yesterday loaded / నిన్నటి నమోదు లోడ్ అయింది');
+        }, icon: const Icon(Icons.content_copy), label: const Text('Same as yesterday / నిన్నటి మాదిరి')),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(value: kind, items: const [DropdownMenuItem(value: 'FEED', child: Text('Feed / ఆహారం')), DropdownMenuItem(value: 'GROWTH', child: Text('Growth sample / వృద్ధి')), DropdownMenuItem(value: 'WATER', child: Text('Water / నీరు')), DropdownMenuItem(value: 'MEDICINE', child: Text('Medicine / మందు')), DropdownMenuItem(value: 'HEALTH', child: Text('Health event / ఆరోగ్యం')), DropdownMenuItem(value: 'CHECK_TRAY', child: Text('Check tray / చెక్ ట్రే'))], onChanged: (value) => setState(() { kind = value!; defaultsLoaded = false; }), decoration: const InputDecoration(labelText: 'Entry type', border: OutlineInputBorder())),
         const SizedBox(height: 12),
         TextField(controller: quantity, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: kind == 'FEED' ? 'Quantity kg / పరిమాణం కిలోలు' : 'Value / విలువ', border: const OutlineInputBorder())),
+        const SizedBox(height: 12),
+        TextField(controller: remarks, maxLines: 2, decoration: InputDecoration(labelText: 'Remarks / గమనికలు', border: const OutlineInputBorder(), suffixIcon: IconButton(icon: Icon(listening ? Icons.mic : Icons.mic_none), onPressed: () async {
+          if (!listening) {
+            final ready = await speech.initialize();
+            if (!ready) return;
+            setState(() => listening = true);
+            await speech.listen(onResult: (result) => setState(() => remarks.text = result.recognizedWords));
+          } else {
+            await speech.stop();
+            setState(() => listening = false);
+          }
+        }))),
         const SizedBox(height: 12),
         FilledButton(onPressed: pondId == null ? null : () async {
           final db = ref.read(databaseProvider);
           final app = ref.read(appStateProvider);
           final repo = FarmRepository(db, SyncClient(db, baseUrl: apiBaseUrl, accessToken: app.accessToken), baseUrl: apiBaseUrl);
-          await repo.saveDailyEntry(pondId: pondId!, kind: kind, payload: {'date': DateTime.now().toIso8601String().substring(0, 10), 'quantityKg': quantity.text});
+          await repo.saveDailyEntry(pondId: pondId!, kind: kind, payload: {'date': DateTime.now().toIso8601String().substring(0, 10), 'quantityKg': quantity.text, 'remarks': remarks.text});
           setState(() => message = 'Saved offline • Pending sync / ఆఫ్‌లైన్‌లో సేవ్ అయింది');
         }, child: const Text('Save entry / నమోదు సేవ్ చేయండి')),
         if (message.isNotEmpty) Text(message),
@@ -404,10 +450,37 @@ class _DailyEntryTabState extends ConsumerState<DailyEntryTab> {
       ]);
 }
 
-class MoneyTab extends StatelessWidget {
+class MoneyTab extends ConsumerStatefulWidget {
   const MoneyTab({super.key});
   @override
-  Widget build(BuildContext context) => const _Page(title: 'Money / డబ్బు', children: [Text('Financial access enabled'), Text('Expenses, payments, reports and party ledger load here.')]);
+  ConsumerState<MoneyTab> createState() => _MoneyTabState();
+}
+
+class _MoneyTabState extends ConsumerState<MoneyTab> {
+  final expenseId = const Uuid().v4();
+  final picker = ImagePicker();
+  String? photoPath;
+  String message = '';
+  @override
+  Widget build(BuildContext context) => _Page(title: 'Money / డబ్బు', children: [
+        const Text('Financial access enabled'),
+        const Text('Expenses, payments, reports and party ledger load here.'),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: () async {
+            final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+            if (photo == null) return;
+            final app = ref.read(appStateProvider);
+            final repository = AttachmentRepository(ref.read(databaseProvider), baseUrl: apiBaseUrl, accessToken: app.accessToken!);
+            await repository.queuePhoto(ownerType: 'EXPENSE', ownerId: expenseId, path: photo.path, contentType: 'image/jpeg');
+            setState(() { photoPath = photo.path; message = 'Bill photo queued / బిల్లు ఫోటో క్యూ అయింది'; });
+          },
+          icon: const Icon(Icons.camera_alt),
+          label: const Text('Capture bill photo / బిల్లు ఫోటో తీయండి'),
+        ),
+        if (photoPath != null) Text(photoPath!),
+        if (message.isNotEmpty) Text(message),
+      ]);
 }
 
 class MoreTab extends StatelessWidget {

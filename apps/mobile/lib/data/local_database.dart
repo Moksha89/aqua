@@ -93,12 +93,28 @@ class DailyEntries extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [SyncOutbox, SyncMetadata, ThemeCache, SyncConflicts, LocalPonds, LocalCrops, DailyEntries])
+class AttachmentQueue extends Table {
+  TextColumn get id => text()();
+  TextColumn get ownerType => text()();
+  TextColumn get ownerId => text()();
+  TextColumn get localPath => text()();
+  TextColumn get fileName => text()();
+  TextColumn get contentType => text()();
+  TextColumn get state => text().withDefault(const Constant('PENDING_UPLOAD'))();
+  TextColumn get attachmentId => text().nullable()();
+  TextColumn get error => text().nullable()();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [SyncOutbox, SyncMetadata, ThemeCache, SyncConflicts, LocalPonds, LocalCrops, DailyEntries, AttachmentQueue])
 class LocalDatabase extends _$LocalDatabase {
   LocalDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -109,6 +125,7 @@ class LocalDatabase extends _$LocalDatabase {
             await m.createTable(localCrops);
             await m.createTable(dailyEntries);
           }
+          if (from < 3) await m.createTable(attachmentQueue);
         },
       );
 
@@ -144,6 +161,13 @@ class LocalDatabase extends _$LocalDatabase {
   Future<void> addEntry(DailyEntriesCompanion entry) => into(dailyEntries).insert(entry);
   Stream<List<DailyEntry>> watchEntries() =>
       (select(dailyEntries)..orderBy([(row) => OrderingTerm.desc(row.createdAt)])).watch();
+
+  Future<DailyEntry?> latestEntry(String pondId, String kind) =>
+      (select(dailyEntries)
+            ..where((row) => row.pondId.equals(pondId) & row.kind.equals(kind))
+            ..orderBy([(row) => OrderingTerm.desc(row.createdAt)])
+            ..limit(1))
+          .getSingleOrNull();
 
   Future<void> markEntry(String id, {required String state, String? marker}) =>
       (update(dailyEntries)..where((row) => row.id.equals(id))).write(
