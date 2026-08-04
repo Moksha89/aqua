@@ -17,7 +17,7 @@ class SyncClient {
   Future<http.Response?> get(String path) async {
     if (accessToken == null) return null;
     try {
-      return await http.get(Uri.parse('$baseUrl$path'), headers: {'authorization': 'Bearer $accessToken'});
+      return await http.get(Uri.parse('$baseUrl$path'), headers: {'authorization': 'Bearer $accessToken'}).timeout(const Duration(seconds: 5));
     } catch (_) {
       return null;
     }
