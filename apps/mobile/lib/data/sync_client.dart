@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
+import '../api/generated_api.dart';
 import 'local_database.dart';
 
 class SyncClient {
@@ -205,17 +206,14 @@ class SyncClient {
   Future<void> pull() async {
     if (accessToken == null) return;
     final cursor = await database.metadata('sync_cursor') ?? '0';
-    final response = await _client.get(
-      Uri.parse('$baseUrl/sync/pull?since=${Uri.encodeQueryComponent(cursor)}'),
-      headers: {'authorization': 'Bearer $accessToken'},
-    );
-    if (response.statusCode < 200 || response.statusCode >= 300) return;
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final changes = body['changes'] as List<dynamic>? ?? const [];
-    for (final change in changes.whereType<Map<String, dynamic>>()) {
-      final entity = change['entity']?.toString();
-      final record = change['record'];
-      if (record is! Map<String, dynamic>) continue;
+    final body = await AquaApiClient(
+      baseUrl: baseUrl,
+      accessToken: accessToken,
+      client: _client,
+    ).pull(since: cursor);
+    for (final change in body.changes) {
+      final entity = change.entity;
+      final record = change.record;
       if (entity == 'crop') {
         await database
             .into(database.localCrops)
@@ -248,9 +246,7 @@ class SyncClient {
             );
       }
     }
-    if (body['cursor'] is String) {
-      await database.setMetadata('sync_cursor', body['cursor'] as String);
-    }
+    await database.setMetadata('sync_cursor', body.cursor);
     // Entity materialization is deliberately isolated from transport. Conflict
     // records remain in the outbox until the user resolves them.
   }

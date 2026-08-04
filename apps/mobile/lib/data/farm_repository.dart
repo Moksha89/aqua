@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+import '../api/generated_api.dart';
 import 'local_database.dart';
 import 'sync_client.dart';
 
@@ -16,39 +17,36 @@ class FarmRepository {
   final _uuid = const Uuid();
 
   Future<void> refreshPonds() async {
-    final response = await sync.get('/masters/ponds');
-    debugPrint(
-      'refreshPonds response=${response?.statusCode} bytes=${response?.body.length}',
-    );
-    if (response == null) throw StateError('Ponds unavailable offline');
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError(response.body);
-    }
-    final rows = (jsonDecode(response.body) as List<dynamic>)
-        .whereType<Map<String, dynamic>>()
-        .map((pond) {
-          final crop = pond['activeCrop'];
-          final attention =
-              pond['attention'] is Map<String, dynamic>
-                  ? pond['attention'] as Map<String, dynamic>
-                  : <String, dynamic>{};
-          return LocalPondsCompanion.insert(
-            id: pond['id'] as String,
-            name: pond['name'] as String,
-            code: pond['code'] as String,
-            attention: Value(
-              attention['state']?.toString() ??
-                  pond['attention']?.toString() ??
-                  'GREEN',
-            ),
-            attentionReason: Value(
-              attention['reason']?.toString() ??
-                  pond['attentionReason']?.toString(),
-            ),
-            cropJson: Value(crop == null ? null : jsonEncode(crop)),
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-          );
-        });
+    final ponds =
+        await AquaApiClient(
+          baseUrl: baseUrl,
+          accessToken: sync.accessToken,
+        ).listPonds();
+    final rows = ponds.map((pond) {
+      final crop = pond.activeCrop;
+      return LocalPondsCompanion.insert(
+        id: pond.id,
+        name: pond.name,
+        code: pond.code,
+        attention: Value(pond.attention.state),
+        attentionReason: Value(pond.attention.reason),
+        cropJson: Value(
+          crop == null
+              ? null
+              : jsonEncode({
+                'id': crop.id,
+                'code': crop.code,
+                'status': crop.status,
+                'doc': _figureJson(crop.doc),
+                'abw': _figureJson(crop.abw),
+                'biomass': _figureJson(crop.biomass),
+                'fcr': _figureJson(crop.fcr),
+                'density': _figureJson(crop.density),
+              }),
+        ),
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+    });
     try {
       await database.replacePonds(rows);
     } catch (error) {
@@ -56,6 +54,17 @@ class FarmRepository {
       rethrow;
     }
   }
+
+  Map<String, dynamic> _figureJson(OperationalFigure figure) => {
+    'value': figure.value,
+    'unit': figure.unit,
+    'status': figure.status,
+    'reason': figure.reason,
+    'derivation': {
+      'inputs': figure.derivation.inputs,
+      'steps': figure.derivation.steps,
+    },
+  };
 
   Future<String> saveDailyEntry({
     required String pondId,
