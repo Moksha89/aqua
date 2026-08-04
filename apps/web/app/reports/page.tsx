@@ -39,12 +39,12 @@ export default function ReportsPage() {
 }
 
 function ReportView({ report }: { report: Report }) {
-  return <div className="mt-6 grid gap-4 md:grid-cols-3">{Object.entries(report).map(([key, value]) => <article key={key} className="rounded-xl border border-border bg-surface p-4"><h2 className="font-semibold text-textPrimary">{key}</h2><ReadableValue value={value} /></article>)}</div>;
+  return <div className="mt-6 grid gap-4 md:grid-cols-3">{Object.entries(report).map(([key, value]) => <article key={key} className="rounded-xl border border-border bg-surface p-4"><h2 className="font-semibold text-textPrimary">{fieldLabel(key)}</h2><ReadableValue value={value} /></article>)}</div>;
 }
 function ReadableValue({ value }: { value: unknown }) {
-  if (Array.isArray(value)) return <div className="mt-2 space-y-2">{value.map((item, index) => <div key={index} className="rounded-lg border border-border p-2"><ReadableValue value={item} /></div>)}</div>;
-  if (value && typeof value === 'object') return <div className="mt-2 space-y-1">{Object.entries(value).map(([key, item]) => <div key={key} className="flex justify-between gap-3 text-sm"><span className="text-textSecondary">{key}</span><span className="text-right text-textPrimary">{String(item)}</span></div>)}</div>;
-  return <p className="mt-2 text-xl font-semibold text-textPrimary">{String(value ?? '')}</p>;
+  if (Array.isArray(value)) return <div className="mt-2 space-y-2">{value.map((item, index) => <div key={`${typeof item}-${index}`} className="rounded-lg border border-border p-2"><ReadableValue value={item} /></div>)}</div>;
+  if (value && typeof value === 'object') return <div className="mt-2 space-y-1">{Object.entries(value).map(([key, item]) => <div key={key} className="flex justify-between gap-3 text-sm"><span className="text-textSecondary">{fieldLabel(key)}</span><span className="text-right text-textPrimary">{formatReportValue(key, item)}</span></div>)}</div>;
+  return <p className="mt-2 text-xl font-semibold text-textPrimary">{formatReportValue('', value)}</p>;
 }
 function downloadReport(report: Report | undefined, name: string) {
   if (!report) return;
@@ -58,5 +58,30 @@ function reportLabel(key: string, t: ReturnType<typeof useI18n>['t']): string {
 }
 function summary(report: Report | undefined): string {
   if (!report) return '';
-  return Object.entries(report).filter(([, value]) => typeof value !== 'object').map(([key, value]) => `${key}: ${String(value)}`).join('\n');
+  return Object.entries(report).filter(([, value]) => typeof value !== 'object').map(([key, value]) => `${fieldLabel(key)}: ${formatReportValue(key, value)}`).join('\n');
+}
+function fieldLabel(key: string): string {
+  const labels: Record<string, string> = {
+    revenuePaise: 'Revenue / ఆదాయం',
+    costPaise: 'Cost / ఖర్చు',
+    netProfitPaise: 'Net profit / నికర లాభం',
+    amountPaise: 'Amount / మొత్తం',
+    paidAmountPaise: 'Paid amount / చెల్లించిన మొత్తం',
+    receivablePaise: 'Receivable / పొందవలసినది',
+    limitPaise: 'Credit limit / క్రెడిట్ పరిమితి',
+    usedPaise: 'Credit used / ఉపయోగించిన క్రెడిట్',
+    headroomPaise: 'Credit headroom / క్రెడిట్ అందుబాటు',
+    expenseDate: 'Expense date / ఖర్చు తేదీ',
+    harvestDate: 'Harvest date / కోత తేదీ',
+    paymentStatus: 'Payment status / చెల్లింపు స్థితి',
+  };
+  return labels[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (value) => value.toUpperCase());
+}
+function formatReportValue(key: string, value: unknown): string {
+  if (value === null || value === undefined) return '—';
+  if (key.endsWith('Paise') && (typeof value === 'string' || typeof value === 'number')) {
+    const amount = Number(value) / 100;
+    return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return String(value);
 }

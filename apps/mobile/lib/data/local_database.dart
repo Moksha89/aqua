@@ -100,7 +100,8 @@ class AttachmentQueue extends Table {
   TextColumn get localPath => text()();
   TextColumn get fileName => text()();
   TextColumn get contentType => text()();
-  TextColumn get state => text().withDefault(const Constant('PENDING_UPLOAD'))();
+  TextColumn get state =>
+      text().withDefault(const Constant('PENDING_UPLOAD'))();
   TextColumn get attachmentId => text().nullable()();
   TextColumn get error => text().nullable()();
   IntColumn get createdAt => integer()();
@@ -109,7 +110,18 @@ class AttachmentQueue extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [SyncOutbox, SyncMetadata, ThemeCache, SyncConflicts, LocalPonds, LocalCrops, DailyEntries, AttachmentQueue])
+@DriftDatabase(
+  tables: [
+    SyncOutbox,
+    SyncMetadata,
+    ThemeCache,
+    SyncConflicts,
+    LocalPonds,
+    LocalCrops,
+    DailyEntries,
+    AttachmentQueue,
+  ],
+)
 class LocalDatabase extends _$LocalDatabase {
   LocalDatabase(super.e);
 
@@ -118,22 +130,23 @@ class LocalDatabase extends _$LocalDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.createTable(localPonds);
-            await m.createTable(localCrops);
-            await m.createTable(dailyEntries);
-          }
-          if (from < 3) await m.createTable(attachmentQueue);
-        },
-      );
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(localPonds);
+        await m.createTable(localCrops);
+        await m.createTable(dailyEntries);
+      }
+      if (from < 3) await m.createTable(attachmentQueue);
+    },
+  );
 
   Future<void> enqueue(Insertable<SyncOutboxData> entry) =>
       into(syncOutbox).insert(entry, mode: InsertMode.insertOrReplace);
 
   Stream<List<SyncOutboxData>> watchPending() =>
-      (select(syncOutbox)..orderBy([(row) => OrderingTerm.asc(row.createdAt)])).watch();
+      (select(syncOutbox)
+        ..orderBy([(row) => OrderingTerm.asc(row.createdAt)])).watch();
 
   Future<void> removeOutbox(String id) =>
       (delete(syncOutbox)..where((row) => row.id.equals(id))).go();
@@ -141,11 +154,24 @@ class LocalDatabase extends _$LocalDatabase {
   Future<void> recordOutboxError(String id, String error) async {
     await (update(syncOutbox)..where((row) => row.id.equals(id))).write(
       SyncOutboxCompanion(
-        attempts: Value((await (select(syncOutbox)..where((row) => row.id.equals(id))).getSingle()).attempts + 1),
+        attempts: Value(
+          (await (select(syncOutbox)
+                    ..where((row) => row.id.equals(id))).getSingle())
+                  .attempts +
+              1,
+        ),
         lastError: Value(error),
       ),
     );
   }
+
+  Future<void> updateOutboxPayload(String id, String payload) =>
+      (update(syncOutbox)..where((row) => row.id.equals(id))).write(
+        SyncOutboxCompanion(
+          payloadJson: Value(payload),
+          lastError: const Value(null),
+        ),
+      );
 
   Future<void> recordConflict(Insertable<SyncConflict> conflict) =>
       into(syncConflicts).insertOnConflictUpdate(conflict);
@@ -158,9 +184,11 @@ class LocalDatabase extends _$LocalDatabase {
     });
   }
 
-  Future<void> addEntry(DailyEntriesCompanion entry) => into(dailyEntries).insert(entry);
+  Future<void> addEntry(DailyEntriesCompanion entry) =>
+      into(dailyEntries).insert(entry);
   Stream<List<DailyEntry>> watchEntries() =>
-      (select(dailyEntries)..orderBy([(row) => OrderingTerm.desc(row.createdAt)])).watch();
+      (select(dailyEntries)
+        ..orderBy([(row) => OrderingTerm.desc(row.createdAt)])).watch();
 
   Future<DailyEntry?> latestEntry(String pondId, String kind) =>
       (select(dailyEntries)
@@ -171,24 +199,36 @@ class LocalDatabase extends _$LocalDatabase {
 
   Future<void> markEntry(String id, {required String state, String? marker}) =>
       (update(dailyEntries)..where((row) => row.id.equals(id))).write(
-        DailyEntriesCompanion(syncState: Value(state), conflictMarker: Value(marker)),
+        DailyEntriesCompanion(
+          syncState: Value(state),
+          conflictMarker: Value(marker),
+        ),
       );
 
   Future<String?> metadata(String key) async =>
-      (await (select(syncMetadata)..where((row) => row.key.equals(key))).getSingleOrNull())?.value;
+      (await (select(syncMetadata)
+            ..where((row) => row.key.equals(key))).getSingleOrNull())
+          ?.value;
 
   Future<void> setMetadata(String key, String value) =>
-      into(syncMetadata).insertOnConflictUpdate(SyncMetadataCompanion.insert(key: key, value: value));
+      into(syncMetadata).insertOnConflictUpdate(
+        SyncMetadataCompanion.insert(key: key, value: value),
+      );
 
   Future<void> cacheTheme(String businessId, String tokensJson) =>
-      into(themeCache).insertOnConflictUpdate(ThemeCacheCompanion.insert(
-        businessId: businessId,
-        tokensJson: tokensJson,
-        cachedAt: DateTime.now().millisecondsSinceEpoch,
-      ));
+      into(themeCache).insertOnConflictUpdate(
+        ThemeCacheCompanion.insert(
+          businessId: businessId,
+          tokensJson: tokensJson,
+          cachedAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
 
   Future<String?> cachedTheme(String businessId) async =>
-      (await (select(themeCache)..where((row) => row.businessId.equals(businessId))).getSingleOrNull())?.tokensJson;
+      (await (select(themeCache)..where(
+            (row) => row.businessId.equals(businessId),
+          )).getSingleOrNull())
+          ?.tokensJson;
 }
 
 LazyDatabase openLocalDatabase() {

@@ -17,24 +17,37 @@ class FarmRepository {
 
   Future<void> refreshPonds() async {
     final response = await sync.get('/masters/ponds');
-    debugPrint('refreshPonds response=${response?.statusCode} bytes=${response?.body.length}');
+    debugPrint(
+      'refreshPonds response=${response?.statusCode} bytes=${response?.body.length}',
+    );
     if (response == null) throw StateError('Ponds unavailable offline');
-    if (response.statusCode < 200 || response.statusCode >= 300) throw StateError(response.body);
-    final rows = (jsonDecode(response.body) as List<dynamic>).whereType<Map<String, dynamic>>().map((pond) {
-      final crop = pond['activeCrop'];
-      final attention = pond['attention'] is Map<String, dynamic>
-          ? pond['attention'] as Map<String, dynamic>
-          : <String, dynamic>{};
-      return LocalPondsCompanion.insert(
-        id: pond['id'] as String,
-        name: pond['name'] as String,
-        code: pond['code'] as String,
-        attention: Value(attention['state']?.toString() ?? pond['attention']?.toString() ?? 'GREEN'),
-        attentionReason: Value(attention['reason']?.toString() ?? pond['attentionReason']?.toString()),
-        cropJson: Value(crop == null ? null : jsonEncode(crop)),
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-      );
-    });
+    if (response.statusCode < 200 || response.statusCode >= 300)
+      throw StateError(response.body);
+    final rows = (jsonDecode(response.body) as List<dynamic>)
+        .whereType<Map<String, dynamic>>()
+        .map((pond) {
+          final crop = pond['activeCrop'];
+          final attention =
+              pond['attention'] is Map<String, dynamic>
+                  ? pond['attention'] as Map<String, dynamic>
+                  : <String, dynamic>{};
+          return LocalPondsCompanion.insert(
+            id: pond['id'] as String,
+            name: pond['name'] as String,
+            code: pond['code'] as String,
+            attention: Value(
+              attention['state']?.toString() ??
+                  pond['attention']?.toString() ??
+                  'GREEN',
+            ),
+            attentionReason: Value(
+              attention['reason']?.toString() ??
+                  pond['attentionReason']?.toString(),
+            ),
+            cropJson: Value(crop == null ? null : jsonEncode(crop)),
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
+          );
+        });
     try {
       await database.replacePonds(rows);
     } catch (error) {
@@ -50,36 +63,123 @@ class FarmRepository {
     required Map<String, Object?> payload,
   }) async {
     final id = _uuid.v4();
-    final pond = await (database.select(database.localPonds)..where((row) => row.id.equals(pondId))).getSingleOrNull();
+    final pond =
+        await (database.select(database.localPonds)
+          ..where((row) => row.id.equals(pondId))).getSingleOrNull();
     String? resolvedCropId = cropId;
     if (resolvedCropId == null && pond?.cropJson != null) {
       final crop = jsonDecode(pond!.cropJson!);
       if (crop is Map<String, dynamic>) resolvedCropId = crop['id']?.toString();
     }
-    final resolvedPayload = {...payload, 'cropId': resolvedCropId};
+    final resolvedPayload = _payloadFor(kind, payload, pondId, resolvedCropId);
+    await database.addEntry(
+      DailyEntriesCompanion.insert(
+        id: id,
+        pondId: pondId,
+        cropId: Value(resolvedCropId),
+        kind: kind,
+        payloadJson: jsonEncode(resolvedPayload),
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+    await sync.enqueue(
+      entityType: kind,
+      entityId: id,
+      operation: 'CREATE',
+      payload: {
+        ...resolvedPayload,
+        'id': id,
+        'pondId': pondId,
+        'cropId': resolvedCropId,
+      },
+    );
     if (kind == 'FEED' && resolvedPayload['feedItemId'] == null) {
-      final response = await sync.get('/masters/feed-items');
-      if (response?.statusCode == 200) {
-        final items = jsonDecode(response!.body);
-        if (items is List && items.isNotEmpty && items.first is Map<String, dynamic>) {
-          resolvedPayload['feedItemId'] = (items.first as Map<String, dynamic>)['id'];
+      try {
+        final response = await sync.get('/masters/feed-items');
+        if (response?.statusCode == 200) {
+          final items = jsonDecode(response!.body);
+          if (items is List &&
+              items.isNotEmpty &&
+              items.first is Map<String, dynamic>) {
+            final withFeed = {
+              ...resolvedPayload,
+              'feedItemId': (items.first as Map<String, dynamic>)['id'],
+            };
+            await database.updateOutboxPayload(
+              id,
+              jsonEncode({
+                ...withFeed,
+                'id': id,
+                'pondId': pondId,
+                'cropId': resolvedCropId,
+              }),
+            );
+          }
         }
+      } catch (_) {
+        // The outbox remains durable and resolves the master when connectivity returns.
       }
     }
-    await database.addEntry(DailyEntriesCompanion.insert(
-      id: id,
-      pondId: pondId,
-      cropId: Value(resolvedCropId),
-      kind: kind,
-      payloadJson: jsonEncode(resolvedPayload),
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-    ));
-    await sync.enqueue(entityType: kind, entityId: id, operation: 'CREATE', payload: {
-      ...resolvedPayload,
-      'id': id,
-      'pondId': pondId,
-      'cropId': resolvedCropId,
-    });
     return id;
+  }
+
+  Map<String, Object?> _payloadFor(
+    String kind,
+    Map<String, Object?> payload,
+    String pondId,
+    String? cropId,
+  ) {
+    final date =
+        payload['logDate'] ??
+        payload['date'] ??
+        DateTime.now().toIso8601String().substring(0, 10);
+    final value = payload['quantityKg'] ?? payload['value'] ?? '0';
+    return switch (kind) {
+      'FEED' => {
+        ...payload,
+        'cropId': cropId,
+        'logDate': date,
+        'mealSlot': payload['mealSlot'] ?? 'AM',
+        'quantityKg': value,
+      },
+      'WATER' => {
+        ...payload,
+        'cropId': cropId,
+        'pondId': pondId,
+        'readAt': payload['readAt'] ?? '${date}T00:00:00.000Z',
+        'slot': payload['slot'] ?? 'AM',
+        'source': payload['source'] ?? 'MANUAL',
+      },
+      'GROWTH' => {
+        ...payload,
+        'cropId': cropId,
+        'sampledOn': payload['sampledOn'] ?? date,
+        'doc': payload['doc'] ?? 0,
+        'animalsInSample': payload['animalsInSample'] ?? 1,
+        'sampleWeightG': payload['sampleWeightG'] ?? value,
+        'individualWeightsG': payload['individualWeightsG'] ?? <String>[],
+      },
+      'MEDICINE' => {
+        ...payload,
+        'cropId': cropId,
+        'appliedOn': payload['appliedOn'] ?? date,
+        'quantity': payload['quantity'] ?? value,
+      },
+      'HEALTH' => {
+        ...payload,
+        'cropId': cropId,
+        'eventDate': payload['eventDate'] ?? date,
+        'doc': payload['doc'] ?? 0,
+        'symptoms': payload['symptoms'] ?? <String>[],
+      },
+      'CHECK_TRAY' => {
+        ...payload,
+        'cropId': cropId,
+        'readAt': payload['readAt'] ?? '${date}T00:00:00.000Z',
+        'feedPlacedKg': payload['feedPlacedKg'] ?? value,
+        'residualCode': payload['residualCode'] ?? 'UNKNOWN',
+      },
+      _ => {...payload, 'cropId': cropId},
+    };
   }
 }
