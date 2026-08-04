@@ -248,8 +248,9 @@ class SyncClient {
             );
       }
     }
-    if (body['cursor'] is String)
+    if (body['cursor'] is String) {
       await database.setMetadata('sync_cursor', body['cursor'] as String);
+    }
     // Entity materialization is deliberately isolated from transport. Conflict
     // records remain in the outbox until the user resolves them.
   }

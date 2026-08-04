@@ -21,8 +21,9 @@ class FarmRepository {
       'refreshPonds response=${response?.statusCode} bytes=${response?.body.length}',
     );
     if (response == null) throw StateError('Ponds unavailable offline');
-    if (response.statusCode < 200 || response.statusCode >= 300)
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError(response.body);
+    }
     final rows = (jsonDecode(response.body) as List<dynamic>)
         .whereType<Map<String, dynamic>>()
         .map((pond) {

@@ -36,10 +36,12 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     refreshListenable: app,
     redirect: (_, state) {
-      if (!app.verified)
+      if (!app.verified) {
         return state.matchedLocation == '/login' ? null : '/login';
-      if (app.businessId == null)
+      }
+      if (app.businessId == null) {
         return state.matchedLocation == '/business' ? null : '/business';
+      }
       return state.matchedLocation == '/login' ||
               state.matchedLocation == '/business'
           ? '/'
@@ -661,10 +663,12 @@ class _DailyEntryTabState extends ConsumerState<DailyEntryTab> {
     final entry = await ref.read(databaseProvider).latestEntry(id, kind);
     if (entry != null) {
       final payload = jsonDecode(entry.payloadJson);
-      if (payload is Map && payload['quantityKg'] != null)
+      if (payload is Map && payload['quantityKg'] != null) {
         quantity.text = payload['quantityKg'].toString();
-      if (payload is Map && payload['remarks'] != null)
+      }
+      if (payload is Map && payload['remarks'] != null) {
         remarks.text = payload['remarks'].toString();
+      }
     }
     defaultsLoaded = true;
   }
