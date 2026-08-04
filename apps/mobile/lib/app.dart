@@ -236,8 +236,35 @@ class ShellScreen extends ConsumerStatefulWidget {
   ConsumerState<ShellScreen> createState() => _ShellScreenState();
 }
 
-class _ShellScreenState extends ConsumerState<ShellScreen> {
+class _ShellScreenState extends ConsumerState<ShellScreen> with WidgetsBindingObserver {
   int tab = 0;
+  late SyncClient sync;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final app = ref.read(appStateProvider);
+    sync = SyncClient(ref.read(databaseProvider), baseUrl: apiBaseUrl, accessToken: app.accessToken);
+    _syncNow();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _syncNow();
+  }
+
+  Future<void> _syncNow() async {
+    await sync.push();
+    await sync.pull();
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
