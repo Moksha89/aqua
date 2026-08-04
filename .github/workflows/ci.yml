@@ -69,3 +69,22 @@ jobs:
           exit 1
       - run: pnpm --filter @aqua/api exec prisma migrate deploy --schema prisma/schema.prisma
       - run: pnpm --filter @aqua/api test:e2e
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: apps/mobile
+      - run: dart run build_runner build --delete-conflicting-outputs
+        working-directory: apps/mobile
+      - run: flutter analyze
+        working-directory: apps/mobile
+      - run: flutter test
+        working-directory: apps/mobile
+      - run: flutter build apk --debug
+        working-directory: apps/mobile
