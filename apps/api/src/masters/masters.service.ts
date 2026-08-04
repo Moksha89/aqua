@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../platform/prisma.service';
 import { QueryScope, ScopeUser } from '../authorization/query-scope';
+import type { PondListItemDto } from './masters.controller';
 
 export type MasterContext = { businessId: string; userId: string; deviceId: string };
 export type Delegate = {
@@ -33,30 +34,71 @@ export class MastersService {
   get costHead(): Delegate { return this.prisma.costHead; }
   get preparationTemplate(): Delegate { return this.prisma.preparationTemplate; }
 
-  async listPonds(user: ScopeUser): Promise<unknown[]> {
+  async listPonds(user: ScopeUser): Promise<PondListItemDto[]> {
     const ponds = await this.prisma.pond.findMany({ where: { ...this.scope.pondWhere(user), voidedAt: null } });
-    return Promise.all(ponds.map((pond) => this.pondSummary(pond, user)));
+    return this.pondSummaries(ponds, user);
   }
 
-  async getPond(id: string, user: ScopeUser): Promise<unknown> {
+  async getPond(id: string, user: ScopeUser): Promise<PondListItemDto | null> {
     const pond = await this.prisma.pond.findFirst({ where: { ...this.scope.pondWhere(user, id), voidedAt: null } });
     if (!pond) return null;
-    return this.pondSummary(pond, user);
+    const [summary] = await this.pondSummaries([pond], user);
+    return summary ?? null;
   }
 
-  private async pondSummary(pond: { id: string; businessId: string; farmId: string; code: string; name: string; extentAcres: Prisma.Decimal; status: string }, user: ScopeUser): Promise<unknown> {
-    const crop = await this.prisma.crop.findFirst({
-      where: { businessId: user.businessId, pondId: pond.id, status: { in: ['ACTIVE', 'HARVESTING'] }, voidedAt: null },
+  private async pondSummaries(ponds: Array<{ id: string; businessId: string; farmId: string; code: string; name: string; extentAcres: Prisma.Decimal; status: string }>, user: ScopeUser): Promise<PondListItemDto[]> {
+    const pondIds = ponds.map((pond) => pond.id);
+    const crops = await this.prisma.crop.findMany({
+      where: { businessId: user.businessId, pondId: { in: pondIds }, status: { in: ['ACTIVE', 'HARVESTING'] }, voidedAt: null },
       orderBy: { stockingDate: 'desc' },
     });
-    const [feed, water, health, growth, speciesLine] = await Promise.all([
-      crop ? this.prisma.feedLog.findFirst({ where: { businessId: user.businessId, cropId: crop.id, voidedAt: null }, orderBy: { logDate: 'desc' } }) : null,
-      this.prisma.waterReading.findFirst({ where: { businessId: user.businessId, pondId: pond.id, voidedAt: null }, orderBy: { readAt: 'desc' } }),
-      crop ? this.prisma.healthEvent.findFirst({ where: { businessId: user.businessId, cropId: crop.id, voidedAt: null }, orderBy: { eventDate: 'desc' } }) : null,
-      crop ? this.prisma.growthSample.findFirst({ where: { businessId: user.businessId, cropId: crop.id, voidedAt: null }, orderBy: { sampledOn: 'desc' } }) : null,
-      crop ? this.prisma.cropSpeciesLine.findFirst({ where: { businessId: user.businessId, cropId: crop.id, voidedAt: null } }) : null,
+    const activeCrops = new Map<string, (typeof crops)[number]>();
+    for (const crop of crops) if (!activeCrops.has(crop.pondId)) activeCrops.set(crop.pondId, crop);
+    const cropIds = [...activeCrops.values()].map((crop) => crop.id);
+    const [feeds, waters, healthEvents, growthSamples, speciesLines] = await Promise.all([
+      this.prisma.feedLog.findMany({ where: { businessId: user.businessId, cropId: { in: cropIds }, voidedAt: null }, orderBy: { logDate: 'desc' } }),
+      this.prisma.waterReading.findMany({ where: { businessId: user.businessId, pondId: { in: pondIds }, voidedAt: null }, orderBy: { readAt: 'desc' } }),
+      this.prisma.healthEvent.findMany({ where: { businessId: user.businessId, cropId: { in: cropIds }, voidedAt: null }, orderBy: { eventDate: 'desc' } }),
+      this.prisma.growthSample.findMany({ where: { businessId: user.businessId, cropId: { in: cropIds }, voidedAt: null }, orderBy: { sampledOn: 'desc' } }),
+      this.prisma.cropSpeciesLine.findMany({ where: { businessId: user.businessId, cropId: { in: cropIds }, voidedAt: null } }),
     ]);
-    const species = speciesLine ? await this.prisma.species.findUnique({ where: { id: speciesLine.speciesId } }) : null;
+    const speciesIds = [...new Set(speciesLines.map((line) => line.speciesId))];
+    const species = await this.prisma.species.findMany({ where: { id: { in: speciesIds } } });
+    const latest = <T extends { cropId: string }>(rows: T[]) => new Map(rows.map((row) => [row.cropId, row]));
+    const latestWater = new Map<string, (typeof waters)[number]>();
+    for (const water of waters) if (!latestWater.has(water.pondId)) latestWater.set(water.pondId, water);
+    const latestFeed = latest(feeds);
+    const latestHealth = latest(healthEvents);
+    const latestGrowth = latest(growthSamples);
+    const lineByCrop = new Map(speciesLines.map((line) => [line.cropId, line]));
+    const speciesById = new Map(species.map((item) => [item.id, item]));
+    return Promise.all(ponds.map((pond) => this.pondSummary(
+      pond,
+      activeCrops.get(pond.id),
+      latestFeed,
+      latestWater.get(pond.id),
+      latestHealth,
+      latestGrowth,
+      lineByCrop,
+      speciesById,
+    )));
+  }
+
+  private async pondSummary(
+    pond: { id: string; businessId: string; farmId: string; code: string; name: string; extentAcres: Prisma.Decimal; status: string },
+    crop: Awaited<ReturnType<PrismaService['crop']['findMany']>>[number] | undefined,
+    feeds: Map<string, Awaited<ReturnType<PrismaService['feedLog']['findMany']>>[number]>,
+    water: Awaited<ReturnType<PrismaService['waterReading']['findMany']>>[number] | undefined,
+    healthEvents: Map<string, Awaited<ReturnType<PrismaService['healthEvent']['findMany']>>[number]>,
+    growthSamples: Map<string, Awaited<ReturnType<PrismaService['growthSample']['findMany']>>[number]>,
+    speciesLines: Map<string, Awaited<ReturnType<PrismaService['cropSpeciesLine']['findMany']>>[number]>,
+    speciesById: Map<string, Awaited<ReturnType<PrismaService['species']['findMany']>>[number]>,
+  ): Promise<PondListItemDto> {
+    const feed = crop ? feeds.get(crop.id) : undefined;
+    const health = crop ? healthEvents.get(crop.id) : undefined;
+    const growth = crop ? growthSamples.get(crop.id) : undefined;
+    const speciesLine = crop ? speciesLines.get(crop.id) : undefined;
+    const species = speciesLine ? speciesById.get(speciesLine.speciesId) : undefined;
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const signals: string[] = [];
     if (crop && (!feed || feed.logDate < today)) signals.push('FEED_NOT_LOGGED_TODAY');
@@ -84,7 +126,7 @@ export class MastersService {
       extentAcres: pond.extentAcres.toString(),
       attention: { state, reason: signals.length ? signals.join(', ') : 'All daily checks are up to date', signals },
       activeCrop: crop ? {
-        id: crop.id, code: crop.code, status: crop.status, stockingDate: crop.stockingDate,
+        id: crop.id, code: crop.code, status: crop.status,
         doc: envelope(String(Math.max(0, Math.floor((Date.now() - crop.stockingDate.getTime()) / 86_400_000))), 'days', 'ESTIMATED', 'Calculated from stocking date', ['stocking date', 'server date'], ['server date minus stocking date']),
         abw, biomass, fcr, density,
       } : null,

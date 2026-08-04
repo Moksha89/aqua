@@ -90,6 +90,14 @@ export class PartyDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() address?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() openingBalancePaise?: string;
 }
+export class PartyListDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ type: [String] }) type!: string[];
+  @ApiProperty({ required: false }) mobile?: string;
+  @ApiProperty({ required: false }) address?: string;
+  @ApiProperty({ required: false }) openingBalancePaise?: string;
+}
 export class SupplierCreditDto {
   @ApiProperty() @IsString() partyId!: string;
   @ApiProperty() @IsString() limitPaise!: string;
@@ -119,6 +127,13 @@ export class CostHeadDto {
   @ApiProperty() @IsString() name!: string;
   @ApiProperty() @IsString() classification!: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() defaultAllocationBasis?: string;
+}
+export class CostHeadListDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() code!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() classification!: string;
+  @ApiProperty({ required: false }) defaultAllocationBasis?: string;
 }
 export class PreparationTemplateDto {
   @ApiProperty() @IsString() speciesCategory!: string;
@@ -261,6 +276,7 @@ export class MastersController {
     }, this.context(req));
   }
   @Get('parties')
+  @ApiResponse({ status: 200, type: [PartyListDto] })
   parties(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.party, this.user(req)); }
   @Get('supplier-credit-limits')
   supplierCredits(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.supplierCreditLimit, this.user(req), false, true); }
@@ -299,6 +315,7 @@ export class MastersController {
     }, this.context(req));
   }
   @Get('cost-heads')
+  @ApiResponse({ status: 200, type: [CostHeadListDto] })
   costHeads(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.costHead, this.user(req), false, true, true); }
   @Get('preparation-templates')
   preparationTemplates(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.preparationTemplate, this.user(req)); }

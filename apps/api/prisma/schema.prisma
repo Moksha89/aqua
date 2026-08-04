@@ -850,6 +850,21 @@ model Expense {
   voidedBy String? @db.Uuid
   voidReason String?
 }
+model Attachment {
+  @@map("attachment")
+  id String @id @default(uuid()) @db.Uuid
+  businessId String @db.Uuid
+  ownerType String
+  ownerId String @db.Uuid
+  objectKey String
+  fileName String
+  contentType String
+  sizeBytes Int?
+  createdAt DateTime @default(now())
+  createdBy String @db.Uuid
+  deviceId String @db.Uuid
+  voidedAt DateTime?
+}
 model Payment {
   @@map("payment")
   id String @id @default(uuid()) @db.Uuid

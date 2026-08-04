@@ -1220,6 +1220,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attachments/presign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AttachmentsController_presign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1345,6 +1361,14 @@ export interface components {
             effectiveFrom: string;
             ratePerUnitPaise: string;
         };
+        PartyListDto: {
+            id: string;
+            name: string;
+            type: string[];
+            mobile?: string;
+            address?: string;
+            openingBalancePaise?: string;
+        };
         PartyDto: {
             name: string;
             type: string[];
@@ -1375,6 +1399,13 @@ export interface components {
             usefulLifeYears: number;
             disposalDate?: string;
             disposalValuePaise?: string;
+        };
+        CostHeadListDto: {
+            id: string;
+            code: string;
+            name: string;
+            classification: string;
+            defaultAllocationBasis?: string;
         };
         CostHeadDto: {
             code: string;
@@ -1503,6 +1534,37 @@ export interface components {
             mode: string;
             reference?: string;
         };
+        LedgerEntryDto: {
+            id: string;
+            kind: string;
+            date: string;
+            amountPaise: string;
+            status?: string;
+        };
+        PartyLedgerResponseDto: {
+            partyId: string;
+            partyName: string;
+            entries: components["schemas"]["LedgerEntryDto"][];
+        };
+        PayableDto: {
+            id: string;
+            expenseDate: string;
+            partyId: string;
+            amountPaise: string;
+            paidAmountPaise: string;
+            paymentStatus: string;
+        };
+        ReceivableDto: {
+            id: string;
+            harvestDate: string;
+            receivablePaise: string;
+            dueDate?: string;
+        };
+        SupplierHeadroomDto: {
+            limitPaise: string;
+            usedPaise: string;
+            headroomPaise: string;
+        };
         CashReportDto: {
             view: string;
             payments: Record<string, never>;
@@ -1606,6 +1668,14 @@ export interface components {
         };
         SyncPushDto: {
             records: components["schemas"]["SyncRecordDto"][];
+        };
+        PresignAttachmentDto: {
+            /** @enum {string} */
+            ownerType: "EXPENSE" | "HARVEST" | "HEALTH";
+            ownerId: string;
+            fileName: string;
+            contentType: string;
+            sizeBytes?: number;
         };
     };
     responses: never;
@@ -2196,7 +2266,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PartyListDto"][];
+                };
             };
         };
     };
@@ -2348,7 +2420,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["CostHeadListDto"][];
+                };
             };
         };
     };
@@ -3154,11 +3228,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: {
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PartyLedgerResponseDto"];
+                };
             };
         };
     };
@@ -3171,11 +3247,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: {
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PayableDto"][];
+                };
             };
         };
     };
@@ -3188,11 +3266,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: {
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ReceivableDto"][];
+                };
             };
         };
     };
@@ -3207,11 +3287,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: {
+            default: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SupplierHeadroomDto"];
+                };
             };
         };
     };
@@ -3675,6 +3757,27 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SyncPushDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AttachmentsController_presign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignAttachmentDto"];
             };
         };
         responses: {

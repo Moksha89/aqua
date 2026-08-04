@@ -14,9 +14,10 @@ import { HarvestModule } from './harvest/harvest.module';
 import { AllocationModule } from './allocation/allocation.module';
 import { ThemeModule } from './theme/theme.module';
 import { SyncModule } from './sync/sync.module';
+import { AttachmentsModule } from './attachments/attachments.module';
 
 @Module({
-  imports: [PrismaModule, HealthModule, AuthModule, CropModule, AuthorizationModule, MastersModule, OperationsModule, FinanceModule, HarvestModule, AllocationModule, ThemeModule, SyncModule],
+  imports: [PrismaModule, HealthModule, AuthModule, CropModule, AuthorizationModule, MastersModule, OperationsModule, FinanceModule, HarvestModule, AllocationModule, ThemeModule, SyncModule, AttachmentsModule],
   providers: [AuditInterceptor],
 })
 export class AppModule {

@@ -56,15 +56,24 @@ export class FinanceService {
       this.prisma.payment.findMany({ where: { partyId, businessId: ctx.businessId, voidedAt: null }, orderBy: { paidOn: 'asc' } }),
     ]);
     if (!party) throw new NotFoundException('Party not found');
-    return { party, expenses, payments };
+    return {
+      partyId: party.id,
+      partyName: party.name,
+      entries: [
+        ...expenses.map((expense) => ({ id: expense.id, kind: 'EXPENSE', date: expense.expenseDate.toISOString(), amountPaise: expense.amountPaise, status: expense.paymentStatus })),
+        ...payments.map((payment) => ({ id: payment.id, kind: 'PAYMENT', date: payment.paidOn.toISOString(), amountPaise: payment.amountPaise })),
+      ].sort((a, b) => a.date.localeCompare(b.date)),
+    };
   }
 
   async payables(ctx: Context) {
-    return this.prisma.expense.findMany({ where: { businessId: ctx.businessId, partyId: { not: null }, paymentStatus: { in: ['UNPAID', 'PART_PAID'] }, voidedAt: null }, orderBy: { expenseDate: 'asc' } });
+    const rows = await this.prisma.expense.findMany({ where: { businessId: ctx.businessId, partyId: { not: null }, paymentStatus: { in: ['UNPAID', 'PART_PAID'] }, voidedAt: null }, orderBy: { expenseDate: 'asc' } });
+    return rows.map((row) => ({ id: row.id, expenseDate: row.expenseDate.toISOString(), partyId: row.partyId!, amountPaise: row.amountPaise, paidAmountPaise: row.paidAmountPaise, paymentStatus: row.paymentStatus }));
   }
 
   async receivables(ctx: Context) {
-    return this.prisma.harvestEvent.findMany({ where: { businessId: ctx.businessId, receivablePaise: { gt: 0 }, voidedAt: null }, orderBy: { receivableDueDate: 'asc' } });
+    const rows = await this.prisma.harvestEvent.findMany({ where: { businessId: ctx.businessId, receivablePaise: { gt: 0 }, voidedAt: null }, orderBy: { receivableDueDate: 'asc' } });
+    return rows.map((row) => ({ id: row.id, harvestDate: row.harvestDate.toISOString(), receivablePaise: row.receivablePaise, dueDate: row.receivableDueDate?.toISOString() }));
   }
 
   async supplierHeadroom(partyId: string, ctx: Context) {
