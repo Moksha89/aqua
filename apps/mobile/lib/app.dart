@@ -254,7 +254,26 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) => const _Page(title: 'Home / హోమ్', children: [Text('Your ponds at a glance / మీ చెరువుల స్థితి'), SizedBox(height: 16), Text('Alerts and attention appear here when the server syncs.')]);
+  Widget build(BuildContext context, WidgetRef ref) => StreamBuilder<List<LocalPond>>(
+        stream: ref.read(databaseProvider).watchPonds(),
+        builder: (context, snapshot) {
+          final ponds = snapshot.data ?? [];
+          return _Page(title: 'Home / హోమ్', children: [
+            const Text('Your ponds at a glance / మీ చెరువుల స్థితి'),
+            const SizedBox(height: 16),
+            if (ponds.isEmpty) const Text('Alerts appear after the first sync.'),
+            for (final pond in ponds)
+              Card(
+                child: ListTile(
+                  title: Text(pond.name),
+                  subtitle: Text('${pond.attention}${pond.attentionReason == null ? '' : ' · ${pond.attentionReason}'}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PondDetailScreen(pond: pond))),
+                ),
+              ),
+          ]);
+        },
+      );
 }
 
 class PondsTab extends ConsumerStatefulWidget {
@@ -276,8 +295,50 @@ class _PondsTabState extends ConsumerState<PondsTab> {
   @override
   Widget build(BuildContext context) => StreamBuilder<List<LocalPond>>(stream: ref.read(databaseProvider).watchPonds(), builder: (context, snapshot) {
         final ponds = snapshot.data ?? [];
-        return _Page(title: 'My Ponds / నా చెరువులు', children: ponds.isEmpty ? const [Text('No ponds cached yet. Connect once to load them.')] : [for (final pond in ponds) Card(child: ListTile(title: Text('${pond.name} · ${pond.code}'), subtitle: Text('${pond.attention} ${pond.attentionReason ?? ''}'), leading: const Icon(Icons.water)))]);
+          return _Page(title: 'My Ponds / నా చెరువులు', children: ponds.isEmpty ? const [Text('No ponds cached yet. Connect once to load them.')] : [for (final pond in ponds) Card(child: ListTile(title: Text('${pond.name} · ${pond.code}'), subtitle: Text('${pond.attention} ${pond.attentionReason ?? ''}'), leading: const Icon(Icons.water), onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PondDetailScreen(pond: pond)))))]);
       });
+}
+
+class PondDetailScreen extends StatelessWidget {
+  const PondDetailScreen({super.key, required this.pond});
+  final LocalPond pond;
+
+  @override
+  Widget build(BuildContext context) {
+    final crop = pond.cropJson == null ? null : jsonDecode(pond.cropJson!);
+    return Scaffold(
+      appBar: AppBar(title: Text('${pond.name} · ${pond.code}')),
+      body: ListView(padding: const EdgeInsets.all(20), children: [
+        Text('Attention: ${pond.attention}', style: Theme.of(context).textTheme.titleLarge),
+        if (pond.attentionReason != null) Text(pond.attentionReason!),
+        const SizedBox(height: 20),
+        if (crop is Map<String, dynamic>) ...[
+          Text('Active crop / ప్రస్తుత పంట', style: Theme.of(context).textTheme.titleLarge),
+          for (final key in ['doc', 'abwG', 'biomassKg', 'fcr', 'density'])
+            if (crop[key] != null)
+              ListTile(
+                title: Text(key.toUpperCase()),
+                subtitle: Text('${crop[key]}${crop['status'] == 'ESTIMATED' ? ' · ESTIMATED' : ''}'),
+                onTap: () => showModalBottomSheet<void>(context: context, builder: (_) => _DerivationView(value: crop[key])),
+              ),
+        ] else
+          const Text('No active crop'),
+      ]),
+    );
+  }
+}
+
+class _DerivationView extends StatelessWidget {
+  const _DerivationView({required this.value});
+  final dynamic value;
+  @override
+  Widget build(BuildContext context) {
+    final map = value is Map<String, dynamic> ? value as Map<String, dynamic> : {'value': value};
+    return SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('How this figure is derived / లెక్కింపు', style: Theme.of(context).textTheme.titleLarge),
+      for (final entry in map.entries) ListTile(dense: true, title: Text(entry.key), subtitle: Text('${entry.value}')),
+    ])));
+  }
 }
 
 class DailyEntryTab extends ConsumerStatefulWidget {
