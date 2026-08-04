@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: 20 83 45;
+  --color-onPrimary: 255 255 255;
+  --color-surface: 255 255 255;
+  --color-background: 248 250 252;
+  --color-textPrimary: 15 23 42;
+  --color-textSecondary: 71 85 105;
+  --color-border: 203 213 225;
+  --color-success: 22 101 52;
+  --color-warning: 146 64 14;
+  --color-danger: 185 28 28;
+  --color-secondary: 14 116 144;
+  --color-onSecondary: 255 255 255;
+  --color-info: 3 105 161;
+  --color-pondStatusAttentionGreen: 22 101 52;
+  --color-pondStatusAttentionAmber: 146 64 14;
+  --color-pondStatusAttentionRed: 185 28 28;
+}

@@ -1,0 +1,21 @@
+CREATE TABLE "crop_input_movement" (
+  "id" UUID NOT NULL,
+  "businessId" UUID NOT NULL,
+  "cropId" UUID NOT NULL,
+  "itemType" TEXT NOT NULL,
+  "itemId" UUID NOT NULL,
+  "quantity" DECIMAL(14,3) NOT NULL,
+  "value_paise" BIGINT NOT NULL,
+  "movementType" TEXT NOT NULL,
+  "reason" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  "createdBy" UUID NOT NULL,
+  "updatedBy" UUID NOT NULL,
+  "deviceId" UUID NOT NULL,
+  "rev" BIGINT NOT NULL DEFAULT 0,
+  "voidedAt" TIMESTAMP(3),
+  "voidedBy" UUID,
+  "voidReason" TEXT,
+  CONSTRAINT "crop_input_movement_pkey" PRIMARY KEY ("id")
+);

@@ -1,0 +1,4 @@
+import Link from 'next/link';
+export default function DashboardPage() {
+  return <section><h1 className="text-3xl font-semibold text-textPrimary">AE Farm Dashboard</h1><p className="mt-2 text-textSecondary">Your pond operations at a glance.</p><div className="mt-6 grid gap-4 md:grid-cols-3"><Link href="/ponds" className="rounded-xl border border-border bg-surface p-5"><h2 className="text-lg font-medium">My ponds</h2><p className="mt-2 text-textSecondary">See attention status and active crops.</p></Link><Link href="/daily-entry" className="rounded-xl border border-border bg-surface p-5"><h2 className="text-lg font-medium">Daily entries</h2><p className="mt-2 text-textSecondary">Record work from the field.</p></Link><article className="rounded-xl border border-border bg-surface p-5"><h2 className="text-lg font-medium">Server-calculated figures</h2><p className="mt-2 text-textSecondary">No client-side estimates.</p></article></div></section>;
+}
