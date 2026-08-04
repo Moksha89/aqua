@@ -70,6 +70,10 @@ enum PnlStatus {
   ESTIMATED
   ACTUAL
 }
+enum AttachmentStatus {
+  PENDING
+  UPLOADED
+}
 
 model AeBusiness {
   @@map("ae_business")
@@ -853,17 +857,19 @@ model Expense {
 model Attachment {
   @@map("attachment")
   id String @id @default(uuid()) @db.Uuid
-  businessId String @db.Uuid
-  ownerType String
-  ownerId String @db.Uuid
-  objectKey String
-  fileName String
-  contentType String
-  sizeBytes Int?
-  createdAt DateTime @default(now())
-  createdBy String @db.Uuid
-  deviceId String @db.Uuid
-  voidedAt DateTime?
+  businessId String @map("business_id") @db.Uuid
+  ownerType String @map("owner_type")
+  ownerId String @map("owner_id") @db.Uuid
+  objectKey String @map("object_key")
+  fileName String @map("file_name")
+  contentType String @map("content_type")
+  sizeBytes Int? @map("size_bytes")
+  status AttachmentStatus @default(PENDING)
+  uploadedAt DateTime? @map("uploaded_at")
+  createdAt DateTime @map("created_at") @default(now())
+  createdBy String @map("created_by") @db.Uuid
+  deviceId String @map("device_id") @db.Uuid
+  voidedAt DateTime? @map("voided_at")
 }
 model Payment {
   @@map("payment")

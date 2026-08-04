@@ -50,9 +50,10 @@ export default function MoneyPage() {
     try {
       const created = await apiRequest<{ id: string }>('/finance/expenses', { method: 'POST', body: JSON.stringify(expense) });
       if (billPhoto) {
-        const presign = await apiRequest<{ uploadUrl: string }>('/attachments/presign', { method: 'POST', body: JSON.stringify({ ownerType: 'EXPENSE', ownerId: created.id, fileName: billPhoto.name, contentType: billPhoto.type, sizeBytes: billPhoto.size }) });
+        const presign = await apiRequest<{ attachmentId: string; uploadUrl: string }>('/attachments/presign', { method: 'POST', body: JSON.stringify({ ownerType: 'EXPENSE', ownerId: created.id, fileName: billPhoto.name, contentType: billPhoto.type, sizeBytes: billPhoto.size }) });
         const upload = await fetch(presign.uploadUrl, { method: 'PUT', headers: { 'content-type': billPhoto.type }, body: billPhoto });
         if (!upload.ok) throw new Error(t.attachmentUploadFailed);
+        await apiRequest('/attachments/confirm', { method: 'POST', body: JSON.stringify({ attachmentId: presign.attachmentId }) });
       }
       setMessage(t.savedExpense);
     }

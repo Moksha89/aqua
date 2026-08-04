@@ -29,6 +29,12 @@ export class PresignAttachmentDto {
   sizeBytes?: number;
 }
 
+export class ConfirmAttachmentDto {
+  @ApiProperty()
+  @IsUUID()
+  attachmentId!: string;
+}
+
 @UseGuards(JwtGuard)
 @Controller('attachments')
 export class AttachmentsController {
@@ -41,6 +47,19 @@ export class AttachmentsController {
     return this.attachments.presign(body, {
       userId: user.id,
       deviceId: user.deviceId,
+      businessId: user.businessId,
+      role: user.role,
+      financialAccess: user.financialAccess,
+      pondScope: user.pondScope,
+    });
+  }
+
+  @Post('confirm')
+  confirm(@Body() body: ConfirmAttachmentDto, @Req() request: AuthenticatedRequest) {
+    const user = request.user;
+    if (!user?.businessId || !user.role) throw new BadRequestException('Business context required');
+    return this.attachments.confirm(body, {
+      userId: user.id,
       businessId: user.businessId,
       role: user.role,
       financialAccess: user.financialAccess,
