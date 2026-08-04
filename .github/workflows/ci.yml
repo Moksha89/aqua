@@ -43,18 +43,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      minio:
-        image: minio/minio
-        env:
-          MINIO_ROOT_USER: aqua
-          MINIO_ROOT_PASSWORD: aqua-secret
-        ports:
-          - 9000:9000
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     env:
       DATABASE_URL: postgresql://aqua:aqua@localhost:5432/aqua_e2e?schema=public
       S3_ENDPOINT: http://localhost:9000
@@ -72,5 +60,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @aqua/api prisma:generate
       - run: PGPASSWORD=aqua psql -h localhost -U aqua -d aqua -c 'CREATE DATABASE aqua_e2e'
+      - run: docker run -d --name aqua-minio -p 9000:9000 -e MINIO_ROOT_USER=aqua -e MINIO_ROOT_PASSWORD=aqua-secret minio/minio server /data
+      - run: |
+          for i in {1..30}; do
+            curl --fail http://localhost:9000/minio/health/live && exit 0
+            sleep 1
+          done
+          exit 1
       - run: pnpm --filter @aqua/api exec prisma migrate deploy --schema prisma/schema.prisma
       - run: pnpm --filter @aqua/api test:e2e
