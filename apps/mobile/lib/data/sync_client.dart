@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
@@ -18,8 +19,8 @@ class SyncClient {
     if (accessToken == null) return null;
     try {
       return await http.get(Uri.parse('$baseUrl$path'), headers: {'authorization': 'Bearer $accessToken'}).timeout(const Duration(seconds: 5));
-    } catch (_) {
-      return null;
+    } catch (error) {
+      throw StateError('GET $path failed: $error');
     }
   }
 
@@ -59,6 +60,7 @@ class SyncClient {
             }],
           }),
         );
+        debugPrint('sync push ${entry.entityId}: ${response.statusCode} ${response.body}');
         if (response.statusCode >= 200 && response.statusCode < 300) {
           final body = jsonDecode(response.body) as Map<String, dynamic>;
           final receipt = (body['receipts'] as List<dynamic>?)?.first as Map<String, dynamic>?;

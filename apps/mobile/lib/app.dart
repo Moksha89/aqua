@@ -415,7 +415,13 @@ class _DailyEntryTabState extends ConsumerState<DailyEntryTab> {
   Widget build(BuildContext context) => _Page(title: 'Daily Entry / రోజువారీ నమోదు', children: [
         StreamBuilder<List<LocalPond>>(stream: ref.read(databaseProvider).watchPonds(), builder: (context, snapshot) {
           final ponds = snapshot.data ?? [];
+          final shouldSelectFirst = pondId == null && ponds.isNotEmpty;
           pondId ??= ponds.isEmpty ? null : ponds.first.id;
+          if (shouldSelectFirst) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() {});
+            });
+          }
           if (pondId != null) loadPrevious(pondId!);
           return DropdownButtonFormField<String>(value: pondId, items: [for (final pond in ponds) DropdownMenuItem(value: pond.id, child: Text(pond.name))], onChanged: (value) => setState(() => pondId = value), decoration: const InputDecoration(labelText: 'Pond / చెరువు', border: OutlineInputBorder()));
         }),
@@ -443,10 +449,14 @@ class _DailyEntryTabState extends ConsumerState<DailyEntryTab> {
         }))),
         const SizedBox(height: 12),
         FilledButton(onPressed: pondId == null ? null : () async {
+          if (quantity.text.trim().isEmpty) {
+            setState(() => message = 'Enter a quantity / పరిమాణం నమోదు చేయండి');
+            return;
+          }
           final db = ref.read(databaseProvider);
           final app = ref.read(appStateProvider);
           final repo = FarmRepository(db, SyncClient(db, baseUrl: apiBaseUrl, accessToken: app.accessToken), baseUrl: apiBaseUrl);
-          await repo.saveDailyEntry(pondId: pondId!, kind: kind, payload: {'date': DateTime.now().toIso8601String().substring(0, 10), 'quantityKg': quantity.text, 'remarks': remarks.text});
+          await repo.saveDailyEntry(pondId: pondId!, kind: kind, payload: {'logDate': DateTime.now().toIso8601String().substring(0, 10), 'mealSlot': 'AM', 'quantityKg': quantity.text, 'remarks': remarks.text});
           setState(() => message = 'Saved offline • Pending sync / ఆఫ్‌లైన్‌లో సేవ్ అయింది');
         }, child: const Text('Save entry / నమోదు సేవ్ చేయండి')),
         if (message.isNotEmpty) Text(message),
