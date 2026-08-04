@@ -66,6 +66,12 @@ export class OperationsService {
     return this.prisma.checkTray.create({ data: { businessId: ctx.businessId, cropId, trayCode: body.trayCode, position: body.position, feedPlacedKg: new Prisma.Decimal(body.feedPlacedKg), checkIntervalMin: body.checkIntervalMin, createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
   }
 
+  async checkTrays(cropId: string, ctx: Context) {
+    const crop = await this.crop(cropId, ctx.businessId);
+    this.scope.assertPondScope(ctx, crop.pondId);
+    return this.prisma.checkTray.findMany({ where: { businessId: ctx.businessId, cropId, voidedAt: null }, orderBy: { trayCode: 'asc' } });
+  }
+
   async checkTrayReading(cropId: string, body: { checkTrayId: string; readAt: string; feedPlacedKg: string; residualCode: string; residualWeightG?: string }, ctx: Context) {
     await this.writableCrop(cropId, ctx);
     const verdict = body.residualCode.toUpperCase() === 'NONE' ? 'UNDERFEEDING' : body.residualCode.toUpperCase() === 'HEAVY' ? 'OVERFEEDING' : 'OPTIMAL';

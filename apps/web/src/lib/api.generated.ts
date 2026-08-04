@@ -635,7 +635,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["OperationsController_trays"];
         put?: never;
         post: operations["OperationsController_tray"];
         delete?: never;
@@ -1229,6 +1229,44 @@ export interface components {
         DeviceDto: Record<string, never>;
         StockDto: Record<string, never>;
         PreparationDto: Record<string, never>;
+        PondAttentionDto: {
+            /** @enum {string} */
+            state: "GREEN" | "AMBER" | "RED";
+            reason: string;
+            signals: string[];
+        };
+        FigureDerivationDto: {
+            inputs: string[];
+            steps: string[];
+        };
+        OperationalFigureDto: {
+            value: string | null;
+            unit: string;
+            status: string;
+            reason?: string;
+            derivation: components["schemas"]["FigureDerivationDto"];
+        };
+        ActiveCropDto: {
+            id: string;
+            code: string;
+            status: string;
+            doc: components["schemas"]["OperationalFigureDto"];
+            abw: components["schemas"]["OperationalFigureDto"];
+            biomass: components["schemas"]["OperationalFigureDto"];
+            fcr: components["schemas"]["OperationalFigureDto"];
+            density: components["schemas"]["OperationalFigureDto"];
+        };
+        PondListItemDto: {
+            id: string;
+            businessId: string;
+            farmId: string;
+            code: string;
+            name: string;
+            extentAcres: string;
+            status: string;
+            attention: components["schemas"]["PondAttentionDto"];
+            activeCrop: components["schemas"]["ActiveCropDto"] | null;
+        };
         FarmDto: {
             name: string;
             address?: string;
@@ -1269,6 +1307,19 @@ export interface components {
             defaultTargetSizeG?: number;
             defaultSurvivalPct?: number;
             waterParamRanges?: Record<string, never>;
+        };
+        FeedItemOptionDto: {
+            id: string;
+            brand: string;
+            feedType: string;
+            gradeCode: string;
+            bagWeightKg: string;
+        };
+        MedicineItemOptionDto: {
+            id: string;
+            name: string;
+            category: string;
+            unit: string;
         };
         FeedItemDto: {
             brand: string;
@@ -1363,6 +1414,13 @@ export interface components {
             feedPlacedKg: string;
             residualCode: string;
             residualWeightG?: string;
+        };
+        CheckTrayOptionDto: {
+            id: string;
+            trayCode: string;
+            position?: string;
+            feedPlacedKg: string;
+            checkIntervalMin: number;
         };
         GrowthDto: {
             sampledOn: string;
@@ -1512,7 +1570,7 @@ export interface components {
             cropId: string;
             version: number;
             /** Format: date-time */
-            generatedAt: string;
+            generatedAt: Record<string, never>;
             generatedBy: string;
             payload: Record<string, never>;
             isCurrent: boolean;
@@ -1826,7 +1884,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PondListItemDto"][];
+                };
             };
         };
     };
@@ -1961,7 +2021,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PondListItemDto"];
+                };
             };
         };
     };
@@ -1978,7 +2040,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FeedItemOptionDto"][];
+                };
             };
         };
     };
@@ -2054,7 +2118,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["MedicineItemOptionDto"][];
+                };
             };
         };
     };
@@ -2831,6 +2897,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    OperationsController_trays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckTrayOptionDto"][];
+                };
             };
         };
     };

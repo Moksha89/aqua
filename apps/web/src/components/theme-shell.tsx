@@ -1,15 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
+import { apiGet } from '../lib/api';
 
 type Theme = { tokens?: Record<string, string> };
 
 export function ThemeShell({ children }: Readonly<{ children: React.ReactNode }>) {
   useEffect(() => {
-    const token = window.localStorage.getItem('aqua_access_token');
-    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1'}/theme`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
-      .then((response) => response.ok ? response.json() as Promise<Theme> : null)
-      .then((theme) => {
+    apiGet<Theme>('/theme').then((theme) => {
         for (const [key, value] of Object.entries(theme?.tokens ?? {})) {
           if (/^#[0-9a-f]{6}$/i.test(value)) {
             const hex = value.slice(1);
@@ -17,7 +15,7 @@ export function ThemeShell({ children }: Readonly<{ children: React.ReactNode }>
             document.documentElement.style.setProperty(`--color-${key}`, rgb);
           }
         }
-      });
+      }).catch(() => undefined);
   }, []);
   return children;
 }

@@ -130,6 +130,9 @@ export class AuthService {
     if (!role) throw new UnauthorizedException('User is not linked to this business');
     return {
       businessId,
+      role: role.role,
+      financialAccess: role.financialAccess,
+      pondScope: role.pondScope,
       accessToken: this.token({ sub: userId, deviceId, businessId, type: 'access' }),
     };
   }

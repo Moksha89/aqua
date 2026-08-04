@@ -1,5 +1,5 @@
-import { Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiProperty } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiProperty, ApiResponse } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
 import { OperationsService } from './operations.service';
@@ -15,6 +15,7 @@ class WaterDto { @ApiProperty({ required: false }) @IsOptional() @IsString() cro
 class MedicineDto { @ApiProperty() @IsString() appliedOn!: string; @ApiProperty() @IsString() medicineItemId!: string; @ApiProperty() @IsString() quantity!: string; @ApiProperty() @IsString() unit!: string; @ApiProperty() @IsString() method!: string; @ApiProperty() @IsString() reason!: string; @ApiProperty() @IsString() costPaise!: string; }
 class HealthDto { @ApiProperty() @IsString() eventDate!: string; @ApiProperty() @IsNumber() doc!: number; @ApiProperty({ type: [String] }) @IsArray() symptoms!: string[]; @ApiProperty({ required: false }) @IsOptional() @IsNumber() mortalityCount?: number; @ApiProperty() @IsBoolean() labTested!: boolean; }
 class AttendanceDto { @ApiProperty() @IsString() labourId!: string; @ApiProperty({ required: false }) @IsOptional() @IsString() pondId?: string; @ApiProperty({ required: false }) @IsOptional() @IsString() cropId?: string; @ApiProperty() @IsString() workDate!: string; @ApiProperty() @IsString() days!: string; @ApiProperty() @IsString() amountPaise!: string; }
+class CheckTrayOptionDto { @ApiProperty() id!: string; @ApiProperty() trayCode!: string; @ApiProperty({ required: false }) position?: string; @ApiProperty() feedPlacedKg!: string; @ApiProperty() checkIntervalMin!: number; }
 
 @UseGuards(JwtGuard)
 @Controller('crops')
@@ -26,6 +27,8 @@ export class OperationsController {
   @Post(':id/feed-logs/same-as-yesterday') same(@Param('id') id: string, @Body() body: SameYesterdayDto, @Req() r: AuthenticatedRequest) { return this.operations.feedSameAsYesterday(id, body.date, this.ctx(r)); }
   @Post(':id/check-trays') tray(@Param('id') id: string, @Body() body: TrayDto, @Req() r: AuthenticatedRequest) { return this.operations.checkTray(id, body, this.ctx(r)); }
   @Post(':id/check-tray-readings') trayReading(@Param('id') id: string, @Body() body: TrayReadingDto, @Req() r: AuthenticatedRequest) { return this.operations.checkTrayReading(id, body, this.ctx(r)); }
+  @ApiResponse({ status: 200, type: [CheckTrayOptionDto] })
+  @Get(':id/check-trays') trays(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.operations.checkTrays(id, this.ctx(r)); }
   @Post(':id/growth-samples') growth(@Param('id') id: string, @Body() body: GrowthDto, @Req() r: AuthenticatedRequest) { return this.operations.growth(id, body, this.ctx(r)); }
   @Post(':id/medicine-applications') medicine(@Param('id') id: string, @Body() body: MedicineDto, @Req() r: AuthenticatedRequest) { return this.operations.medicine(id, body, this.ctx(r)); }
   @Post(':id/health-events') health(@Param('id') id: string, @Body() body: HealthDto, @Req() r: AuthenticatedRequest) { return this.operations.health(id, body, this.ctx(r)); }

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiResponse } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
 import { MasterContext, MastersService } from './masters.service';
@@ -53,6 +53,13 @@ export class FeedItemDto {
   @ApiProperty() @IsNumber() bagWeightKg!: number;
   @ApiProperty({ required: false }) @IsOptional() @IsString() supplierId?: string;
 }
+export class FeedItemOptionDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() brand!: string;
+  @ApiProperty() feedType!: string;
+  @ApiProperty() gradeCode!: string;
+  @ApiProperty() bagWeightKg!: string;
+}
 export class FeedRateDto {
   @ApiProperty() @IsString() feedItemId!: string;
   @ApiProperty() @IsString() effectiveFrom!: string;
@@ -64,6 +71,12 @@ export class MedicineItemDto {
   @ApiProperty() @IsString() unit!: string;
   @ApiProperty({ required: false }) @IsOptional() @IsNumber() packSize?: number;
   @ApiProperty({ required: false }) @IsOptional() @IsString() supplierId?: string;
+}
+export class MedicineItemOptionDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() category!: string;
+  @ApiProperty() unit!: string;
 }
 export class MedicineRateDto {
   @ApiProperty() @IsString() medicineItemId!: string;
@@ -112,6 +125,43 @@ export class PreparationTemplateDto {
   @ApiProperty() @IsString() name!: string;
   @ApiProperty() items!: object[];
 }
+export class PondAttentionDto {
+  @ApiProperty({ enum: ['GREEN', 'AMBER', 'RED'] }) state!: 'GREEN' | 'AMBER' | 'RED';
+  @ApiProperty() reason!: string;
+  @ApiProperty({ type: [String] }) signals!: string[];
+}
+export class FigureDerivationDto {
+  @ApiProperty({ type: [String] }) inputs!: string[];
+  @ApiProperty({ type: [String] }) steps!: string[];
+}
+export class OperationalFigureDto {
+  @ApiProperty({ nullable: true, type: String }) value!: string | null;
+  @ApiProperty() unit!: string;
+  @ApiProperty() status!: string;
+  @ApiProperty({ required: false }) reason?: string;
+  @ApiProperty({ type: FigureDerivationDto }) derivation!: FigureDerivationDto;
+}
+export class ActiveCropDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() code!: string;
+  @ApiProperty() status!: string;
+  @ApiProperty({ type: OperationalFigureDto }) doc!: OperationalFigureDto;
+  @ApiProperty({ type: OperationalFigureDto }) abw!: OperationalFigureDto;
+  @ApiProperty({ type: OperationalFigureDto }) biomass!: OperationalFigureDto;
+  @ApiProperty({ type: OperationalFigureDto }) fcr!: OperationalFigureDto;
+  @ApiProperty({ type: OperationalFigureDto }) density!: OperationalFigureDto;
+}
+export class PondListItemDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() businessId!: string;
+  @ApiProperty() farmId!: string;
+  @ApiProperty() code!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() extentAcres!: string;
+  @ApiProperty() status!: string;
+  @ApiProperty({ type: PondAttentionDto }) attention!: PondAttentionDto;
+  @ApiProperty({ nullable: true, type: ActiveCropDto }) activeCrop!: ActiveCropDto | null;
+}
 
 @UseGuards(JwtGuard)
 @Controller('masters')
@@ -127,7 +177,8 @@ export class MastersController {
   @Get('farms')
   farms(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.farm, this.user(req)); }
   @Get('ponds')
-  ponds(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.pond, this.user(req), true); }
+  @ApiResponse({ status: 200, type: [PondListItemDto] })
+  ponds(@Req() req: AuthenticatedRequest) { return this.masters.listPonds(this.user(req)); }
   @Get('lease-agreements')
   leases(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.leaseAgreement, this.user(req), false, true); }
   @Get('species')
@@ -135,7 +186,8 @@ export class MastersController {
   @Get('farms/:id')
   farm(@Param('id') id: string, @Req() req: AuthenticatedRequest) { return this.masters.get(this.masters.farm, id, this.user(req)); }
   @Get('ponds/:id')
-  pond(@Param('id') id: string, @Req() req: AuthenticatedRequest) { return this.masters.get(this.masters.pond, id, this.user(req), true); }
+  @ApiResponse({ status: 200, type: PondListItemDto })
+  pond(@Param('id') id: string, @Req() req: AuthenticatedRequest) { return this.masters.getPond(id, this.user(req)); }
   @Post('farms')
   createFarm(@Body() body: FarmDto, @Req() req: AuthenticatedRequest) {
     return this.masters.create(this.masters.farm, {
@@ -170,10 +222,12 @@ export class MastersController {
       waterParamRanges: body.waterParamRanges,
     }, this.context(req));
   }
+  @ApiResponse({ status: 200, type: [FeedItemOptionDto] })
   @Get('feed-items')
   feedItems(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.feedItem, this.user(req)); }
   @Get('feed-rate-history')
   feedRates(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.feedRateHistory, this.user(req)); }
+  @ApiResponse({ status: 200, type: [MedicineItemOptionDto] })
   @Get('medicine-items')
   medicineItems(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.medicineItem, this.user(req)); }
   @Get('medicine-rate-history')

@@ -14,7 +14,13 @@ export default {
         border: 'rgb(var(--color-border) / <alpha-value>)',
         success: 'rgb(var(--color-success) / <alpha-value>)',
         warning: 'rgb(var(--color-warning) / <alpha-value>)',
-        danger: 'rgb(var(--color-danger) / <alpha-value>)'
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
+        secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
+        onSecondary: 'rgb(var(--color-onSecondary) / <alpha-value>)',
+        info: 'rgb(var(--color-info) / <alpha-value>)',
+        pondAttentionGreen: 'rgb(var(--color-pondStatusAttentionGreen) / <alpha-value>)',
+        pondAttentionAmber: 'rgb(var(--color-pondStatusAttentionAmber) / <alpha-value>)',
+        pondAttentionRed: 'rgb(var(--color-pondStatusAttentionRed) / <alpha-value>)'
       }
     }
   },
