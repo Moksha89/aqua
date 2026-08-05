@@ -76,6 +76,8 @@ async function main() {
     const event = await prisma.harvestEvent.create({ data: { businessId: biz.id, cropId: crops[0].id, harvestDate: day(2), doc: 96, type: 'PARTIAL', reason: 'MARKET_RATE', sampleTaken: true, sampleCount: 40, sampleWeightG: '880', abwG: '22', rateCardId: rate.id, grossValuePaise: 1040000n, deductionsPaise: 20000n, netRealisationPaise: 1020000n, receivablePaise: 1020000n, receivableDueDate: new Date(Date.now() + 14 * 86400000), ...meta } });
     await prisma.harvestLine.create({ data: { businessId: biz.id, harvestEventId: event.id, speciesId: species.id, basis: 'COUNT', key: '30', quantityKg: '20', ratePerKgPaise: 52000n, lineValuePaise: 1040000n, ...meta } });
   }
+  const scrap = await prisma.scrapSale.findFirst({ where: { businessId: biz.id, item: 'Used netting' } });
+  if (!scrap) await prisma.scrapSale.create({ data: { businessId: biz.id, cropId: crops[0].id, pondId: ponds[0].id, saleDate: day(6), item: 'Used netting', quantity: '12.500', ratePaise: 8000n, buyerPartyId: parties[1].id, amountPaise: 100000n, ...meta } });
   console.log(`STAGING seed ready for ${biz.name} (${biz.id})`);
 }
 
