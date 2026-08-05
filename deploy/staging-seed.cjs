@@ -18,8 +18,12 @@ async function main() {
     if (!pond) pond = await prisma.pond.create({ data: { businessId: biz.id, farmId: farm.id, code, name, extentAcres: extent, ownershipType: 'OWN', waterDepthM: '1.5', status, ...meta } });
     ponds.push(pond);
   }
-  await prisma.userBusinessRole.upsert({ where: { userId_businessId: { userId: owner.id, businessId: biz.id } }, update: { financialAccess: true, pondScope: ['*'] }, create: { businessId: biz.id, userId: owner.id, role: 'AE_OWNER', financialAccess: true, pondScope: ['*'], ...meta } });
-  await prisma.userBusinessRole.upsert({ where: { userId_businessId: { userId: operator.id, businessId: biz.id } }, update: { pondScope: [ponds[0].id] }, create: { businessId: biz.id, userId: operator.id, role: 'AE_OPERATOR', financialAccess: false, pondScope: [ponds[0].id], ...meta } });
+  const ownerRole = await prisma.userBusinessRole.findFirst({ where: { userId: owner.id, businessId: biz.id, voidedAt: null } });
+  if (ownerRole) await prisma.userBusinessRole.update({ where: { id: ownerRole.id }, data: { financialAccess: true, pondScope: ['*'], updatedBy: SYS } });
+  else await prisma.userBusinessRole.create({ data: { businessId: biz.id, userId: owner.id, role: 'AE_OWNER', financialAccess: true, pondScope: ['*'], ...meta } });
+  const operatorRole = await prisma.userBusinessRole.findFirst({ where: { userId: operator.id, businessId: biz.id, voidedAt: null } });
+  if (operatorRole) await prisma.userBusinessRole.update({ where: { id: operatorRole.id }, data: { pondScope: [ponds[0].id], updatedBy: SYS } });
+  else await prisma.userBusinessRole.create({ data: { businessId: biz.id, userId: operator.id, role: 'AE_OPERATOR', financialAccess: false, pondScope: [ponds[0].id], ...meta } });
   const crops = [];
   for (const [pond, code, prep, stock] of [[ponds[0], 'CROP-1', 108, 96], [ponds[1], 'CROP-2', 60, 48]]) {
     let crop = await prisma.crop.findFirst({ where: { businessId: biz.id, code } });
@@ -40,10 +44,12 @@ async function main() {
     if (!party) party = await prisma.party.create({ data: { businessId: biz.id, name, type, mobile, ...meta } });
     parties.push(party);
   }
+  let commonPool = await prisma.commonExpensePool.findFirst({ where: { businessId: biz.id, costHeadId: heads[2].id, basis: 'POND_EXTENT', voidedAt: null } });
+  if (!commonPool) commonPool = await prisma.commonExpensePool.create({ data: { businessId: biz.id, periodMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1), costHeadId: heads[2].id, basis: 'POND_EXTENT', amountPaise: 75000n, status: 'OPEN', ...meta } });
   const expenseData = [
     { expenseDate: day(12), costHeadId: heads[0].id, allocationTarget: 'POND_CROP', pondId: ponds[0].id, cropId: crops[0].id, amountPaise: 500000n, paymentStatus: 'UNPAID', partyId: parties[0].id },
     { expenseDate: day(8), costHeadId: heads[1].id, allocationTarget: 'POND_CROP', pondId: ponds[1].id, cropId: crops[1].id, amountPaise: 185000n, paymentStatus: 'PAID', paidAmountPaise: 185000n, partyId: parties[0].id },
-    { expenseDate: day(4), costHeadId: heads[2].id, allocationTarget: 'COMMON', commonPoolId: undefined, amountPaise: 75000n, paymentStatus: 'UNPAID' },
+    { expenseDate: day(4), costHeadId: heads[2].id, allocationTarget: 'COMMON', commonPoolId: commonPool.id, amountPaise: 75000n, paymentStatus: 'UNPAID' },
   ];
   for (const item of expenseData) {
     const exists = await prisma.expense.findFirst({ where: { businessId: biz.id, expenseDate: item.expenseDate, amountPaise: item.amountPaise } });
