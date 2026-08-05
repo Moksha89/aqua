@@ -38,7 +38,8 @@ export class MastersService {
   async validateLeaseExtent(businessId: string, extentAcres: number, pondId?: string, client?: PrismaService, leaseAgreementId?: string): Promise<void> {
     if (!pondId && !leaseAgreementId) return;
     const prisma = client ?? this.prisma;
-    const pond = await prisma.pond.findFirst({ where: { businessId, voidedAt: null, ...(pondId ? { id: pondId } : leaseAgreementId ? { leaseAgreementId } : { id: '__missing__' }) }, select: { extentAcres: true } });
+    const where = pondId ? { id: pondId, businessId, voidedAt: null } : { leaseAgreementId, businessId, voidedAt: null };
+    const pond = await prisma.pond.findFirst({ where, select: { extentAcres: true } });
     if (!pond) throw new BadRequestException('Attached pond was not found.');
     if (new Prisma.Decimal(String(extentAcres)).gt(pond.extentAcres)) {
       throw new BadRequestException('Lease extent cannot exceed the attached pond extent.');
@@ -229,17 +230,23 @@ export class MastersService {
 
   async updateLease(id: string, data: Record<string, unknown>, context: MasterContext): Promise<unknown> {
     return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.leaseAgreement.findFirst({ where: { id, businessId: context.businessId, voidedAt: null }, select: { extentAcres: true } });
+      const existing = await tx.leaseAgreement.findFirst({ where: { id, businessId: context.businessId, voidedAt: null } });
       if (!existing) throw new BadRequestException('Lease agreement was not found.');
       const pondId = data.pondId as string | undefined;
       const leaseData = { ...data };
       delete leaseData.pondId;
       await this.validateLeaseExtent(context.businessId, Number(leaseData.extentAcres), pondId, tx as unknown as PrismaService, id);
+      const previousPond = await tx.pond.findFirst({ where: { businessId: context.businessId, leaseAgreementId: id, voidedAt: null } });
       const lease = await tx.leaseAgreement.update({
         where: { id },
         data: { ...leaseData, updatedBy: context.userId },
       });
-      if (pondId) await tx.pond.update({ where: { id: pondId }, data: { leaseAgreementId: id, ownershipType: 'LEASED', updatedBy: context.userId } });
+      if (pondId) {
+        const relinkedPond = await tx.pond.update({ where: { id: pondId }, data: { leaseAgreementId: id, ownershipType: 'LEASED', updatedBy: context.userId } });
+        if (previousPond && previousPond.id !== pondId) await tx.pond.update({ where: { id: previousPond.id }, data: { leaseAgreementId: null, ownershipType: 'OWN', updatedBy: context.userId } });
+        await this.audit(context, relinkedPond.id, 'UPDATE', previousPond, relinkedPond);
+      }
+      await this.audit(context, id, 'UPDATE', existing, lease);
       return lease;
     });
   }
