@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet, apiRequest, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
+import { ActionButton, Card, PageHeader, StatCard } from '../../src/components/design-system';
 
 type Pond = components['schemas']['PondListItemDto'];
 type CostHead = components['schemas']['CostHeadListDto'];
@@ -65,10 +66,10 @@ export default function MoneyPage() {
     catch (error) { setMessage(error instanceof Error ? error.message : t.savePayment); }
   }
 
-  if (!financial) return <section><h1 className="text-3xl font-semibold">{t.money}</h1><p className="mt-4 text-textSecondary">{t.financialUnavailable}</p></section>;
-  return <section>
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-3xl font-semibold">{t.money}</h1><p className="mt-2 text-textSecondary">{t.valuesServer}</p></div><Link href="/reports" className="rounded-lg border border-border px-4 py-2 text-textPrimary">{t.reports}</Link></div>
-    {pnl.data && <div className="mt-6 grid gap-4 md:grid-cols-3"><Metric label={t.revenue} value={pnl.data.revenuePaise} /><Metric label={t.cost} value={pnl.data.costPaise} /><Metric label={t.netProfit} value={pnl.data.netProfitPaise} /></div>}
+  if (!financial) return <section className="rise"><PageHeader eyebrow={t.money} title={t.money} subtitle={t.financialUnavailable} /><Card className="card-pad"><p className="muted">{t.financialUnavailable}</p></Card></section>;
+  return <section className="rise">
+    <PageHeader eyebrow={t.money} title="Money at a glance" subtitle={t.valuesServer} action={<ActionButton href="/reports"><i className="ph-duotone ph-chart-line-up mr-2" />{t.reports}</ActionButton>} />
+    {pnl.data && <div className="grid gap-3 sm:grid-cols-3"><StatCard label={t.revenue} value={formatPaise(pnl.data.revenuePaise)} /><StatCard label={t.cost} value={formatPaise(pnl.data.costPaise)} tone="warning" /><StatCard label={t.netProfit} value={formatPaise(pnl.data.netProfitPaise)} tone="success" /></div>}
     <div className="mt-8 grid gap-6 lg:grid-cols-2">
       <form onSubmit={saveExpense} className="rounded-xl border border-border bg-surface p-5"><h2 className="text-xl font-semibold">{t.expense}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Field label={t.expenseDate} type="date" value={expense.expenseDate} onChange={(value) => setExpense({ ...expense, expenseDate: value })} />

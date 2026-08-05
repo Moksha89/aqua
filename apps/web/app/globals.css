@@ -25,7 +25,13 @@
 .ph-duotone.ph-caret-right::before { content: '\e13a'; }
 .ph-duotone.ph-cloud-check::before { content: '\e1b0'; }
 .ph-duotone.ph-drop::before { content: '\e210'; }
-.ph-duotone.ph-plus::before { content: '\e3d4'; }
+.ph-duotone.ph-house::before { content: '\e2c2'; }
+.ph-duotone.ph-wallet::before { content: '\e68a'; }
+.ph-duotone.ph-list::before { content: '\e2f0'; }
+.ph-duotone.ph-plus::before { content: '\e3d5'; }
+.ph-duotone.ph-chart-line-up::before { content: '\e156'; }
+.ph-duotone.ph-users-three::before { content: '\e68e'; }
+.ph-duotone.ph-check::before { content: '\e182'; }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

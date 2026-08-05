@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
+import { Card, PageHeader } from '../../src/components/design-system';
 
 const reports = [
   ['business-pnl', 'businessPnl', 'BusinessPnlReportDto'],
@@ -30,8 +31,8 @@ export default function ReportsPage() {
   const [selected, setSelected] = useState<ReportName>('BusinessPnlReportDto');
   const config = reports.find((item) => item[2] === selected) ?? reports[0];
   const query = useQuery({ queryKey: ['report', config[0]], queryFn: () => apiGet<Report>(`/finance/reports/${config[0]}`), enabled: financial });
-  if (!financial) return <section><h1 className="text-3xl font-semibold">{t.reports}</h1><p className="mt-4 text-textSecondary">{t.financialUnavailable}</p></section>;
-  return <section>
+  if (!financial) return <section className="rise"><PageHeader eyebrow={t.reports} title={t.reports} subtitle={t.financialUnavailable} /><Card className="card-pad"><p className="muted">{t.financialUnavailable}</p></Card></section>;
+  return <section className="rise">
     <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-semibold">{t.reports}</h1><div className="flex gap-2"><button type="button" onClick={() => window.print()} className="rounded-lg border border-border px-3 py-2">{t.exportPdf}</button><button type="button" onClick={() => downloadReport(query.data, config[0])} className="rounded-lg border border-border px-3 py-2">{t.exportExcel}</button><button type="button" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${reportLabel(config[1], t)}\n${summary(query.data)}`)}`, '_blank', 'noopener,noreferrer')} className="rounded-lg border border-border px-3 py-2">{t.shareWhatsapp}</button></div></div>
     <div className="mt-6 flex flex-wrap gap-2">{reports.map((item) => <button type="button" key={item[2]} onClick={() => setSelected(item[2])} className={`rounded-lg border border-border px-3 py-2 text-sm ${selected === item[2] ? 'bg-primary text-onPrimary' : 'bg-surface text-textPrimary'}`}>{reportLabel(item[1], t)}</button>)}</div>
     {query.isLoading && <p className="mt-6 text-textSecondary">{t.loading}</p>}{query.error && <p className="mt-6 text-danger">{query.error.message}</p>}{query.data && <ReportView report={query.data} />}
@@ -42,7 +43,7 @@ function ReportView({ report }: { report: Report }) {
   return <div className="mt-6 grid gap-4 md:grid-cols-3">{Object.entries(report).map(([key, value]) => <article key={key} className="rounded-xl border border-border bg-surface p-4"><h2 className="font-semibold text-textPrimary">{labelKey(key)}</h2><ReadableValue value={value} path={key} /></article>)}</div>;
 }
 function ReadableValue({ value, path = '' }: { value: unknown; path?: string }) {
-  if (Array.isArray(value)) return <div className="mt-2 space-y-2">{value.map((item, index) => <div key={index} className="rounded-lg border border-border p-2"><p className="text-xs font-bold text-textSecondary">Item {index + 1}</p><ReadableValue value={item} path={path} /></div>)}</div>;
+  if (Array.isArray(value)) return <div className="mt-2 space-y-2">{value.map((item, index) => <div key={index} className="rounded-lg border border-border p-2"><p className="text-xs font-bold text-textSecondary">Details</p><ReadableValue value={item} path={path} /></div>)}</div>;
   if (value && typeof value === 'object') return <div className="mt-2 space-y-1">{Object.entries(value).map(([key, item]) => <div key={key} className="flex justify-between gap-3 text-sm"><span className="text-textSecondary">{labelKey(key)}</span><span className="text-right text-textPrimary">{formatReportValue(item, key)}</span></div>)}</div>;
   return <p className="mt-2 text-xl font-semibold text-textPrimary">{formatReportValue(value, path)}</p>;
 }
