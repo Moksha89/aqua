@@ -23,7 +23,7 @@ export default function LoginPage() {
         setMessage(t.otpSent);
       } else {
         const result = await apiRequest<{ accessToken: string; refreshToken: string; userId: string }>('/auth/otp/verify', { method: 'POST', body: JSON.stringify({ mobile, code, deviceId }) });
-        saveSession({ ...result });
+        saveSession({ ...result, mobile });
         router.replace('/business');
       }
     } catch (error) { setMessage(error instanceof Error ? error.message : t.unableSignIn); }

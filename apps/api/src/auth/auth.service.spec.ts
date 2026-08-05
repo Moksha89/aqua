@@ -17,6 +17,7 @@ function prismaMock() {
     userAccount: { findUnique: jest.fn().mockResolvedValue({ id: 'user-id' }), create: jest.fn() },
     refreshToken: { create: jest.fn().mockResolvedValue({ id: 'refresh-id' }) },
     userBusinessRole: { findFirst: jest.fn() },
+    aeBusiness: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Farm' }) },
   };
 }
 

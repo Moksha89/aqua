@@ -134,8 +134,10 @@ export class AuthService {
       where: { userId, businessId, voidedAt: null },
     });
     if (!role) throw new UnauthorizedException('User is not linked to this business');
+    const business = await this.prisma.aeBusiness.findUnique({ where: { id: businessId }, select: { name: true } });
     return {
       businessId,
+      businessName: business?.name,
       role: role.role,
       financialAccess: role.financialAccess,
       pondScope: role.pondScope,

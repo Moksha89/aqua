@@ -1,7 +1,34 @@
+@font-face {
+  font-family: 'Phosphor-Duotone';
+  src: url('/fonts/Phosphor-Duotone.woff2') format('woff2');
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+}
+
+.ph-duotone {
+  font-family: 'Phosphor-Duotone' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+}
+.ph-duotone::before { display: inline-block; }
+.ph-duotone.ph-arrow-left::before { content: '\e058'; }
+.ph-duotone.ph-arrow-right::before { content: '\e06c'; }
+.ph-duotone.ph-bell::before { content: '\e0ce'; }
+.ph-duotone.ph-bell-ringing::before { content: '\e5e8'; }
+.ph-duotone.ph-bowl-food::before { content: '\eaa4'; }
+.ph-duotone.ph-caret-right::before { content: '\e13a'; }
+.ph-duotone.ph-cloud-check::before { content: '\e1b0'; }
+.ph-duotone.ph-drop::before { content: '\e210'; }
+.ph-duotone.ph-plus::before { content: '\e3d4'; }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('/icons/phosphor-duotone.css');
 
 @font-face {
   font-family: 'Plus Jakarta Sans';
@@ -36,7 +63,14 @@ body { margin: 0; font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sa
 button, input, select, textarea { font: inherit; }
 .app-frame { width: 100%; max-width: 30rem; min-height: 100dvh; margin: 0 auto; background: rgb(var(--color-background)); }
 .app-content { padding: 1.25rem 1rem 7rem; }
-.app-topbar { display:flex; align-items:center; justify-content:space-between; padding: 1.25rem 1rem .75rem; }
+.app-topbar { display:flex; align-items:center; justify-content:space-between; padding: 1rem 1rem .75rem; }
+.app-brand { display:flex; align-items:center; gap:.6rem; color:rgb(var(--color-textPrimary)); text-decoration:none; }
+.app-brand .farm-mark { width:2.35rem; height:2.35rem; border-radius:.8rem; box-shadow:none; }
+.app-brand .farm-mark svg { width:1.45rem; height:1.45rem; }
+.app-brand strong, .app-brand small { display:block; }
+.app-brand strong { font-size:.82rem; line-height:1.15; }
+.app-brand small { margin-top:.15rem; color:rgb(var(--color-textSecondary)); font-size:.62rem; }
+.header-icon { display:grid; place-items:center; width:2.35rem; height:2.35rem; border:1px solid rgb(var(--color-border)); border-radius:50%; background:rgb(var(--color-surface)); color:rgb(var(--color-primary)); font-size:1.25rem; }
 .farm-mark { display:inline-grid; place-items:center; width:5rem; height:5rem; border-radius:1.65rem; background:rgb(var(--color-surface)); color:rgb(var(--color-primary)); box-shadow:0 12px 30px rgb(var(--color-primary) / .2); }
 .farm-mark svg { width:3rem; height:3rem; }
 .farm-mark svg path:first-child { fill:rgb(var(--color-primary)); }
@@ -69,16 +103,21 @@ button, input, select, textarea { font: inherit; }
 .field-input { width:100%; min-height:3.1rem; border:1px solid rgb(var(--color-border)); border-radius:.9rem; padding:.75rem .9rem; background:rgb(var(--color-surface)); color:rgb(var(--color-textPrimary)); outline:none; }
 .field-input:focus { border-color:rgb(var(--color-primary)); box-shadow:0 0 0 3px rgb(var(--color-primary) / .13); }
 .bottom-nav { position:fixed; z-index:20; right:0; bottom:0; left:0; border-top:1px solid rgb(var(--color-border)); background:rgb(var(--color-surface) / .96); backdrop-filter:blur(18px); }
-.bottom-nav-inner { position:relative; display:grid; grid-template-columns:repeat(5,1fr); max-width:30rem; margin:0 auto; padding:.55rem .35rem .7rem; }
-.bottom-tab { display:grid; justify-items:center; gap:.2rem; color:rgb(var(--color-textSecondary)); font-size:.65rem; font-weight:750; text-decoration:none; }
+.bottom-nav-inner { position:relative; display:grid; grid-template-columns:repeat(5,1fr); align-items:end; max-width:30rem; margin:0 auto; padding:.45rem .35rem .6rem; }
+.bottom-tab { display:grid; justify-items:center; gap:.2rem; min-height:3rem; color:rgb(var(--color-textSecondary)); font-size:.65rem; font-weight:750; text-decoration:none; }
 .bottom-tab.active { color:rgb(var(--color-primary)); }
-.fab { position:absolute; left:50%; top:-1.75rem; width:4rem; height:4rem; transform:translateX(-50%); border:4px solid rgb(var(--color-background)); border-radius:50%; background:rgb(var(--color-primary)); color:rgb(var(--color-onPrimary)); font-size:1.8rem; box-shadow:0 12px 25px rgb(var(--color-primary) / .3); }
-.bottom-tab.fab-space { grid-column:3; }
-.bottom-tab.fab-space span { margin-top:1.2rem; }
+.fab { position:relative; width:3.85rem; height:3.85rem; border:4px solid rgb(var(--color-background)); border-radius:50%; background:rgb(var(--color-primary)); color:rgb(var(--color-onPrimary)); font-size:1.8rem; box-shadow:0 12px 25px rgb(var(--color-primary) / .3); }
+.bottom-tab.fab-space { grid-column:3; min-height:4.55rem; margin-top:-1.35rem; align-content:end; gap:.18rem; }
+.bottom-tab.fab-space span { margin:0; }
 .pond-tile { display:block; padding:1rem; border:1px solid rgb(var(--color-border)); border-radius:1.25rem; background:rgb(var(--color-surface)); color:inherit; text-decoration:none; }
 .pond-tile.attention-RED { border-color:rgb(var(--color-danger) / .45); }
 .pond-tile.attention-AMBER { border-color:rgb(var(--color-warning) / .45); }
 .pond-tile.attention-GREEN { border-color:rgb(var(--color-success) / .35); }
+.pond-tile-icon { display:grid; place-items:center; width:2.8rem; height:2.8rem; border-radius:1rem; background:rgb(var(--color-primary) / .1); color:rgb(var(--color-primary)); font-size:1.45rem; }
+.stat-card.accent { border-color:transparent; background:rgb(var(--color-primary)); color:rgb(var(--color-onPrimary)); }
+.stat-card.accent .muted, .stat-card.accent .stat-value { color:rgb(var(--color-onPrimary)); }
+.list-row { display:flex; align-items:center; gap:.75rem; padding:.9rem 0; border-bottom:1px solid rgb(var(--color-border)); text-decoration:none; }
+.list-row:last-child { border-bottom:0; }
 .chip { display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; padding:.35rem .6rem; background:rgb(var(--color-primary) / .1); color:rgb(var(--color-primary)); font-size:.68rem; font-weight:800; }
 .rise { animation:rise .35s ease both; }
 .tap { transition:transform .16s ease, box-shadow .16s ease; }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { clearSession, getSession, type Session } from '../lib/api';
+import { FarmMark } from './design-system';
 import { useI18n } from '../lib/i18n';
 
 export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -28,8 +29,9 @@ export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) 
   ];
   return <div className="app-frame text-textPrimary">
     <header className="app-topbar">
-      <Link className="text-lg font-extrabold tracking-tight text-primary" href="/">AE Farm</Link>
+      <Link className="app-brand" href="/"><FarmMark /><span><strong>{session.businessName ?? 'AE Farm'}</strong>{session.mobile && <small>{session.mobile}</small>}</span></Link>
       <div className="flex items-center gap-3">
+        <button aria-label="Notifications" className="header-icon"><i className="ph-duotone ph-bell" /></button>
         <button aria-label="Change language" className="muted text-xs font-bold" onClick={() => setLanguage(language === 'en' ? 'te' : 'en')}>{language === 'en' ? 'తెలుగు' : 'English'}</button>
         <button aria-label="Sign out" className="grid h-10 w-10 place-items-center rounded-full bg-primary font-bold text-onPrimary" onClick={() => { clearSession(); router.replace('/login'); }}>AF</button>
       </div>
