@@ -39,16 +39,16 @@ export default function ReportsPage() {
 }
 
 function ReportView({ report }: { report: Report }) {
-  return <div className="mt-6 grid gap-4 md:grid-cols-3">{Object.entries(report).map(([key, value]) => <article key={key} className="rounded-xl border border-border bg-surface p-4"><h2 className="font-semibold text-textPrimary">{key}</h2><ReadableValue value={value} /></article>)}</div>;
+  return <div className="mt-6 grid gap-4 md:grid-cols-3">{Object.entries(report).map(([key, value]) => <article key={key} className="rounded-xl border border-border bg-surface p-4"><h2 className="font-semibold text-textPrimary">{labelKey(key)}</h2><ReadableValue value={value} path={key} /></article>)}</div>;
 }
-function ReadableValue({ value }: { value: unknown }) {
-  if (Array.isArray(value)) return <div className="mt-2 space-y-2">{value.map((item, index) => <div key={index} className="rounded-lg border border-border p-2"><ReadableValue value={item} /></div>)}</div>;
-  if (value && typeof value === 'object') return <div className="mt-2 space-y-1">{Object.entries(value).map(([key, item]) => <div key={key} className="flex justify-between gap-3 text-sm"><span className="text-textSecondary">{key}</span><span className="text-right text-textPrimary">{String(item)}</span></div>)}</div>;
-  return <p className="mt-2 text-xl font-semibold text-textPrimary">{String(value ?? '')}</p>;
+function ReadableValue({ value, path = '' }: { value: unknown; path?: string }) {
+  if (Array.isArray(value)) return <div className="mt-2 space-y-2">{value.map((item, index) => <div key={index} className="rounded-lg border border-border p-2"><p className="text-xs font-bold text-textSecondary">Item {index + 1}</p><ReadableValue value={item} path={path} /></div>)}</div>;
+  if (value && typeof value === 'object') return <div className="mt-2 space-y-1">{Object.entries(value).map(([key, item]) => <div key={key} className="flex justify-between gap-3 text-sm"><span className="text-textSecondary">{labelKey(key)}</span><span className="text-right text-textPrimary">{formatReportValue(item, key)}</span></div>)}</div>;
+  return <p className="mt-2 text-xl font-semibold text-textPrimary">{formatReportValue(value, path)}</p>;
 }
 function downloadReport(report: Report | undefined, name: string) {
   if (!report) return;
-  const rows = Object.entries(report).map(([key, value]) => `${key},${JSON.stringify(String(value))}`).join('\n');
+  const rows = Object.entries(report).map(([key, value]) => `${labelKey(key)},${JSON.stringify(formatReportValue(value, key))}`).join('\n');
   const blob = new Blob([`field,value\n${rows}`], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${name}.csv`; anchor.click(); URL.revokeObjectURL(url);
 }
@@ -58,5 +58,15 @@ function reportLabel(key: string, t: ReturnType<typeof useI18n>['t']): string {
 }
 function summary(report: Report | undefined): string {
   if (!report) return '';
-  return Object.entries(report).filter(([, value]) => typeof value !== 'object').map(([key, value]) => `${key}: ${String(value)}`).join('\n');
+  return Object.entries(report).filter(([, value]) => typeof value !== 'object').map(([key, value]) => `${labelKey(key)}: ${formatReportValue(value, key)}`).join('\n');
+}
+function labelKey(key: string): string {
+  return key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+function formatReportValue(value: unknown, key = ''): string {
+  if (value === null || value === undefined || value === '') return '—';
+  if (typeof value === 'number' && /paise|amount|revenue|cost|profit|payment|expense|cash/i.test(key)) return `₹${(value / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  if (typeof value === 'string' && /^\d+$/.test(value) && /paise|amount|revenue|cost|profit|payment|expense|cash/i.test(key)) return `₹${(Number(value) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  if (typeof value === 'object') return '[details]';
+  return String(value);
 }
