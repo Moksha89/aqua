@@ -17,20 +17,38 @@ export default function HarvestEventsPage() {
 
 function HarvestRow({ event, language }: { event: Record<string, unknown>; language: 'en' | 'te' }) {
   const lines = Array.isArray(event.lines) ? event.lines as Array<Record<string, unknown>> : [];
-  const totalKg = lines.reduce((sum, line) => sum + numericValue(line.quantityKg), 0);
-  return <Card className="card-pad"><div className="flex items-start justify-between gap-3"><div><p className="font-extrabold">{language === 'te' ? 'కోత' : 'Harvest'} · {shortDate(event.harvestDate)}</p><p className="muted mt-1">{friendly(event.method ?? event.type ?? 'Partial', language)} · {friendly(event.reason ?? 'Harvest sale', language)}</p></div><p className="text-lg font-extrabold">{totalKg.toLocaleString('en-IN', { maximumFractionDigits: 3 })} kg</p></div><div className="mt-4 grid gap-3">{lines.map((line, index) => <div key={index} className="grid gap-2"><p className="font-extrabold">{line.basis === 'COUNT' ? (language === 'te' ? 'కౌంట్' : 'Count') : (language === 'te' ? 'గ్రేడ్' : 'Grade')} · {friendly(line.key ?? 'Lot', language)}</p><div className="grid grid-cols-2 gap-2"><FigureCard label={language === 'te' ? 'బరువు' : 'Weight'} figure={asFigure(line.quantityKg, 'kg')} /><FigureCard label={language === 'te' ? 'రేటు' : 'Rate'} figure={asFigure(line.ratePerKgPaise, '₹/kg', true)} /></div></div>)}</div><div className="mt-3 grid grid-cols-2 gap-2"><FigureCard label={language === 'te' ? 'స్థూల విలువ' : 'Gross realisation'} figure={asFigure(event.grossValuePaise, '₹', true)} /><FigureCard label={language === 'te' ? 'నికర విలువ' : 'Net realisation'} figure={asFigure(event.netRealisationPaise, '₹', true)} /></div></Card>;
+  const totalKg = lines.reduce((sum, line) => sum + weightKg(line.quantityKg), 0);
+  return <Card className="card-pad"><div className="flex items-start justify-between gap-3"><div><p className="font-extrabold">{language === 'te' ? 'కోత' : 'Harvest'} · {shortDate(event.harvestDate)}</p><p className="muted mt-1">{friendly(event.method ?? event.type ?? 'Partial', language)} · {friendly(event.reason ?? 'Harvest sale', language)}</p></div><p className="text-lg font-extrabold">{totalKg.toLocaleString('en-IN', { maximumFractionDigits: 3 })} kg</p></div><div className="mt-4 grid gap-3">{lines.map((line, index) => <div key={index} className="grid gap-2"><p className="font-extrabold">{line.basis === 'COUNT' ? (language === 'te' ? 'కౌంట్' : 'Count') : (language === 'te' ? 'గ్రేడ్' : 'Grade')} · {friendly(line.key ?? 'Lot', language)}</p><div className="grid grid-cols-2 gap-2"><FigureCard label={language === 'te' ? 'బరువు' : 'Weight'} figure={weightFigure(line.quantityKg)} /><FigureCard label={language === 'te' ? 'రేటు' : 'Rate'} figure={asFigure(line.ratePerKgPaise, '₹/kg', true)} /></div></div>)}</div><div className="mt-3 grid grid-cols-2 gap-2"><FigureCard label={language === 'te' ? 'స్థూల విలువ' : 'Gross realisation'} figure={asFigure(event.grossValuePaise, '₹', true)} /><FigureCard label={language === 'te' ? 'నికర విలువ' : 'Net realisation'} figure={asFigure(event.netRealisationPaise, '₹', true)} /></div></Card>;
 }
 function shortDate(value: unknown): string { const date = new Date(String(value ?? '')); return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
 function friendly(value: unknown, language: 'en' | 'te'): string { const text = String(value).replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()); return language === 'te' ? text : text; }
 function numericValue(value: unknown): number {
   const unwrapped = value && typeof value === 'object' && 'value' in value ? (value as { value?: unknown }).value : value;
-  const number = typeof unwrapped === 'number' ? unwrapped : Number(unwrapped);
+  const decimal = unwrapped && typeof unwrapped === 'object' ? decimalObject(unwrapped as Record<string, unknown>) : null;
+  const number = typeof unwrapped === 'number' ? unwrapped : Number(decimal ?? unwrapped);
   return Number.isFinite(number) ? number : 0;
 }
 function asFigure(value: unknown, unit: string, money = false): { value: string; unit: string; status: string } {
-  const unwrapped = value && typeof value === 'object' && 'value' in value ? (value as { value?: unknown }).value : value;
-  const number = numericValue(unwrapped);
-  if (!Number.isFinite(number)) return { value: '—', unit, status: 'NOT_DETERMINABLE' };
+  const envelope = value && typeof value === 'object' && 'value' in value ? value as { value?: unknown; unit?: string; status?: string; reason?: string } : undefined;
+  const number = numericValue(value);
+  if (envelope?.status?.toUpperCase() === 'NOT_DETERMINABLE') return { value: '', unit: envelope.unit ?? unit, status: 'NOT_DETERMINABLE' };
   const formatted = money ? `₹${(number / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : number.toLocaleString('en-IN', { maximumFractionDigits: 3 });
   return { value: formatted, unit: money ? '' : unit, status: 'DETERMINED' };
+}
+function weightKg(value: unknown): number {
+  const envelope = value && typeof value === 'object' && 'value' in value ? value as { value?: unknown; unit?: string } : undefined;
+  const number = numericValue(value);
+  return envelope?.unit?.toLowerCase() === 'g' ? number / 1000 : number;
+}
+function weightFigure(value: unknown): { value: string; unit: string; status: string } {
+  const envelope = value && typeof value === 'object' && 'value' in value ? value as { unit?: string; status?: string } : undefined;
+  if (envelope?.status?.toUpperCase() === 'NOT_DETERMINABLE') return { value: '', unit: 'kg', status: 'NOT_DETERMINABLE' };
+  return { value: weightKg(value).toLocaleString('en-IN', { maximumFractionDigits: 3 }), unit: 'kg', status: 'DETERMINED' };
+}
+function decimalObject(value: Record<string, unknown>): string | null {
+  if (!Array.isArray(value.d) || typeof value.e !== 'number') return null;
+  const digits = value.d.join('');
+  const places = value.e + 1;
+  const text = places <= 0 ? `0.${'0'.repeat(-places)}${digits}` : places >= digits.length ? `${digits}${'0'.repeat(places - digits.length)}` : `${digits.slice(0, places)}.${digits.slice(places)}`;
+  return value.s === -1 ? `-${text}` : text;
 }

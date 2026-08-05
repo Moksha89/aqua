@@ -33,11 +33,13 @@ export function StatCard({ label, value, unit, tone = 'primary' }: { label: stri
 }
 
 export function FigureCard({ label, figure, onDerivation }: { label: string; figure?: { value?: string | null; unit?: string; status?: string; reason?: string }; onDerivation?: () => void }) {
-  const unavailable = !figure?.value || figure.status === 'NOT_DETERMINABLE';
+  const status = figure?.status?.toUpperCase();
+  const unavailable = !figure?.value || status === 'NOT_DETERMINABLE';
   return <Card className="card-pad">
     <div className="flex items-start justify-between gap-3">
       <p className="muted text-xs font-bold">{label}</p>
-      {figure?.status && figure.status !== 'AVAILABLE' && <span className="chip">{figure.status === 'ESTIMATED' ? 'ESTIMATED' : 'NOT DETERMINABLE'}</span>}
+      {status === 'ESTIMATED' && <span className="chip">ESTIMATED</span>}
+      {status === 'NOT_DETERMINABLE' && <span className="chip">NOT DETERMINABLE</span>}
     </div>
     <p className="stat-value">{unavailable ? '—' : figure.value} <small className="text-sm font-bold">{figure?.unit}</small></p>
     {unavailable && figure?.reason && <p className="muted mt-1 text-xs">{figure.reason}</p>}
