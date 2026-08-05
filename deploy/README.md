@@ -21,6 +21,12 @@ docker compose --env-file .env -f deploy/docker-compose.prod.yml up -d --build
 docker compose --env-file .env -f deploy/docker-compose.prod.yml run --rm api pnpm exec prisma migrate deploy
 ```
 
+For staging-only manual testing, `DEV_LOGIN_OTP` may be set to a non-empty fixed
+OTP value. The value is accepted only for an unconsumed, unexpired login
+challenge and all normal challenge attempt/consumption checks still apply. The
+API logs a loud warning when this switch is enabled. **Never set
+`DEV_LOGIN_OTP` in production**; leave it unset for production and CI.
+
 ## Updating
 
 ```bash

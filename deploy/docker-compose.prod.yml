@@ -54,6 +54,7 @@ services:
       S3_REGION: us-east-1
       S3_BUCKET: aqua-attachments
       JWT_SECRET: ${JWT_SECRET}
+      DEV_LOGIN_OTP: ${DEV_LOGIN_OTP:-}
       CORS_ORIGINS: ${PUBLIC_ORIGIN}
       PORT: 3000
     ports:
