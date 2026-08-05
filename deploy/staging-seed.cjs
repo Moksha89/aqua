@@ -1,4 +1,7 @@
 /* STAGING ONLY: idempotent demo data for AE Farm screenshots and acceptance checks. */
+const path = require('path');
+process.env.NODE_PATH = [path.join(__dirname, '../apps/api/node_modules'), process.env.NODE_PATH].filter(Boolean).join(path.delimiter);
+require('module').Module._initPaths();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const SYS = '00000000-0000-0000-0000-000000000000';
@@ -95,8 +98,14 @@ async function main() {
   const periodStart = new Date('2026-07-01T00:00:00.000Z');
   const periodEnd = new Date('2026-08-01T00:00:00.000Z');
   const allocationRun = await prisma.allocationRun.findFirst({ where: { businessId: biz.id, periodStart, periodEnd, trigger: 'MONTH_END' } });
+  const seedCropIds = crops.concat(closedCrop).map((crop) => crop.id);
+  if (allocationRun) {
+    await prisma.apportionedCost.deleteMany({ where: { businessId: biz.id, cropId: { in: seedCropIds }, allocationRunId: { not: allocationRun.id }, kind: { in: ['LEASE', 'DEPRECIATION', 'COMMON'] } } });
+  } else {
+    await prisma.apportionedCost.deleteMany({ where: { businessId: biz.id, cropId: { in: seedCropIds }, kind: { in: ['LEASE', 'DEPRECIATION', 'COMMON'] } } });
+  }
   if (!allocationRun) {
-    const { AllocationService } = require('../apps/api/dist/allocation/allocation.service');
+    const { AllocationService } = require(path.join(__dirname, '../apps/api/dist/allocation/allocation.service'));
     await new AllocationService(prisma).run(
       { periodStart: periodStart.toISOString(), periodEnd: periodEnd.toISOString(), trigger: 'MONTH_END' },
       { businessId: biz.id, userId: owner.id, deviceId: SYS },

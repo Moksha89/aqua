@@ -139,7 +139,8 @@ function ScrapAction({ parties, language, message, setMessage }: { parties: Arra
 
 function ScreenRows({ screen, value, parties, language, runId }: { screen: Screen; value: unknown; parties: Array<{ id: string; name: string; type?: string[]; mobile?: string; openingBalancePaise?: string }>; language: 'en' | 'te'; runId: string | null }) {
   if (screen === 'scrap' && Array.isArray(value)) return <div className="grid gap-3">{value.length ? value.map((item) => { const row = item as Record<string, unknown>; const buyer = parties.find((party) => party.id === row.buyerPartyId); return <Card className="card-pad" key={String(row.id)}><div className="flex items-start justify-between gap-3"><div><p className="font-extrabold">{String(row.item ?? 'Scrap sale')}</p><p className="muted mt-1">{formatDate(row.saleDate)} · {buyer?.name ?? (language === 'te' ? 'కొనుగోలుదారు లేదు' : 'No buyer')}</p></div><div className="text-right"><p className="font-extrabold">{paise(row.amountPaise)}</p><p className="muted text-sm">{formatQuantity(row.quantity)} × {paise(row.ratePaise)}</p></div></div></Card>; }) : <EmptyState title={language === 'te' ? 'స్క్రాప్ అమ్మకాలు లేవు' : 'No scrap sales yet'} body={language === 'te' ? 'మొదటి స్క్రాప్ అమ్మకాన్ని నమోదు చేయండి.' : 'Record the first scrap sale from this form.'} />}</div>;
-  if (screen === 'allocation' && Array.isArray(value) && !runId) return <div className="grid gap-3">{value.length ? value.map((item) => { const row = item as Record<string, unknown>; return <Link href={`/money/allocation?runId=${String(row.id)}`} key={String(row.id)}><Card className="card-pad tap"><div className="flex items-center justify-between gap-3"><div><p className="font-extrabold">{friendlyStatus(row.trigger, language)} · {friendlyStatus(row.status, language)}</p><p className="muted mt-1">{formatDate(row.periodStart)} – {formatDate(row.periodEnd)}</p></div><span className="chip">{String(row.derivationCount ?? 0)} {language === 'te' ? 'లెక్కలు' : 'figures'}</span></div></Card></Link>; }) : <EmptyState title={language === 'te' ? 'కేటాయింపు రన్‌లు లేవు' : 'No allocation runs yet'} body={language === 'te' ? 'కేటాయింపు పని అమలు చేసిన తర్వాత ఇది ఇక్కడ కనిపిస్తుంది.' : 'Run allocation working to see its history here.'} />}</div>;
+  if (screen === 'allocation' && Array.isArray(value) && !runId) return <div className="grid gap-3">{value.length ? value.map((item) => { const row = item as Record<string, unknown>; return <Link href={`/money/allocation?runId=${String(row.id)}`} key={String(row.id)}><Card className="card-pad tap"><div className="flex items-center justify-between gap-3"><div><p className="font-extrabold">{friendlyStatus(row.trigger, language)} · {friendlyStatus(row.status, language)}</p><p className="muted mt-1">{formatDate(row.periodStart)} – {formatDate(row.periodEnd)}</p></div><span className="chip">{language === 'te' ? `${String(row.derivationCount ?? 0)} లెక్కలు` : `${String(row.derivationCount ?? 0)} allocated figures`}</span></div></Card></Link>; }) : <EmptyState title={language === 'te' ? 'కేటాయింపు రన్‌లు లేవు' : 'No allocation runs yet'} body={language === 'te' ? 'కేటాయింపు పని అమలు చేసిన తర్వాత ఇది ఇక్కడ కనిపిస్తుంది.' : 'Run allocation working to see its history here.'} />}</div>;
+  if (screen === 'allocation' && Array.isArray(value) && runId) return <div className="grid gap-3">{value.length ? <><Card className="card-pad"><p className="section-title">{language === 'te' ? 'కేటాయింపు మొత్తం' : 'Allocated total'}</p><p className="stat-value">{paise(value.reduce((sum, item) => sum + Number((item as Record<string, unknown>).amountPaise ?? 0), 0))}</p></Card>{value.map((item) => { const row = item as Record<string, unknown>; return <Card className="card-pad" key={String(row.id)}><div className="flex items-start justify-between gap-3"><div><p className="font-extrabold">{friendlyStatus(row.kind, language)}</p><p className="muted mt-1">{formatDate(row.fromDate)} – {formatDate(row.toDate)} · {String(row.days ?? 0)} {language === 'te' ? 'రోజులు' : 'days'}</p></div><p className="text-lg font-extrabold">{paise(row.amountPaise)}</p></div><p className="muted mt-3 text-sm">{working(row, language)}</p></Card>; })}</> : <EmptyState title={language === 'te' ? 'కేటాయింపు వివరాలు లేవు' : 'No allocation details'} body={language === 'te' ? 'ఈ రన్‌కు పని వివరాలు లేవు.' : 'This run has no derivation details.'} />}</div>;
   if (screen === 'parties' && Array.isArray(value)) return <div className="grid gap-3">{value.map((item) => {
     const row = item as Record<string, unknown>;
     return <Card className="card-pad" key={String(row.id)}><p className="text-lg font-extrabold">{String(row.name ?? '—')}</p><p className="muted mt-1">{String((row.type as string[] | undefined)?.join(', ') ?? 'Farm contact')}</p><div className="mt-3 flex flex-wrap gap-3 text-sm"><span>{String(row.mobile ?? 'No mobile')}</span><span>{paise(row.openingBalancePaise)}</span></div></Card>;
@@ -160,6 +161,30 @@ function ScreenRows({ screen, value, parties, language, runId }: { screen: Scree
     })}</div></section>)}</div>;
   }
   return <Readable value={value} language={language} />;
+}
+
+function working(row: Record<string, unknown>, language: 'en' | 'te'): string {
+  const derivation = row.derivation && typeof row.derivation === 'object' ? row.derivation as Record<string, unknown> : {};
+  const detail = derivation.derivation && typeof derivation.derivation === 'object' ? derivation.derivation as Record<string, unknown> : {};
+  const formula = typeof derivation.formula === 'string' ? derivation.formula : '';
+  const inputs = detail.inputs && typeof detail.inputs === 'object' ? detail.inputs as Record<string, unknown> : {};
+  const annual = inputs.annual;
+  const acres = inputs.acres;
+  const occupancy = inputs.occupancy ?? inputs.activeDays ?? row.days;
+  if (row.kind === 'LEASE' && annual !== undefined && acres !== undefined && occupancy !== undefined) {
+    const text = `${formatPaise(annual)} × ${Number(acres) / 10000} acres ÷ 365 × ${occupancy} days`;
+    return language === 'te' ? `పని: ${text}` : `Working: ${text}`;
+  }
+  if (row.kind === 'COMMON' && inputs.commonCostPaise !== undefined && inputs.basisValue !== undefined && inputs.totalBasisValue !== undefined) {
+    const text = `${formatPaise(inputs.commonCostPaise)} × ${inputs.basisValue} ÷ ${inputs.totalBasisValue} × ${inputs.activeDays ?? row.days} ÷ ${inputs.daysInPeriod ?? 'period days'}`;
+    return language === 'te' ? `పని: ${text}` : `Working: ${text}`;
+  }
+  if (row.kind === 'DEPRECIATION' && inputs.asset && typeof inputs.asset === 'object') {
+    const asset = inputs.asset as Record<string, unknown>;
+    const text = `${formatPaise(asset.costPaise)} − salvage ÷ ${asset.usefulLifeYears} years ÷ 365 × ${occupancy} days`;
+    return language === 'te' ? `పని: ${text}` : `Working: ${text}`;
+  }
+  return language === 'te' ? `పని: ${formula || 'సర్వర్ లెక్కింపు'}` : `Working: ${formula || 'Server calculation'}`;
 }
 
 function Readable({ value, field = '', language = 'en' }: { value: unknown; field?: string; language?: 'en' | 'te' }) {
