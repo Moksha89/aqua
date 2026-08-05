@@ -4,7 +4,11 @@ import { PrismaService } from '../platform/prisma.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    if (process.env.DEV_LOGIN_OTP?.trim()) {
+      console.warn('[auth] DEV_LOGIN_OTP is enabled; this staging-only login bypass must never be set in production');
+    }
+  }
 
   async requestOtp(mobile: string, deviceId?: string): Promise<{ mobile: string }> {
     const code = randomInt(100000, 1000000).toString();
@@ -35,7 +39,9 @@ export class AuthService {
     }
     const expected = Buffer.from(entry.codeHash);
     const actual = Buffer.from(this.hash(code));
-    const matches = expected.length === actual.length && timingSafeEqual(expected, actual);
+    const fixedOtp = process.env.DEV_LOGIN_OTP?.trim();
+    const fixedMatches = Boolean(fixedOtp && code === fixedOtp);
+    const matches = fixedMatches || (expected.length === actual.length && timingSafeEqual(expected, actual));
     if (!matches) {
       await this.prisma.otpChallenge.update({
         where: { id: entry.id },

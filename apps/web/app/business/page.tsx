@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest, getSession, saveSession } from '../../src/lib/api';
+import { ActionButton, Card, Field, PageHeader } from '../../src/components/design-system';
 import { useI18n } from '../../src/lib/i18n';
 
 export default function BusinessPage() {
@@ -13,11 +14,11 @@ export default function BusinessPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     try {
-      const result = await apiRequest<{ businessId: string; accessToken: string; role?: string; financialAccess?: boolean; pondScope?: string[] }>('/auth/business/switch', { method: 'POST', body: JSON.stringify({ businessId }) });
+      const result = await apiRequest<{ businessId: string; accessToken: string; role: string; financialAccess: boolean; pondScope: string[] }>('/auth/business/switch', { method: 'POST', body: JSON.stringify({ businessId }) });
       const session = getSession();
       if (session) saveSession({ ...session, ...result });
       router.replace('/');
     } catch (error) { setMessage(error instanceof Error ? error.message : t.businessFailed); }
   }
-  return <main className="mx-auto max-w-md rounded-2xl border border-border bg-surface p-6"><h1 className="text-2xl font-semibold">{t.chooseBusiness}</h1><p className="mt-2 text-textSecondary">{t.businessHint}</p><form onSubmit={submit}><input required value={businessId} onChange={(event) => setBusinessId(event.target.value)} className="mt-5 w-full rounded-lg border border-border bg-background p-3" placeholder={t.businessId} /><button className="mt-4 w-full rounded-lg bg-primary p-3 text-onPrimary" type="submit">{t.continue}</button></form>{message && <p className="mt-3 text-danger">{message}</p>}</main>;
+  return <div className="rise"><PageHeader eyebrow={t.brand} title={t.chooseBusiness} subtitle={t.businessHint} /><Card className="card-pad"><form onSubmit={submit} className="grid gap-4"><Field label={t.businessId} value={businessId} onChange={setBusinessId} required /><ActionButton type="submit">{t.continue}</ActionButton>{message && <p className="text-sm text-danger">{message}</p>}</form></Card></div>;
 }
