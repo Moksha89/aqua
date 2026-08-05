@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet } from '../../../src/lib/api';
 import { Card, EmptyState, FigureCard, PageHeader } from '../../../src/components/design-system';
 import { useI18n } from '../../../src/lib/i18n';
+import { formatPaise, formatQuantity } from '../../../src/lib/money';
 
 export default function HarvestEventsPage() {
   const { language } = useI18n();
@@ -32,7 +33,7 @@ function asFigure(value: unknown, unit: string, money = false): { value: string;
   const envelope = value && typeof value === 'object' && 'value' in value ? value as { value?: unknown; unit?: string; status?: string; reason?: string } : undefined;
   const number = numericValue(value);
   if (envelope?.status?.toUpperCase() === 'NOT_DETERMINABLE') return { value: '', unit: envelope.unit ?? unit, status: 'NOT_DETERMINABLE' };
-  const formatted = money ? `₹${(number / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : number.toLocaleString('en-IN', { maximumFractionDigits: 3 });
+  const formatted = money ? formatPaise(number) : formatQuantity(number);
   return { value: formatted, unit: money ? '' : unit, status: 'DETERMINED' };
 }
 function weightKg(value: unknown): number {
@@ -43,7 +44,7 @@ function weightKg(value: unknown): number {
 function weightFigure(value: unknown): { value: string; unit: string; status: string } {
   const envelope = value && typeof value === 'object' && 'value' in value ? value as { unit?: string; status?: string } : undefined;
   if (envelope?.status?.toUpperCase() === 'NOT_DETERMINABLE') return { value: '', unit: 'kg', status: 'NOT_DETERMINABLE' };
-  return { value: weightKg(value).toLocaleString('en-IN', { maximumFractionDigits: 3 }), unit: 'kg', status: 'DETERMINED' };
+  return { value: formatQuantity(weightKg(value)), unit: 'kg', status: 'DETERMINED' };
 }
 function decimalObject(value: Record<string, unknown>): string | null {
   if (!Array.isArray(value.d) || typeof value.e !== 'number') return null;

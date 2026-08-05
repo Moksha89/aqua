@@ -6,6 +6,7 @@ import { apiGet, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
 import { Card, PageHeader } from '../../src/components/design-system';
+import { formatPaise } from '../../src/lib/money';
 
 const reports = [
   ['business-pnl', 'businessPnl', 'BusinessPnlReportDto'],
@@ -68,8 +69,7 @@ function labelKey(key: string): string {
 }
 function formatReportValue(value: unknown, key = ''): string {
   if (value === null || value === undefined || value === '') return '—';
-  if (typeof value === 'number' && /paise|amount|revenue|cost|profit|payment|expense|cash/i.test(key)) return `₹${(value / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
-  if (typeof value === 'string' && /^\d+$/.test(value) && /paise|amount|revenue|cost|profit|payment|expense|cash/i.test(key)) return `₹${(Number(value) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  if ((typeof value === 'number' || typeof value === 'string') && /paise|amount|revenue|cost|profit|payment|expense|cash/i.test(key)) return formatPaise(value);
   if (typeof value === 'object') return '[details]';
   return String(value);
 }

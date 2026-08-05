@@ -7,7 +7,7 @@ import { apiGet, apiRequest, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
 import { ActionButton, Card, PageHeader, StatCard } from '../../src/components/design-system';
-import { rupeesToPaise } from '../../src/lib/money';
+import { formatPaise, rupeesToPaise } from '../../src/lib/money';
 
 type Pond = components['schemas']['PondListItemDto'];
 type CostHead = components['schemas']['CostHeadListDto'];
@@ -35,15 +35,6 @@ const moneyScreens: Array<[string, [string, string], string]> = [
   ['assets', ['Assets and disposal', 'ఆస్తులు మరియు విక్రయం'], 'ph-buildings'],
   ['scrap', ['Scrap sales', 'స్క్రాప్ అమ్మకాలు'], 'ph-recycle'],
 ];
-
-function formatPaise(value: string): string {
-  const negative = value.startsWith('-');
-  const digits = negative ? value.slice(1) : value;
-  const rupees = digits.length > 2 ? digits.slice(0, -2) : '0';
-  const paise = digits.slice(-2).padStart(2, '0');
-  const grouped = rupees.length > 3 ? `${rupees.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',')},${rupees.slice(-3)}` : rupees;
-  return `${negative ? '-' : ''}₹${grouped}.${paise}`;
-}
 
 export default function MoneyPage() {
   const { t, language } = useI18n();
