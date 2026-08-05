@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { apiRequest, saveSession } from '../../src/lib/api';
 import { ActionButton, Card, FarmMark, Field } from '../../src/components/design-system';
 import { useI18n } from '../../src/lib/i18n';
+import { createUuid } from '../../src/lib/ids';
 
 export default function LoginPage() {
   const { t, language, setLanguage } = useI18n();
   const router = useRouter();
   const [mobile, setMobile] = useState('');
   const [code, setCode] = useState('');
-  const [deviceId] = useState(() => crypto.randomUUID());
+  const [deviceId] = useState(() => createUuid());
   const [requested, setRequested] = useState(false);
   const [message, setMessage] = useState('');
   async function submit(event: FormEvent) {
