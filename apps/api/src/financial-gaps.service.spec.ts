@@ -3,6 +3,7 @@ import { AllocationService } from './allocation/allocation.service';
 import { HarvestService } from './harvest/harvest.service';
 import { MastersService } from './masters/masters.service';
 import { ScrapService } from './scrap/scrap.service';
+import { FinanceService } from './finance/finance.service';
 import { UserRole } from './auth/roles';
 
 const user = (businessId: string, financialAccess = true) => ({
@@ -66,6 +67,32 @@ describe('financial gap read scoping', () => {
     const service = new AllocationService({ allocationRun: { findFirst } } as never);
     await expect(service.derivation('run-a', { businessId: 'business-b', role: 'AE_OWNER', pondScope: ['*'] })).rejects.toBeInstanceOf(NotFoundException);
     expect(findFirst).toHaveBeenCalledWith({ where: { id: 'run-a', businessId: 'business-b' } });
+  });
+
+  it('returns server-derived insights scoped to one business', async () => {
+    const aggregate = jest.fn()
+      .mockResolvedValueOnce({ _sum: { netRealisationPaise: 1000n } })
+      .mockResolvedValueOnce({ _sum: { amountPaise: 400n } })
+      .mockResolvedValueOnce({ _sum: { amountPaise: 100n } });
+    const prisma = {
+      harvestEvent: { aggregate, findFirst: jest.fn().mockResolvedValue(null) },
+      expense: { aggregate, count: jest.fn().mockResolvedValue(2) },
+      apportionedCost: { aggregate },
+      crop: { count: jest.fn().mockResolvedValue(1) },
+    };
+    const service = new FinanceService(prisma as never);
+    const result = await service.insights({ businessId: 'business-b', userId: 'user', deviceId: 'device' });
+    expect(result.figures).toEqual({ revenuePaise: 1000n, costPaise: 500n, netProfitPaise: 500n });
+    expect(aggregate).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ businessId: 'business-b' }) }));
+  });
+
+  it('materialises all closure steps as pending without writing rows', async () => {
+    const checklistFindMany = jest.fn().mockResolvedValue([]);
+    const service = new HarvestService({ crop: { findFirst: jest.fn().mockResolvedValue({ id: 'crop', pondId: 'pond' }), }, cropClosureChecklist: { findMany: checklistFindMany } } as never, {} as never, { assertPondScope: jest.fn() } as never);
+    const result = await service.checklistRead('crop', user('business-b'));
+    expect(result).toHaveLength(6);
+    expect(result.every((step) => step.status === 'PENDING')).toBe(true);
+    expect(checklistFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: { businessId: 'business-b', cropId: 'crop', voidedAt: null } }));
   });
 
   it('scopes allocation history to the caller business', async () => {

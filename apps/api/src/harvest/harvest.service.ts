@@ -9,6 +9,7 @@ import type { CloseCropResponseDto } from './harvest.controller';
 type Context = ScopeUser & { deviceId: string };
 type Line = { speciesId?: string; basis: 'COUNT' | 'GRADE'; key: string; quantityKg: string; ratePerKgPaise: string };
 type HarvestInput = { harvestDate: string; doc: number; type: 'PARTIAL' | 'FINAL'; reason: 'TARGET_SIZE' | 'MARKET_RATE' | 'DISEASE' | 'SEASON_END' | 'OTHER'; sampleTaken: boolean; sampleCount?: number; sampleWeightG?: string; buyerPartyId?: string; receivableDueDate?: string; lines: Line[]; deductions?: Array<{ kind: string; amountPaise: string }> };
+const CLOSURE_STEPS = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION', 'FREEZE_PNL'] as const;
 
 @Injectable()
 export class HarvestService {
@@ -33,9 +34,19 @@ export class HarvestService {
 
   async checklistRead(cropId: string, ctx: Context) {
     await this.scopedCrop(cropId, ctx);
-    return this.prisma.cropClosureChecklist.findMany({
+    const existing = await this.prisma.cropClosureChecklist.findMany({
       where: { businessId: ctx.businessId, cropId, voidedAt: null },
       orderBy: { step: 'asc' },
+    });
+    const byStep = new Map(existing.map((item) => [item.step, item]));
+    return CLOSURE_STEPS.map((step) => byStep.get(step) ?? {
+      id: null,
+      businessId: ctx.businessId,
+      cropId,
+      step,
+      status: 'PENDING',
+      note: null,
+      virtual: true,
     });
   }
 
@@ -122,7 +133,7 @@ export class HarvestService {
   async checklist(cropId: string, ctx: Context) {
     const crop = await this.prisma.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
     if (!crop) throw new NotFoundException('Crop not found');
-    const steps = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION', 'FREEZE_PNL'];
+    const steps = CLOSURE_STEPS;
     return this.prisma.$transaction(async (tx) => {
       for (const step of steps) {
         const existing = await tx.cropClosureChecklist.findFirst({ where: { businessId: ctx.businessId, cropId, step, voidedAt: null } });

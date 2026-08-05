@@ -143,6 +143,29 @@ export class FinanceService {
     const costPaise = (direct._sum.amountPaise ?? 0n) + (allocated._sum.amountPaise ?? 0n);
     return { revenuePaise, costPaise, netProfitPaise: revenuePaise - costPaise };
   }
+  async insights(ctx: Context) {
+    const [revenue, direct, allocated, activeCrops, openPayables, latestHarvest] = await Promise.all([
+      this.prisma.harvestEvent.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { netRealisationPaise: true } }),
+      this.prisma.expense.aggregate({ where: { businessId: ctx.businessId, voidedAt: null, ratePending: false }, _sum: { amountPaise: true } }),
+      this.prisma.apportionedCost.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { amountPaise: true } }),
+      this.prisma.crop.count({ where: { businessId: ctx.businessId, status: { in: ['ACTIVE', 'HARVESTING'] }, voidedAt: null } }),
+      this.prisma.expense.count({ where: { businessId: ctx.businessId, paymentStatus: { in: ['UNPAID', 'PART_PAID'] }, voidedAt: null } }),
+      this.prisma.harvestEvent.findFirst({ where: { businessId: ctx.businessId, voidedAt: null }, orderBy: { harvestDate: 'desc' }, select: { harvestDate: true } }),
+    ]);
+    const revenuePaise = revenue._sum.netRealisationPaise ?? 0n;
+    const costPaise = (direct._sum.amountPaise ?? 0n) + (allocated._sum.amountPaise ?? 0n);
+    const netProfitPaise = revenuePaise - costPaise;
+    return {
+      generatedAt: new Date().toISOString(),
+      figures: { revenuePaise, costPaise, netProfitPaise },
+      insights: [
+        { kind: netProfitPaise >= 0n ? 'POSITIVE_MARGIN' : 'COSTS_AHEAD', message: netProfitPaise >= 0n ? 'Recorded revenue is ahead of recorded costs.' : 'Recorded costs are ahead of recorded revenue.', valuePaise: netProfitPaise },
+        { kind: 'ACTIVE_CROPS', message: `${activeCrops} active crop${activeCrops === 1 ? '' : 's'} need daily records.`, count: activeCrops },
+        { kind: 'OPEN_PAYABLES', message: openPayables ? `${openPayables} farm payment${openPayables === 1 ? '' : 's'} still need attention.` : 'No unpaid farm expenses are waiting.', count: openPayables },
+        ...(latestHarvest ? [{ kind: 'LATEST_HARVEST', message: `Latest harvest recorded on ${latestHarvest.harvestDate.toISOString().slice(0, 10)}.` }] : []),
+      ],
+    };
+  }
   async costHeadAnalysis(ctx: Context) {
     return this.prisma.expense.groupBy({ by: ['costHeadId'], where: { businessId: ctx.businessId, voidedAt: null, ratePending: false }, _sum: { amountPaise: true }, _count: { id: true } });
   }

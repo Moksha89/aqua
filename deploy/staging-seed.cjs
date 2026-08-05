@@ -30,6 +30,12 @@ async function main() {
     if (!crop) crop = await prisma.crop.create({ data: { businessId: biz.id, pondId: pond.id, code, speciesCategory: 'SHRIMP', status: 'ACTIVE', preparationStartDate: day(prep), stockingDate: day(stock), survivalAssumptionPct: '80', feedLoggingEnabled: true, ...meta } });
     crops.push(crop);
   }
+  let closedCrop = await prisma.crop.findFirst({ where: { businessId: biz.id, code: 'CROP-CLOSED' } });
+  if (!closedCrop) {
+    closedCrop = await prisma.crop.create({ data: { businessId: biz.id, pondId: ponds[2].id, code: 'CROP-CLOSED', speciesCategory: 'SHRIMP', status: 'CLOSED', preparationStartDate: day(240), stockingDate: day(210), expectedHarvestDate: day(90), finalHarvestDate: day(105), closedAt: day(100), closedBy: owner.id, standingBiomassG: '0', estimatedSurvivors: 0n, targetSizeG: '22', survivalAssumptionPct: '82', feedLoggingEnabled: true, ...meta } });
+  }
+  const frozen = await prisma.cropPnl.findFirst({ where: { businessId: biz.id, cropId: closedCrop.id, version: 1 } });
+  if (!frozen) await prisma.cropPnl.create({ data: { businessId: biz.id, cropId: closedCrop.id, version: 1, generatedAt: day(100), generatedBy: owner.id, payload: { status: 'FROZEN', revenuePaise: '840000', costPaise: '560000', netProfitPaise: '280000', source: 'staging-seed' }, isCurrent: true, ...meta } });
   let species = await prisma.species.findFirst({ where: { businessId: biz.id, name: 'Vannamei shrimp' } });
   if (!species) species = await prisma.species.create({ data: { businessId: biz.id, category: 'SHRIMP', name: 'Vannamei shrimp', defaultDocDays: 120, ...meta } });
   const heads = [];
