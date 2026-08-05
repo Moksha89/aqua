@@ -22,13 +22,30 @@ export default function MoneyScreenPage({ params }: { params: { screen: string }
   const session = getSession();
   const financial = session?.financialAccess === true;
   const selectedParty = useSearchParams().get('partyId');
-  const parties = useQuery({ queryKey: ['money-screen-parties'], queryFn: () => apiGet<Array<{ id: string; name: string; mobile?: string }>>('/masters/parties'), enabled: financial && ['parties', 'new-party', 'ledger', 'credit', 'payment'].includes(screen) });
+  const parties = useQuery({ queryKey: ['money-screen-parties'], queryFn: () => apiGet<Array<{ id: string; name: string; type?: string[]; mobile?: string; openingBalancePaise?: string }>>('/masters/parties'), enabled: financial && ['parties', 'new-party', 'ledger', 'credit', 'payment', 'payables', 'receivables', 'cash', 'cash-requirement'].includes(screen) });
   const ponds = useQuery({ queryKey: ['money-screen-ponds'], queryFn: () => apiGet<Array<{ id: string; name: string }>>('/masters/ponds'), enabled: financial && screen === 'idle-cost' });
   const queryPath = screen === 'parties' ? '/masters/parties' : screen === 'payables' ? '/finance/payables' : screen === 'receivables' ? '/finance/receivables' : (screen === 'cash' || screen === 'cash-requirement') ? '/finance/reports/cash' : screen === 'lease' ? '/masters/lease-agreements' : screen === 'assets' ? '/masters/assets' : screen === 'credit' && selectedParty ? `/finance/suppliers/${selectedParty}/headroom` : screen === 'credit' ? '/masters/supplier-credit-limits' : screen === 'ledger' && selectedParty ? `/finance/parties/${selectedParty}/ledger` : '';
-  const query = useQuery({ queryKey: ['money-screen', screen], queryFn: () => apiGet<unknown>(queryPath), enabled: financial && Boolean(queryPath) });
+  const query = useQuery({ queryKey: ['money-screen', screen, selectedParty], queryFn: () => apiGet<unknown>(queryPath), enabled: financial && Boolean(queryPath) });
   const [message, setMessage] = useState('');
   if (!financial) return <section className="rise"><PageHeader eyebrow={t.money} title={title} subtitle={t.financialUnavailable} /><Card className="card-pad"><p className="muted">{t.financialUnavailable}</p></Card></section>;
-  return <section className="rise"><PageHeader eyebrow={t.money} title={title} subtitle={language === 'te' ? 'మీ ఫార్మ్ ఆర్థిక వివరాలను చూడండి.' : 'Review the financial details for your farm.'} /><Card className="card-pad">{query.isLoading ? <p className="muted">{t.loading}</p> : null}{query.error ? <p className="text-danger">{String(query.error)}</p> : null}{query.data !== undefined ? <Readable value={query.data} language={language} /> : null}{(!queryPath || screen === 'allocation' || screen === 'idle-cost' || (screen === 'ledger' && !selectedParty) || (screen === 'credit' && !selectedParty)) ? <ScreenAction screen={screen} parties={parties.data ?? []} ponds={ponds.data ?? []} message={message} setMessage={setMessage} language={language} /> : null}{query.data === undefined && queryPath && !query.isLoading ? <p className="muted">{t.noData}</p> : null}</Card></section>;
+  const subtitle = {
+    expense: ['Record a farm expense with its pond, crop and bill.', 'చెరువు, పంట మరియు బిల్లు వివరాలతో ఖర్చు నమోదు చేయండి.'],
+    parties: ['Keep your suppliers, buyers and other farm contacts together.', 'మీ సరఫరాదారులు, కొనుగోలుదారులు మరియు ఇతర పరిచయాలను ఇక్కడ ఉంచండి.'],
+    'new-party': ['Add a supplier, buyer or other farm contact.', 'సరఫరాదారు, కొనుగోలుదారు లేదా ఇతర ఫార్మ్ పరిచయాన్ని జోడించండి.'],
+    ledger: ['See every expense and payment with this party.', 'ఈ పార్టీకి సంబంధించిన ప్రతి ఖర్చు మరియు చెల్లింపును చూడండి.'],
+    credit: ['Check supplier limits and remaining headroom.', 'సరఫరాదారు పరిమితి మరియు మిగిలిన క్రెడిట్ చూడండి.'],
+    payment: ['Record money paid or received from a farm contact.', 'ఫార్మ్ పరిచయానికి చెల్లించిన లేదా అందుకున్న మొత్తాన్ని నమోదు చేయండి.'],
+    payables: ['See bills that still need to be paid.', 'ఇంకా చెల్లించాల్సిన బిల్లులను చూడండి.'],
+    receivables: ['See money expected from your harvests.', 'మీ కోతల నుంచి రావాల్సిన మొత్తాన్ని చూడండి.'],
+    cash: ['Follow money moving in and out of the farm.', 'ఫార్మ్‌లోకి వచ్చిన మరియు బయటకు వెళ్లిన డబ్బును చూడండి.'],
+    'cash-requirement': ['Plan upcoming farm payments from your cash records.', 'మీ నగదు రికార్డులతో రాబోయే ఫార్మ్ చెల్లింపులను ప్లాన్ చేయండి.'],
+    allocation: ['Review how shared farm costs are distributed.', 'సాధారణ ఫార్మ్ ఖర్చులు ఎలా పంచబడ్డాయో చూడండి.'],
+    'idle-cost': ['Record the cost of a pond while it is idle.', 'చెరువు ఖాళీగా ఉన్నప్పుడు దాని ఖర్చును నమోదు చేయండి.'],
+    lease: ['Review land leases and their payment terms.', 'భూమి లీజులు మరియు చెల్లింపు నిబంధనలను చూడండి.'],
+    assets: ['Keep track of farm equipment and disposal.', 'ఫార్మ్ పరికరాలు మరియు విక్రయాలను ట్రాక్ చేయండి.'],
+    scrap: ['Record income from scrap sold on the farm.', 'ఫార్మ్‌లో అమ్మిన స్క్రాప్ ఆదాయాన్ని నమోదు చేయండి.'],
+  }[screen] ?? ['Manage your farm money and payments.', 'మీ ఫార్మ్ డబ్బు లావాదేవీలను నిర్వహించండి.'];
+  return <section className="rise"><PageHeader eyebrow={t.money} title={title} subtitle={language === 'te' ? subtitle[1] : subtitle[0]} /><Card className="card-pad">{query.isLoading ? <p className="muted">{t.loading}</p> : null}{query.error ? <p className="text-danger">{String(query.error)}</p> : null}{query.data !== undefined ? <ScreenRows screen={screen} value={query.data} parties={parties.data ?? []} language={language} /> : null}{(!queryPath || screen === 'allocation' || screen === 'idle-cost' || (screen === 'ledger' && !selectedParty) || (screen === 'credit' && !selectedParty)) ? <ScreenAction screen={screen} parties={parties.data ?? []} ponds={ponds.data ?? []} message={message} setMessage={setMessage} language={language} /> : null}{query.data === undefined && queryPath && !query.isLoading ? <p className="muted">{t.noData}</p> : null}</Card></section>;
 }
 
 function ScreenAction({ screen, parties, ponds, message, setMessage, language }: { screen: Screen; parties: Array<{ id: string; name: string }>; ponds: Array<{ id: string; name: string }>; message: string; setMessage: (value: string) => void; language: 'en' | 'te' }) {
@@ -94,9 +111,32 @@ function ExpenseAction({ parties, language, message, setMessage }: { parties: Ar
   </form>;
 }
 
+function ScreenRows({ screen, value, parties, language }: { screen: Screen; value: unknown; parties: Array<{ id: string; name: string; type?: string[]; mobile?: string; openingBalancePaise?: string }>; language: 'en' | 'te' }) {
+  if (screen === 'parties' && Array.isArray(value)) return <div className="grid gap-3">{value.map((item) => {
+    const row = item as Record<string, unknown>;
+    return <Card className="card-pad" key={String(row.id)}><p className="text-lg font-extrabold">{String(row.name ?? '—')}</p><p className="muted mt-1">{String((row.type as string[] | undefined)?.join(', ') ?? 'Farm contact')}</p><div className="mt-3 flex flex-wrap gap-3 text-sm"><span>{String(row.mobile ?? 'No mobile')}</span><span>{paise(row.openingBalancePaise)}</span></div></Card>;
+  })}</div>;
+  if (screen === 'payables' && Array.isArray(value)) return <div className="grid gap-3">{value.map((item) => {
+    const row = item as Record<string, unknown>;
+    const party = parties.find((candidate) => candidate.id === row.partyId);
+    return <Card className="card-pad" key={String(row.id)}><div className="flex items-start justify-between gap-3"><div><p className="font-extrabold">{party?.name ?? 'Supplier'}</p><p className="muted mt-1">{formatDate(row.expenseDate)} · {friendlyStatus(row.paymentStatus, language)}</p></div><p className="text-lg font-extrabold">{paise(row.amountPaise)}</p></div></Card>;
+  })}</div>;
+  if ((screen === 'cash' || screen === 'cash-requirement') && value && typeof value === 'object') {
+    const data = value as { payments?: unknown[]; expenses?: unknown[] };
+    const groups: Array<[string, unknown[], string]> = [['payments', data.payments ?? [], 'Payments'], ['expenses', data.expenses ?? [], 'Expenses']];
+    return <div className="grid gap-5">{groups.map(([kind, rows, heading]) => <section key={kind}><h2 className="section-title">{language === 'te' ? (kind === 'payments' ? 'చెల్లింపులు' : 'ఖర్చులు') : heading}</h2><div className="mt-3 grid gap-3">{rows.map((item) => {
+      const row = item as Record<string, unknown>;
+      const party = parties.find((candidate) => candidate.id === (row.partyId as string));
+      const date = row.paidOn ?? row.expenseDate;
+      return <Card className="card-pad" key={String(row.id)}><div className="flex items-start justify-between gap-3"><div><p className="font-extrabold">{party?.name ?? (kind === 'payments' ? 'Farm payment' : 'Farm expense')}</p><p className="muted mt-1">{formatDate(date)}{row.mode ? ` · ${friendlyStatus(row.mode, language)}` : ''}</p></div><p className="text-lg font-extrabold">{paise(row.amountPaise)}</p></div></Card>;
+    })}</div></section>)}</div>;
+  }
+  return <Readable value={value} language={language} />;
+}
+
 function Readable({ value, field = '', language = 'en' }: { value: unknown; field?: string; language?: 'en' | 'te' }) {
-  if (Array.isArray(value)) return value.length === 0 ? <EmptyState title={language === 'te' ? 'రికార్డులు లేవు' : 'No records yet'} body={language === 'te' ? 'సర్వర్‌లో ఈ జాబితాకు ఇంకా రికార్డులు లేవు.' : 'There are no records in this server-backed list yet.'} /> : <div className="grid gap-3">{value.map((item, index) => <Card className="card-pad" key={index}><Readable value={item} language={language} /></Card>)}</div>;
-  if (value && typeof value === 'object') return <div className="grid gap-4 sm:grid-cols-2">{Object.entries(value as Record<string, unknown>).map(([key, item]) => <section key={key} className="min-w-0"><h2 className="section-title">{farmerLabel(key)}</h2>{typeof item === 'object' ? <Readable value={item} field={key} language={language} /> : <StatCard label={farmerLabel(key)} value={displayValue(item, key)} />}</section>)}</div>;
+  if (Array.isArray(value)) return value.length === 0 ? <EmptyState title={language === 'te' ? 'రికార్డులు లేవు' : 'No records yet'} body={language === 'te' ? 'సర్వర్‌లో ఈ జాబితాకు ఇంకా రికార్డులు లేవు.' : 'There are no records in this server-backed list yet.'} /> : <div className="grid gap-3">{value.map((item, index) => <Card className="card-pad" key={String((item as Record<string, unknown>)?.id ?? index)}><Readable value={item} language={language} /></Card>)}</div>;
+  if (value && typeof value === 'object') return <div className="grid gap-4 sm:grid-cols-2">{Object.entries(value as Record<string, unknown>).filter(([key]) => !isInternalKey(key)).map(([key, item]) => <section key={key} className="min-w-0">{typeof item === 'object' ? <><h2 className="section-title">{farmerLabel(key)}</h2><Readable value={item} field={key} language={language} /></> : <StatCard label={farmerLabel(key)} value={displayValue(item, key)} />}</section>)}</div>;
   return <p className="stat-value">{displayValue(value, field)}</p>;
 }
 
@@ -110,5 +150,14 @@ function displayValue(value: unknown, field: string): string {
   if (value === null || value === undefined || value === '') return '—';
   if (/paise|amount|cost|revenue|profit|limit|used|headroom/i.test(field)) return paise(value);
   if (typeof value === 'string' && /^[A-Z][A-Z0-9_]+$/.test(value)) return value.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  if (/date|on$/i.test(field) && typeof value === 'string') return formatDate(value);
   return String(value);
+}
+
+function isInternalKey(key: string): boolean { return /^(id|.*Id|businessId|createdAt|updatedAt|voidedAt|rev|deviceId|view)$/i.test(key); }
+function formatDate(value: unknown): string { if (typeof value !== 'string') return '—'; const date = new Date(value); return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
+function friendlyStatus(value: unknown, language: 'en' | 'te'): string {
+  const text = String(value ?? '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  if (language === 'te') return text === 'Paid' ? 'చెల్లించారు' : text === 'Unpaid' ? 'చెల్లించలేదు' : text;
+  return text;
 }
