@@ -84,7 +84,8 @@ async function main() {
   const asset = await prisma.asset.findFirst({ where: { businessId: biz.id, name: 'Pond aerator A1' } });
   if (!asset) await prisma.asset.create({ data: { businessId: biz.id, name: 'Pond aerator A1', category: 'AERATOR', pondId: ponds[0].id, purchaseDate: day(90), costPaise: 1200000n, salvagePct: '10', usefulLifeYears: '5', ...meta } });
   const lease = await prisma.leaseAgreement.findFirst({ where: { businessId: biz.id, landlordName: 'Kovur Landowner' } });
-  const leaseAgreement = lease ?? await prisma.leaseAgreement.create({ data: { businessId: biz.id, landlordName: 'Kovur Landowner', landlordContact: '9000000200', extentAcres: '4.5', ratePerAcrePerAnnumPaise: 900000n, startDate: day(180), endDate: new Date(Date.now() + 185 * 86400000), paymentFrequency: 'QUARTERLY', advancePaise: 300000n, advanceRefundable: true, ...meta } });
+  const leaseAgreement = lease ?? await prisma.leaseAgreement.create({ data: { businessId: biz.id, landlordName: 'Kovur Landowner', landlordContact: '9000000200', extentAcres: '2.0', ratePerAcrePerAnnumPaise: 900000n, startDate: day(180), endDate: new Date(Date.now() + 185 * 86400000), paymentFrequency: 'QUARTERLY', advancePaise: 300000n, advanceRefundable: true, ...meta } });
+  await prisma.leaseAgreement.update({ where: { id: leaseAgreement.id }, data: { extentAcres: '2.0', updatedBy: SYS } });
   await prisma.pond.update({ where: { id: ponds[1].id }, data: { ownershipType: 'LEASED', leaseAgreementId: leaseAgreement.id, updatedBy: SYS } });
   let rate = await prisma.marketRateReference.findFirst({ where: { businessId: biz.id, speciesId: species.id, key: '30' } });
   if (!rate) rate = await prisma.marketRateReference.create({ data: { businessId: biz.id, rateDate: day(2), region: 'Nellore', speciesId: species.id, basis: 'COUNT', key: '30', ratePerKgPaise: 52000n, ...meta } });
@@ -99,18 +100,13 @@ async function main() {
   const periodEnd = new Date('2026-08-01T00:00:00.000Z');
   const allocationRun = await prisma.allocationRun.findFirst({ where: { businessId: biz.id, periodStart, periodEnd, trigger: 'MONTH_END' } });
   const seedCropIds = crops.concat(closedCrop).map((crop) => crop.id);
-  if (allocationRun) {
-    await prisma.apportionedCost.deleteMany({ where: { businessId: biz.id, cropId: { in: seedCropIds }, allocationRunId: { not: allocationRun.id }, kind: { in: ['LEASE', 'DEPRECIATION', 'COMMON'] } } });
-  } else {
-    await prisma.apportionedCost.deleteMany({ where: { businessId: biz.id, cropId: { in: seedCropIds }, kind: { in: ['LEASE', 'DEPRECIATION', 'COMMON'] } } });
-  }
-  if (!allocationRun) {
-    const { AllocationService } = require(path.join(__dirname, '../apps/api/dist/allocation/allocation.service'));
-    await new AllocationService(prisma).run(
-      { periodStart: periodStart.toISOString(), periodEnd: periodEnd.toISOString(), trigger: 'MONTH_END' },
-      { businessId: biz.id, userId: owner.id, deviceId: SYS },
-    );
-  }
+  await prisma.apportionedCost.deleteMany({ where: { businessId: biz.id, cropId: { in: seedCropIds }, kind: { in: ['LEASE', 'DEPRECIATION', 'COMMON'] } } });
+  if (allocationRun) await prisma.allocationRun.delete({ where: { id: allocationRun.id } });
+  const { AllocationService } = require(path.join(__dirname, '../apps/api/dist/allocation/allocation.service'));
+  await new AllocationService(prisma).run(
+    { periodStart: periodStart.toISOString(), periodEnd: periodEnd.toISOString(), trigger: 'MONTH_END' },
+    { businessId: biz.id, userId: owner.id, deviceId: SYS },
+  );
   console.log(`STAGING seed ready for ${biz.name} (${biz.id})`);
 }
 
