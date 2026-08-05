@@ -1,6 +1,4 @@
-'use client';
-
 import Link from 'next/link';
 export default function MorePage() {
-  return <section><h1 className="text-3xl font-semibold">More</h1><div className="mt-6 grid gap-4 sm:grid-cols-2"><Link href="/settings/theme" className="rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold">Theme settings</h2><p className="mt-2 text-textSecondary">Manage semantic business colours.</p></Link><Link href="/business" className="rounded-xl border border-border bg-surface p-5"><h2 className="font-semibold">Switch business</h2><p className="mt-2 text-textSecondary">Change the active business context.</p></Link></div></section>;
+  return <section className="rise"><h1 className="display-title">More</h1><p className="muted mt-2">Farm settings, reference data and sync.</p><div className="mt-6 grid gap-4 sm:grid-cols-2">{[['/settings/theme','Theme settings','Manage semantic business colours.'],['/business','Switch business','Change the active business context.'],['/masters','Masters','Species, feed, medicine and labour choices.'],['/attendance','Attendance','Record labour days and cost.'],['/sync','Sync outbox','Inspect the server cursor and changes.'],['/business/profile','Business profile','Business identity and settings.'],['/audit','Audit trail','Server-recorded mutations and integrity.']].map(([href,title,sub]) => <Link href={href} className="card card-pad" key={href}><h2 className="font-extrabold">{title}</h2><p className="muted mt-2 text-sm">{sub}</p></Link>)}</div></section>;
 }

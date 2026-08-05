@@ -42,6 +42,13 @@ button, input, select, textarea { font: inherit; }
 .farm-mark svg path:first-child { fill:rgb(var(--color-primary)); }
 .farm-mark svg path:nth-child(2), .farm-mark svg circle { fill:rgb(var(--color-secondary)); }
 .farm-mark-light { background:rgb(var(--color-surface)); }
+.crop-hero { display:flex; align-items:center; justify-content:space-between; gap:1rem; background:linear-gradient(145deg,rgb(var(--color-primary) / .1),rgb(var(--color-secondary) / .12)); }
+.stat-arc { position:relative; width:7.5rem; flex:none; text-align:center; }
+.stat-arc svg { width:100%; overflow:visible; }
+.stat-arc path { fill:none; stroke:rgb(var(--color-border)); stroke-width:9; stroke-linecap:round; }
+.stat-arc .stat-arc-value { stroke:rgb(var(--color-primary)); stroke-dasharray:150 200; }
+.stat-arc span { position:absolute; inset:2.1rem 0 auto; font-size:1.35rem; font-weight:800; }
+.stat-arc small { display:block; color:rgb(var(--color-textSecondary)); font-size:.6rem; letter-spacing:.1em; }
 .eyebrow { color: rgb(var(--color-primary)); font-size:.7rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
 .display-title { color:rgb(var(--color-textPrimary)); font-size:1.8rem; line-height:1.1; font-weight:800; letter-spacing:-.04em; }
 .card { border:1px solid rgb(var(--color-border)); border-radius:1.25rem; background:rgb(var(--color-surface)); box-shadow:0 8px 24px rgb(var(--color-primary) / .06); }
