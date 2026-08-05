@@ -18,6 +18,22 @@ type Payable = components['schemas']['PayableDto'];
 type Receivable = components['schemas']['ReceivableDto'];
 type Ledger = components['schemas']['PartyLedgerResponseDto'];
 type Headroom = components['schemas']['SupplierHeadroomDto'];
+const moneyScreens: Array<[string, [string, string], string]> = [
+  ['expense', ['Expense entry', 'ఖర్చు నమోదు'], 'ph-receipt'],
+  ['parties', ['Parties', 'పార్టీలు'], 'ph-users-three'],
+  ['new-party', ['New party', 'కొత్త పార్టీ'], 'ph-user-plus'],
+  ['ledger', ['Party ledger', 'పార్టీ లెడ్జర్'], 'ph-notebook'],
+  ['credit', ['Supplier credit', 'సరఫరాదారు క్రెడిట్'], 'ph-credit-card'],
+  ['payment', ['Payment', 'చెల్లింపు'], 'ph-money'],
+  ['payables', ['Payables', 'చెల్లించాల్సినవి'], 'ph-arrow-up'],
+  ['receivables', ['Receivables', 'రావాల్సినవి'], 'ph-arrow-down'],
+  ['cash', ['Cash requirement', 'నగదు అవసరం'], 'ph-wallet'],
+  ['allocation', ['Allocation working', 'కేటాయింపు లెక్కలు'], 'ph-git-branch'],
+  ['idle-cost', ['Idle pond cost', 'ఖాళీ చెరువు ఖర్చు'], 'ph-pause-circle'],
+  ['lease', ['Lease register', 'లీజ్ రిజిస్టర్'], 'ph-file-text'],
+  ['assets', ['Assets and disposal', 'ఆస్తులు మరియు విక్రయం'], 'ph-buildings'],
+  ['scrap', ['Scrap sales', 'స్క్రాప్ అమ్మకాలు'], 'ph-recycle'],
+];
 
 function formatPaise(value: string): string {
   const negative = value.startsWith('-');
@@ -29,7 +45,7 @@ function formatPaise(value: string): string {
 }
 
 export default function MoneyPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const session = getSession();
   const financial = session?.financialAccess === true;
   const [message, setMessage] = useState('');
@@ -68,8 +84,10 @@ export default function MoneyPage() {
 
   if (!financial) return <section className="rise"><PageHeader eyebrow={t.money} title={t.money} subtitle={t.financialUnavailable} /><Card className="card-pad"><p className="muted">{t.financialUnavailable}</p></Card></section>;
   return <section className="rise">
-    <PageHeader eyebrow={t.money} title="Money at a glance" subtitle={t.valuesServer} action={<ActionButton href="/reports"><i className="ph-duotone ph-chart-line-up mr-2" />{t.reports}</ActionButton>} />
+    <PageHeader eyebrow={t.money} title="Money at a glance" subtitle={language === 'te' ? 'మీ ఫార్మ్ డబ్బు లావాదేవీలను నిర్వహించండి.' : 'Manage your farm money and payments.'} action={<ActionButton href="/reports"><i className="ph-duotone ph-chart-line-up mr-2" />{t.reports}</ActionButton>} />
     {pnl.data && <div className="grid gap-3 sm:grid-cols-3"><StatCard label={t.revenue} value={formatPaise(pnl.data.revenuePaise)} /><StatCard label={t.cost} value={formatPaise(pnl.data.costPaise)} tone="warning" /><StatCard label={t.netProfit} value={formatPaise(pnl.data.netProfitPaise)} tone="success" /></div>}
+    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{moneyScreens.map(([slug, label, icon]) => <Link key={slug} href={`/money/${slug}`} className="pond-tile tap"><i className={`ph-duotone ${icon} text-2xl text-primary`} /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? label[1] : label[0]}</span><i className="ph-duotone ph-caret-right mt-2 text-textSecondary" /></Link>)}</div>
+    <div className="mt-5 grid grid-cols-2 gap-3"><Link href="/harvest/events" className="pond-tile tap"><i className="ph-duotone ph-fish text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? 'కోత ఈవెంట్లు' : 'Harvest events'}</span></Link><Link href="/harvest/market-rates" className="pond-tile tap"><i className="ph-duotone ph-chart-line-up text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? 'మార్కెట్ రేట్లు' : 'Market rates'}</span></Link><Link href="/closure" className="pond-tile tap"><i className="ph-duotone ph-check-circle text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? 'క్లోజర్ చెక్‌లిస్ట్' : 'Closure checklist'}</span></Link><Link href="/closed-crops" className="pond-tile tap"><i className="ph-duotone ph-archive text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? 'మూసిన పంటలు' : 'Closed-crop archive'}</span></Link></div>
     <div className="mt-8 grid gap-6 lg:grid-cols-2">
       <form onSubmit={saveExpense} className="rounded-xl border border-border bg-surface p-5"><h2 className="text-xl font-semibold">{t.expense}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Field label={t.expenseDate} type="date" value={expense.expenseDate} onChange={(value) => setExpense({ ...expense, expenseDate: value })} />
