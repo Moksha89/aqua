@@ -1,5 +1,5 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { createHash, createHmac, randomBytes, randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../platform/prisma.service';
 
 @Injectable()
@@ -143,6 +143,105 @@ export class AuthService {
       pondScope: role.pondScope,
       accessToken: this.token({ sub: userId, deviceId, businessId, type: 'access' }),
     };
+  }
+
+  async businesses(userId: string) {
+    const memberships = await this.prisma.userBusinessRole.findMany({
+      where: { userId, voidedAt: null },
+    });
+    const businesses = await this.prisma.aeBusiness.findMany({
+      where: { id: { in: memberships.map((membership) => membership.businessId) }, voidedAt: null },
+    });
+    const byId = new Map(businesses.map((business) => [business.id, business]));
+    return memberships
+      .filter((membership) => byId.has(membership.businessId))
+      .map((membership) => ({
+        businessId: membership.businessId,
+        name: byId.get(membership.businessId)!.name,
+        role: membership.role,
+        financialAccess: membership.financialAccess,
+        pondScope: membership.pondScope,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async registerBusiness(userId: string, deviceId: string, input: {
+    name: string;
+    district?: string;
+    village?: string;
+    language: string;
+    currency: string;
+    fyStartMonth: number;
+  }) {
+    const existing = await this.prisma.userBusinessRole.count({ where: { userId, voidedAt: null } });
+    if (existing > 0) throw new BadRequestException('This user already belongs to a business');
+    const business = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.aeBusiness.create({
+        data: {
+          id: randomUUID(),
+          name: input.name,
+          district: input.district,
+          village: input.village,
+          language: input.language,
+          currency: input.currency,
+          fyStartMonth: input.fyStartMonth,
+          createdBy: userId,
+          updatedBy: userId,
+          deviceId,
+        },
+      });
+      await tx.userBusinessRole.create({
+        data: {
+          businessId: created.id,
+          userId,
+          role: 'AE_OWNER',
+          financialAccess: true,
+          pondScope: ['*'],
+          createdBy: userId,
+          updatedBy: userId,
+          deviceId,
+        },
+      });
+      await tx.preparationTemplate.createMany({
+        data: ['SHRIMP', 'FISH'].map((speciesCategory) => ({
+          businessId: created.id,
+          speciesCategory,
+          name: `${speciesCategory} default preparation`,
+          items: [],
+          createdBy: userId,
+          updatedBy: userId,
+          deviceId,
+        })),
+      });
+      return created;
+    });
+    return {
+      businessId: business.id,
+      businessName: business.name,
+      role: 'AE_OWNER',
+      financialAccess: true,
+      pondScope: ['*'],
+      accessToken: this.token({ sub: userId, deviceId, businessId: business.id, type: 'access' }),
+    };
+  }
+
+  async profile(userId: string, businessId: string) {
+    const membership = await this.prisma.userBusinessRole.findFirst({ where: { userId, businessId, voidedAt: null } });
+    if (!membership) throw new UnauthorizedException('User is not linked to this business');
+    return this.prisma.aeBusiness.findFirst({ where: { id: businessId, voidedAt: null } });
+  }
+
+  async updateProfile(userId: string, businessId: string, deviceId: string, input: {
+    name?: string;
+    district?: string;
+    village?: string;
+    language?: string;
+    currency?: string;
+    fyStartMonth?: number;
+  }) {
+    const membership = await this.prisma.userBusinessRole.findFirst({ where: { userId, businessId, voidedAt: null } });
+    if (!membership || !['AE_OWNER', 'AE_ADMIN'].includes(membership.role)) throw new UnauthorizedException('Business profile access denied');
+    return this.prisma.aeBusiness.update({ where: { id: businessId }, data: { ...input, updatedBy: userId, deviceId } });
   }
 
   private hash(value: string): string {

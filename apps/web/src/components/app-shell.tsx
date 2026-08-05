@@ -16,6 +16,7 @@ export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) 
     const current = getSession();
     setSession(current);
     if (!current && pathname !== '/login') router.replace('/login');
+    if (current && !current.businessId && pathname !== '/business' && pathname !== '/login') router.replace('/business');
     if (current && pathname === '/login') router.replace('/');
   }, [pathname, router]);
   if (pathname === '/login') return <>{children}</>;

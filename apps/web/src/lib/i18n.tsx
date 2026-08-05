@@ -21,7 +21,9 @@ const teluguFinance = {
 
 export function I18nProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [language, setLanguage] = useState<Language>('en');
-  const t = (language === 'te' ? { ...dictionaries.en, ...reportLabelsEn, ...dictionaries.te, ...teluguFinance } : { ...dictionaries.en, ...reportLabelsEn }) as Dictionary;
+  const t = (language === 'te'
+    ? { ...dictionaries.en, ...reportLabelsEn, ...dictionaries.te, ...teluguFinance, valuesServer: 'ఈరోజు ఫార్మ్ పనిని నమోదు చేయండి; మీ రికార్డులను తాజాగా ఉంచుతాము.' }
+    : { ...dictionaries.en, ...reportLabelsEn, valuesServer: 'Record today’s farm work here so your records stay up to date.' }) as Dictionary;
   return <I18nContext.Provider value={{ language, setLanguage, t }}>{children}</I18nContext.Provider>;
 }
 export function useI18n() { return useContext(I18nContext); }

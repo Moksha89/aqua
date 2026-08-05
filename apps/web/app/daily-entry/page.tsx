@@ -23,7 +23,7 @@ const date = () => new Date().toISOString().slice(0, 10);
 const timestamp = () => new Date().toISOString().slice(0, 16);
 
 export default function DailyEntryPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const params = useSearchParams();
   const [kind, setKind] = useState<Kind>('feed');
   const [pondId, setPondId] = useState(params.get('pondId') ?? '');
