@@ -4,14 +4,14 @@ import { FormEvent, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet, apiRequest, getSession } from '../../../src/lib/api';
-import { ActionButton, Card, Field, PageHeader, StatCard } from '../../../src/components/design-system';
+import { ActionButton, Card, EmptyState, Field, PageHeader, StatCard } from '../../../src/components/design-system';
 import { useI18n } from '../../../src/lib/i18n';
 
-type Screen = 'expense' | 'parties' | 'new-party' | 'ledger' | 'credit' | 'payment' | 'payables' | 'receivables' | 'cash' | 'allocation' | 'idle-cost' | 'lease' | 'assets' | 'scrap';
+type Screen = 'expense' | 'parties' | 'new-party' | 'ledger' | 'credit' | 'payment' | 'payables' | 'receivables' | 'cash' | 'cash-requirement' | 'allocation' | 'idle-cost' | 'lease' | 'assets' | 'scrap';
 const paise = (value: unknown) => `₹${(Number(value ?? 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const labels = {
-  en: { expense: 'Expense entry', parties: 'Parties', 'new-party': 'New party', ledger: 'Party ledger', credit: 'Supplier credit', payment: 'Payment', payables: 'Payables', receivables: 'Receivables', cash: 'Cash requirement', allocation: 'Allocation working', 'idle-cost': 'Idle pond cost', lease: 'Lease register', assets: 'Assets and disposal', scrap: 'Scrap sales' },
-  te: { expense: 'ఖర్చు నమోదు', parties: 'పార్టీలు', 'new-party': 'కొత్త పార్టీ', ledger: 'పార్టీ లెడ్జర్', credit: 'సరఫరాదారు క్రెడిట్', payment: 'చెల్లింపు', payables: 'చెల్లించాల్సినవి', receivables: 'రావాల్సినవి', cash: 'నగదు అవసరం', allocation: 'కేటాయింపు లెక్కలు', 'idle-cost': 'ఖాళీ చెరువు ఖర్చు', lease: 'లీజ్ రిజిస్టర్', assets: 'ఆస్తులు మరియు విక్రయం', scrap: 'స్క్రాప్ అమ్మకాలు' },
+  en: { expense: 'Expense entry', parties: 'Parties', 'new-party': 'New party', ledger: 'Party ledger', credit: 'Supplier credit', payment: 'Payment', payables: 'Payables', receivables: 'Receivables', cash: 'Cash', 'cash-requirement': 'Cash requirement', allocation: 'Allocation working', 'idle-cost': 'Idle pond cost', lease: 'Lease register', assets: 'Assets and disposal', scrap: 'Scrap sales' },
+  te: { expense: 'ఖర్చు నమోదు', parties: 'పార్టీలు', 'new-party': 'కొత్త పార్టీ', ledger: 'పార్టీ లెడ్జర్', credit: 'సరఫరాదారు క్రెడిట్', payment: 'చెల్లింపు', payables: 'చెల్లించాల్సినవి', receivables: 'రావాల్సినవి', cash: 'నగదు', 'cash-requirement': 'నగదు అవసరం', allocation: 'కేటాయింపు లెక్కలు', 'idle-cost': 'ఖాళీ చెరువు ఖర్చు', lease: 'లీజ్ రిజిస్టర్', assets: 'ఆస్తులు మరియు విక్రయం', scrap: 'స్క్రాప్ అమ్మకాలు' },
 } as const;
 
 export default function MoneyScreenPage({ params }: { params: { screen: string } }) {
@@ -23,11 +23,11 @@ export default function MoneyScreenPage({ params }: { params: { screen: string }
   const selectedParty = useSearchParams().get('partyId');
   const parties = useQuery({ queryKey: ['money-screen-parties'], queryFn: () => apiGet<Array<{ id: string; name: string; mobile?: string }>>('/masters/parties'), enabled: financial && ['parties', 'new-party', 'ledger', 'credit', 'payment'].includes(screen) });
   const ponds = useQuery({ queryKey: ['money-screen-ponds'], queryFn: () => apiGet<Array<{ id: string; name: string }>>('/masters/ponds'), enabled: financial && screen === 'idle-cost' });
-  const queryPath = screen === 'payables' ? '/finance/payables' : screen === 'receivables' ? '/finance/receivables' : screen === 'cash' ? '/finance/reports/cash' : screen === 'lease' ? '/masters/lease-agreements' : screen === 'assets' ? '/masters/assets' : screen === 'ledger' && selectedParty ? `/finance/parties/${selectedParty}/ledger` : screen === 'credit' && selectedParty ? `/finance/suppliers/${selectedParty}/headroom` : '';
+  const queryPath = screen === 'parties' ? '/masters/parties' : screen === 'payables' ? '/finance/payables' : screen === 'receivables' ? '/finance/receivables' : (screen === 'cash' || screen === 'cash-requirement') ? '/finance/reports/cash' : screen === 'lease' ? '/masters/lease-agreements' : screen === 'assets' ? '/masters/assets' : screen === 'credit' && selectedParty ? `/finance/suppliers/${selectedParty}/headroom` : screen === 'credit' ? '/masters/supplier-credit-limits' : screen === 'ledger' && selectedParty ? `/finance/parties/${selectedParty}/ledger` : '';
   const query = useQuery({ queryKey: ['money-screen', screen], queryFn: () => apiGet<unknown>(queryPath), enabled: financial && Boolean(queryPath) });
   const [message, setMessage] = useState('');
   if (!financial) return <section className="rise"><PageHeader eyebrow={t.money} title={title} subtitle={t.financialUnavailable} /><Card className="card-pad"><p className="muted">{t.financialUnavailable}</p></Card></section>;
-  return <section className="rise"><PageHeader eyebrow={t.money} title={title} subtitle={language === 'te' ? 'మీ ఫార్మ్ ఆర్థిక వివరాలను చూడండి.' : 'Review the financial details for your farm.'} /><Card className="card-pad">{query.isLoading ? <p className="muted">{t.loading}</p> : null}{query.error ? <p className="text-danger">{String(query.error)}</p> : null}{query.data !== undefined ? <Readable value={query.data} /> : null}{(!queryPath || screen === 'allocation' || screen === 'idle-cost') ? <ScreenAction screen={screen} parties={parties.data ?? []} ponds={ponds.data ?? []} message={message} setMessage={setMessage} language={language} /> : null}{query.data === undefined && queryPath && !query.isLoading ? <p className="muted">{t.noData}</p> : null}</Card></section>;
+  return <section className="rise"><PageHeader eyebrow={t.money} title={title} subtitle={language === 'te' ? 'మీ ఫార్మ్ ఆర్థిక వివరాలను చూడండి.' : 'Review the financial details for your farm.'} /><Card className="card-pad">{query.isLoading ? <p className="muted">{t.loading}</p> : null}{query.error ? <p className="text-danger">{String(query.error)}</p> : null}{query.data !== undefined ? <Readable value={query.data} language={language} /> : null}{(!queryPath || screen === 'allocation' || screen === 'idle-cost' || (screen === 'ledger' && !selectedParty) || (screen === 'credit' && !selectedParty)) ? <ScreenAction screen={screen} parties={parties.data ?? []} ponds={ponds.data ?? []} message={message} setMessage={setMessage} language={language} /> : null}{query.data === undefined && queryPath && !query.isLoading ? <p className="muted">{t.noData}</p> : null}</Card></section>;
 }
 
 function ScreenAction({ screen, parties, ponds, message, setMessage, language }: { screen: Screen; parties: Array<{ id: string; name: string }>; ponds: Array<{ id: string; name: string }>; message: string; setMessage: (value: string) => void; language: 'en' | 'te' }) {
@@ -55,9 +55,9 @@ function ScreenAction({ screen, parties, ponds, message, setMessage, language }:
   return <div className="grid gap-3"><p className="muted">{language === 'te' ? 'ఈ పని సర్వర్ చర్యను కోరుతుంది; బ్రౌజర్‌లో లెక్కించబడదు.' : screen === 'scrap' ? 'This workflow needs a server action and is not calculated in the browser.' : 'The API does not currently expose a list endpoint for this register.'}</p><span className="chip">NOT DETERMINABLE</span></div>;
 }
 
-function Readable({ value, field = '' }: { value: unknown; field?: string }) {
-  if (Array.isArray(value)) return <div className="grid gap-3">{value.map((item, index) => <Card className="card-pad" key={index}><Readable value={item} /></Card>)}</div>;
-  if (value && typeof value === 'object') return <div className="grid gap-3 sm:grid-cols-2">{Object.entries(value as Record<string, unknown>).map(([key, item]) => <StatCard key={key} label={key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')} value={typeof item === 'object' ? 'Details' : displayValue(item, key)} />)}</div>;
+function Readable({ value, field = '', language = 'en' }: { value: unknown; field?: string; language?: 'en' | 'te' }) {
+  if (Array.isArray(value)) return value.length === 0 ? <EmptyState title={language === 'te' ? 'రికార్డులు లేవు' : 'No records yet'} body={language === 'te' ? 'సర్వర్‌లో ఈ జాబితాకు ఇంకా రికార్డులు లేవు.' : 'There are no records in this server-backed list yet.'} /> : <div className="grid gap-3">{value.map((item, index) => <Card className="card-pad" key={index}><Readable value={item} language={language} /></Card>)}</div>;
+  if (value && typeof value === 'object') return <div className="grid gap-4 sm:grid-cols-2">{Object.entries(value as Record<string, unknown>).map(([key, item]) => <section key={key} className="min-w-0"><h2 className="section-title">{key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')}</h2>{typeof item === 'object' ? <Readable value={item} field={key} language={language} /> : <StatCard label={key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')} value={displayValue(item, key)} />}</section>)}</div>;
   return <p className="stat-value">{displayValue(value, field)}</p>;
 }
 
