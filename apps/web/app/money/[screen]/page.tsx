@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet, apiRequest, getSession } from '../../../src/lib/api';
 import { ActionButton, Card, EmptyState, Field, PageHeader, StatCard } from '../../../src/components/design-system';
 import { useI18n } from '../../../src/lib/i18n';
+import { rupeesToPaise } from '../../../src/lib/money';
 
 type Screen = 'expense' | 'parties' | 'new-party' | 'ledger' | 'credit' | 'payment' | 'payables' | 'receivables' | 'cash' | 'cash-requirement' | 'allocation' | 'idle-cost' | 'lease' | 'assets' | 'scrap';
 const paise = (value: unknown) => `₹${(Number(value ?? 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -45,23 +46,64 @@ function ScreenAction({ screen, parties, ponds, message, setMessage, language }:
     event.preventDefault();
     try {
       if (screen === 'new-party') await apiRequest('/masters/parties', { method: 'POST', body: JSON.stringify({ name, mobile, type: [partyType] }) });
-      if (screen === 'payment') await apiRequest('/finance/payments', { method: 'POST', body: JSON.stringify({ partyId, paidOn: new Date().toISOString().slice(0, 10), direction: paymentDirection, amountPaise: amount, mode: paymentMode }) });
+      if (screen === 'payment') await apiRequest('/finance/payments', { method: 'POST', body: JSON.stringify({ partyId, paidOn: new Date().toISOString().slice(0, 10), direction: paymentDirection, amountPaise: rupeesToPaise(amount), mode: paymentMode }) });
       if (screen === 'allocation') await apiRequest('/allocations/runs', { method: 'POST', body: JSON.stringify({ periodStart: fromDate, periodEnd: toDate, trigger: 'MONTH_END' }) });
       if (screen === 'idle-cost') await apiRequest('/allocations/idle-pond-costs', { method: 'POST', body: JSON.stringify({ pondId: partyId, fromDate, toDate }) });
       setMessage(language === 'te' ? 'సేవ్ చేయబడింది.' : 'Saved.');
     } catch (error) { setMessage(error instanceof Error ? error.message : language === 'te' ? 'సేవ్ చేయడం సాధ్యం కాలేదు.' : 'Unable to save.'); }
   }
-  if (screen === 'new-party' || screen === 'payment') return <form onSubmit={submit} className="grid gap-4"><h2 className="section-title">{screen === 'new-party' ? 'Party details' : 'Payment details'}</h2>{screen === 'new-party' ? <><Field label="Name" value={name} onChange={setName} required /><Field label="Mobile" value={mobile} onChange={setMobile} /><label className="field-label">Party type<select className="field-input" value={partyType} onChange={(event) => setPartyType(event.target.value)}><option value="SUPPLIER">Supplier</option><option value="BUYER">Buyer</option><option value="LANDLORD">Landlord</option></select></label></> : <><label className="field-label">Party<select className="field-input" value={partyId} onChange={(event) => setPartyId(event.target.value)} required><option value="">Select party</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label><Field label="Amount (paise)" value={amount} onChange={setAmount} required /><label className="field-label">Direction<select className="field-input" value={paymentDirection} onChange={(event) => setPaymentDirection(event.target.value)}><option value="PAYABLE">Payable</option><option value="RECEIVABLE">Receivable</option></select></label><label className="field-label">Payment mode<select className="field-input" value={paymentMode} onChange={(event) => setPaymentMode(event.target.value)}><option value="CASH">Cash</option><option value="BANK">Bank</option><option value="UPI">UPI</option><option value="CHEQUE">Cheque</option></select></label></>}<ActionButton type="submit">Save</ActionButton>{message && <p className="text-primary">{message}</p>}</form>;
-  if (screen === 'expense') return <div className="grid gap-3"><p className="muted">{language === 'te' ? 'ఖర్చు నమోదు స్క్రీన్‌లో ఖర్చు తల, కేటాయింపు, పార్టీ, చెల్లింపు, తేదీ మరియు బిల్లు ఫోటో ఉన్నాయి.' : 'Expense entry keeps cost head, allocation, party, payment, date, and bill photo fields together.'}</p><ActionButton href="/money">{language === 'te' ? 'ఖర్చు నమోదు తెరవండి' : 'Open expense entry'}</ActionButton></div>;
+  if (screen === 'new-party' || screen === 'payment') return <form onSubmit={submit} className="grid gap-4"><h2 className="section-title">{screen === 'new-party' ? 'Party details' : 'Payment details'}</h2>{screen === 'new-party' ? <><Field label="Name" value={name} onChange={setName} required /><Field label="Mobile" value={mobile} onChange={setMobile} /><label className="field-label">Party type<select className="field-input" value={partyType} onChange={(event) => setPartyType(event.target.value)}><option value="SUPPLIER">Supplier</option><option value="BUYER">Buyer</option><option value="LANDLORD">Landlord</option></select></label></> : <><label className="field-label">Party<select className="field-input" value={partyId} onChange={(event) => setPartyId(event.target.value)} required><option value="">Select party</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label><Field label="Amount (₹)" value={amount} onChange={setAmount} required /><label className="field-label">Direction<select className="field-input" value={paymentDirection} onChange={(event) => setPaymentDirection(event.target.value)}><option value="PAYABLE">Payable</option><option value="RECEIVABLE">Receivable</option></select></label><label className="field-label">Payment mode<select className="field-input" value={paymentMode} onChange={(event) => setPaymentMode(event.target.value)}><option value="CASH">Cash</option><option value="BANK">Bank</option><option value="UPI">UPI</option><option value="CHEQUE">Cheque</option></select></label></>}<ActionButton type="submit">Save</ActionButton>{message && <p className="text-primary">{message}</p>}</form>;
+  if (screen === 'expense') return <ExpenseAction parties={parties} language={language} message={message} setMessage={setMessage} />;
   if (screen === 'allocation' || screen === 'idle-cost') return <form onSubmit={submit} className="grid gap-4"><h2 className="section-title">{language === 'te' ? 'సర్వర్ కేటాయింపు పని' : 'Server allocation working'}</h2>{screen === 'idle-cost' && <label className="field-label">{language === 'te' ? 'చెరువు' : 'Pond'}<select className="field-input" value={partyId} onChange={(event) => setPartyId(event.target.value)} required><option value="">{language === 'te' ? 'చెరువును ఎంచుకోండి' : 'Select pond'}</option>{ponds.map((pond) => <option key={pond.id} value={pond.id}>{pond.name}</option>)}</select></label>}<Field label={language === 'te' ? 'ప్రారంభ తేదీ' : 'From date'} type="date" value={fromDate} onChange={setFromDate} required /><Field label={language === 'te' ? 'ముగింపు తేదీ' : 'To date'} type="date" value={toDate} onChange={setToDate} required /><ActionButton type="submit">{language === 'te' ? 'సర్వర్‌లో అమలు చేయండి' : 'Run on server'}</ActionButton>{message && <p className="text-primary">{message}</p>}</form>;
   if (screen === 'ledger' || screen === 'credit') return <div className="grid gap-3"><label className="field-label">{language === 'te' ? 'పార్టీ' : 'Party'}<select className="field-input" value={partyId} onChange={(event) => setPartyId(event.target.value)}><option value="">{language === 'te' ? 'పార్టీని ఎంచుకోండి' : 'Select party'}</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label>{partyId && <ActionButton href={`/money/${screen}?partyId=${partyId}`}>{language === 'te' ? 'చూడండి' : 'View'}</ActionButton>}<p className="muted text-sm">{language === 'te' ? 'సర్వర్ వివరాలను లోడ్ చేయడానికి పార్టీని ఎంచుకోండి.' : 'Choose a party to load its server-backed details.'}</p></div>;
   return <div className="grid gap-3"><p className="muted">{language === 'te' ? 'ఈ పని సర్వర్ చర్యను కోరుతుంది; బ్రౌజర్‌లో లెక్కించబడదు.' : screen === 'scrap' ? 'This workflow needs a server action and is not calculated in the browser.' : 'The API does not currently expose a list endpoint for this register.'}</p><span className="chip">NOT DETERMINABLE</span></div>;
 }
 
+function ExpenseAction({ parties, language, message, setMessage }: { parties: Array<{ id: string; name: string }>; language: 'en' | 'te'; message: string; setMessage: (value: string) => void }) {
+  const ponds = useQuery({ queryKey: ['money-expense-ponds'], queryFn: () => apiGet<Array<{ id: string; name: string; activeCrop?: { id: string; code: string } | null }>>('/masters/ponds') });
+  const heads = useQuery({ queryKey: ['money-expense-cost-heads'], queryFn: () => apiGet<Array<{ id: string; code: string; name: string }>>('/masters/cost-heads') });
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [costHeadId, setCostHeadId] = useState('');
+  const [allocationTarget, setAllocationTarget] = useState('POND_CROP');
+  const [pondId, setPondId] = useState('');
+  const [cropId, setCropId] = useState('');
+  const [partyId, setPartyId] = useState('');
+  const [amount, setAmount] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('UNPAID');
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    try {
+      await apiRequest('/finance/expenses', { method: 'POST', body: JSON.stringify({
+        expenseDate: date, costHeadId, allocationTarget, pondId: allocationTarget === 'POND_CROP' ? pondId : undefined,
+        cropId: allocationTarget === 'POND_CROP' ? cropId : undefined, partyId: partyId || undefined,
+        amountPaise: rupeesToPaise(amount), paymentStatus,
+      }) });
+      setMessage(language === 'te' ? 'ఖర్చు సేవ్ అయింది.' : 'Expense saved.');
+    } catch (error) { setMessage(error instanceof Error ? error.message : language === 'te' ? 'ఖర్చు సేవ్ కాలేదు.' : 'Unable to save expense.'); }
+  }
+  return <form onSubmit={submit} className="grid gap-4"><h2 className="section-title">{language === 'te' ? 'ఖర్చు వివరాలు' : 'Expense details'}</h2>
+    <Field label={language === 'te' ? 'ఖర్చు తేదీ' : 'Expense date'} type="date" value={date} onChange={setDate} required />
+    <label className="field-label">{language === 'te' ? 'ఖర్చు తల' : 'Cost head'}<select className="field-input" value={costHeadId} onChange={(event) => setCostHeadId(event.target.value)} required><option value="">Select cost head</option>{(heads.data ?? []).map((head) => <option key={head.id} value={head.id}>{head.code} · {head.name}</option>)}</select></label>
+    <label className="field-label">{language === 'te' ? 'కేటాయింపు' : 'Allocation'}<select className="field-input" value={allocationTarget} onChange={(event) => setAllocationTarget(event.target.value)}><option value="POND_CROP">Pond / crop</option><option value="COMMON">Common farm cost</option></select></label>
+    {allocationTarget === 'POND_CROP' && <><label className="field-label">{language === 'te' ? 'చెరువు' : 'Pond'}<select className="field-input" value={pondId} onChange={(event) => { setPondId(event.target.value); setCropId(ponds.data?.find((pond) => pond.id === event.target.value)?.activeCrop?.id ?? ''); }} required><option value="">Select pond</option>{(ponds.data ?? []).map((pond) => <option key={pond.id} value={pond.id}>{pond.name}</option>)}</select></label><label className="field-label">{language === 'te' ? 'పంట' : 'Crop'}<select className="field-input" value={cropId} onChange={(event) => setCropId(event.target.value)} required><option value="">Select crop</option>{ponds.data?.find((pond) => pond.id === pondId)?.activeCrop && <option value={ponds.data.find((pond) => pond.id === pondId)!.activeCrop!.id}>{ponds.data.find((pond) => pond.id === pondId)!.activeCrop!.code}</option>}</select></label></>}
+    <label className="field-label">{language === 'te' ? 'పార్టీ' : 'Party'}<select className="field-input" value={partyId} onChange={(event) => setPartyId(event.target.value)}><option value="">No party</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label>
+    <Field label={language === 'te' ? 'మొత్తం (రూపాయలు)' : 'Amount (₹)'} value={amount} onChange={setAmount} required />
+    <label className="field-label">{language === 'te' ? 'చెల్లింపు స్థితి' : 'Payment status'}<select className="field-input" value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}><option value="UNPAID">Unpaid</option><option value="PAID">Paid</option><option value="PART_PAID">Part paid</option></select></label>
+    <label className="field-label">{language === 'te' ? 'బిల్లు ఫోటో' : 'Bill photo'}<input className="field-input" type="file" accept="image/*" capture="environment" /></label>
+    <ActionButton type="submit">{language === 'te' ? 'ఖర్చు సేవ్ చేయండి' : 'Save expense'}</ActionButton>{message && <p className="text-primary">{message}</p>}
+  </form>;
+}
+
 function Readable({ value, field = '', language = 'en' }: { value: unknown; field?: string; language?: 'en' | 'te' }) {
   if (Array.isArray(value)) return value.length === 0 ? <EmptyState title={language === 'te' ? 'రికార్డులు లేవు' : 'No records yet'} body={language === 'te' ? 'సర్వర్‌లో ఈ జాబితాకు ఇంకా రికార్డులు లేవు.' : 'There are no records in this server-backed list yet.'} /> : <div className="grid gap-3">{value.map((item, index) => <Card className="card-pad" key={index}><Readable value={item} language={language} /></Card>)}</div>;
-  if (value && typeof value === 'object') return <div className="grid gap-4 sm:grid-cols-2">{Object.entries(value as Record<string, unknown>).map(([key, item]) => <section key={key} className="min-w-0"><h2 className="section-title">{key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')}</h2>{typeof item === 'object' ? <Readable value={item} field={key} language={language} /> : <StatCard label={key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ')} value={displayValue(item, key)} />}</section>)}</div>;
+  if (value && typeof value === 'object') return <div className="grid gap-4 sm:grid-cols-2">{Object.entries(value as Record<string, unknown>).map(([key, item]) => <section key={key} className="min-w-0"><h2 className="section-title">{farmerLabel(key)}</h2>{typeof item === 'object' ? <Readable value={item} field={key} language={language} /> : <StatCard label={farmerLabel(key)} value={displayValue(item, key)} />}</section>)}</div>;
   return <p className="stat-value">{displayValue(value, field)}</p>;
+}
+
+function farmerLabel(key: string): string {
+  const clean = key.replace(/Paise$/i, '');
+  const known: Record<string, string> = { view: 'Summary', expenses: 'Expenses', payments: 'Payments' };
+  return known[clean] ?? clean.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function displayValue(value: unknown, field: string): string {

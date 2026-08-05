@@ -62,7 +62,9 @@ function summary(report: Report | undefined): string {
   return Object.entries(report).filter(([, value]) => typeof value !== 'object').map(([key, value]) => `${labelKey(key)}: ${formatReportValue(value, key)}`).join('\n');
 }
 function labelKey(key: string): string {
-  return key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const withoutUnit = key.replace(/Paise$/i, '');
+  const known: Record<string, string> = { view: 'Summary', expenses: 'Expenses', payments: 'Payments', revenue: 'Revenue', cost: 'Cost', netProfit: 'Net profit' };
+  return known[withoutUnit] ?? withoutUnit.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 function formatReportValue(value: unknown, key = ''): string {
   if (value === null || value === undefined || value === '') return '—';

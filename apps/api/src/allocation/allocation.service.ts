@@ -3,9 +3,29 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../platform/prisma.service';
 import { acres1e4, bp, commonAllocation, depreciationDailyRate, depreciationForWindow, days, leaseCost, paise, sharedAssetDailyDepreciation } from '../rules-engine';
 type Context = { businessId: string; userId: string; deviceId: string };
+type ReadContext = { businessId: string; pondScope: string[]; role?: string };
 @Injectable()
 export class AllocationService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async runs(ctx: ReadContext) {
+    const runs = await this.prisma.allocationRun.findMany({ where: { businessId: ctx.businessId }, orderBy: { createdAt: 'desc' } });
+    const crops = await this.prisma.crop.findMany({ where: { businessId: ctx.businessId, voidedAt: null } });
+    const allowedCropIds = new Set(crops.filter((crop) => ctx.role !== 'AE_OPERATOR' || ctx.pondScope.includes('*') || ctx.pondScope.includes(crop.pondId)).map((crop) => crop.id));
+    const counts = await Promise.all(runs.map(async (run) => ({
+      ...run,
+      derivationCount: await this.prisma.apportionedCost.count({ where: { businessId: ctx.businessId, allocationRunId: run.id, cropId: { in: [...allowedCropIds] } } }),
+    })));
+    return counts;
+  }
+
+  async derivation(id: string, ctx: ReadContext) {
+    const run = await this.prisma.allocationRun.findFirst({ where: { id, businessId: ctx.businessId } });
+    if (!run) throw new NotFoundException('Allocation run not found');
+    const crops = await this.prisma.crop.findMany({ where: { businessId: ctx.businessId, voidedAt: null } });
+    const allowedCropIds = crops.filter((crop) => ctx.role !== 'AE_OPERATOR' || ctx.pondScope.includes('*') || ctx.pondScope.includes(crop.pondId)).map((crop) => crop.id);
+    return this.prisma.apportionedCost.findMany({ where: { businessId: ctx.businessId, allocationRunId: id, cropId: { in: allowedCropIds } }, orderBy: { createdAt: 'asc' } });
+  }
   async run(body: { periodStart: string; periodEnd: string; trigger?: 'MONTH_END' | 'CLOSURE' }, ctx: Context) {
     return this.prisma.$transaction(async (tx) => {
       const run = await tx.allocationRun.create({ data: { businessId: ctx.businessId, periodStart: new Date(body.periodStart), periodEnd: new Date(body.periodEnd), trigger: body.trigger ?? 'MONTH_END', status: 'OPEN', createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });

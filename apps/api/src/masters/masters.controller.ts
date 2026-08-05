@@ -4,6 +4,7 @@ import { IsArray, IsBoolean, IsNumber, IsOptional, IsString } from 'class-valida
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
 import { MasterContext, MastersService } from './masters.service';
 import { UserRole } from '../auth/roles';
+import { FinancialAccessGuard } from '../auth/roles.guard';
 
 export class FarmDto {
   @ApiProperty() @IsString() name!: string;
@@ -103,6 +104,14 @@ export class SupplierCreditDto {
   @ApiProperty() @IsString() limitPaise!: string;
   @ApiProperty() @IsNumber() creditPeriodDays!: number;
   @ApiProperty() @IsString() effectiveFrom!: string;
+}
+export class MarketRateDto {
+  @ApiProperty() @IsString() rateDate!: string;
+  @ApiProperty() @IsString() region!: string;
+  @ApiProperty() @IsString() speciesId!: string;
+  @ApiProperty() @IsString() basis!: string;
+  @ApiProperty() @IsString() key!: string;
+  @ApiProperty() @IsString() ratePerKgPaise!: string;
 }
 export class LabourDto {
   @ApiProperty() @IsString() name!: string;
@@ -280,6 +289,9 @@ export class MastersController {
   parties(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.party, this.user(req)); }
   @Get('supplier-credit-limits')
   supplierCredits(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.supplierCreditLimit, this.user(req), false, true); }
+  @Get('market-rates')
+  @UseGuards(FinancialAccessGuard)
+  marketRates(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.marketRateReference, this.user(req), false, true, true); }
   @Get('labour')
   labour(@Req() req: AuthenticatedRequest) { return this.masters.list(this.masters.labour, this.user(req)); }
   @Get('assets')
@@ -296,6 +308,14 @@ export class MastersController {
     return this.masters.create(this.masters.supplierCreditLimit, {
       partyId: body.partyId, limitPaise: BigInt(body.limitPaise), creditPeriodDays: body.creditPeriodDays,
       effectiveFrom: new Date(body.effectiveFrom),
+    }, this.context(req));
+  }
+  @Post('market-rates')
+  @UseGuards(FinancialAccessGuard)
+  createMarketRate(@Body() body: MarketRateDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.create(this.masters.marketRateReference, {
+      rateDate: new Date(body.rateDate), region: body.region, speciesId: body.speciesId,
+      basis: body.basis, key: body.key, ratePerKgPaise: BigInt(body.ratePerKgPaise),
     }, this.context(req));
   }
   @Post('labour')

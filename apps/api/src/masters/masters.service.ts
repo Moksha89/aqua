@@ -33,6 +33,7 @@ export class MastersService {
   get asset(): Delegate { return this.prisma.asset; }
   get costHead(): Delegate { return this.prisma.costHead; }
   get preparationTemplate(): Delegate { return this.prisma.preparationTemplate; }
+  get marketRateReference(): Delegate { return this.prisma.marketRateReference; }
 
   async listPonds(user: ScopeUser): Promise<PondListItemDto[]> {
     const ponds = await this.prisma.pond.findMany({ where: { ...this.scope.pondWhere(user), voidedAt: null } });

@@ -7,6 +7,7 @@ import { apiGet, apiRequest, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
 import { ActionButton, Card, PageHeader, StatCard } from '../../src/components/design-system';
+import { rupeesToPaise } from '../../src/lib/money';
 
 type Pond = components['schemas']['PondListItemDto'];
 type CostHead = components['schemas']['CostHeadListDto'];
@@ -65,7 +66,7 @@ export default function MoneyPage() {
   async function saveExpense(event: FormEvent) {
     event.preventDefault();
     try {
-      const created = await apiRequest<{ id: string }>('/finance/expenses', { method: 'POST', body: JSON.stringify(expense) });
+      const created = await apiRequest<{ id: string }>('/finance/expenses', { method: 'POST', body: JSON.stringify({ ...expense, amountPaise: rupeesToPaise(expense.amountPaise) }) });
       if (billPhoto) {
         const presign = await apiRequest<{ attachmentId: string; uploadUrl: string }>('/attachments/presign', { method: 'POST', body: JSON.stringify({ ownerType: 'EXPENSE', ownerId: created.id, fileName: billPhoto.name, contentType: billPhoto.type, sizeBytes: billPhoto.size }) });
         const upload = await fetch(presign.uploadUrl, { method: 'PUT', headers: { 'content-type': billPhoto.type }, body: billPhoto });
@@ -78,7 +79,7 @@ export default function MoneyPage() {
   }
   async function savePayment(event: FormEvent) {
     event.preventDefault();
-    try { await apiRequest('/finance/payments', { method: 'POST', body: JSON.stringify(payment) }); setMessage(t.savedPayment); }
+    try { await apiRequest('/finance/payments', { method: 'POST', body: JSON.stringify({ ...payment, amountPaise: rupeesToPaise(payment.amountPaise) }) }); setMessage(t.savedPayment); }
     catch (error) { setMessage(error instanceof Error ? error.message : t.savePayment); }
   }
 
@@ -94,13 +95,13 @@ export default function MoneyPage() {
         <label className="text-sm text-textSecondary">{t.costHead}<select required value={expense.costHeadId} onChange={(event) => setExpense({ ...expense, costHeadId: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(costHeads.data ?? []).map((head) => <option key={head.id} value={head.id}>{head.code} · {head.name}</option>)}</select></label>
         <label className="text-sm text-textSecondary">{t.allocation}<select value={expense.allocationTarget} onChange={(event) => setExpense({ ...expense, allocationTarget: event.target.value as Expense['allocationTarget'] })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="POND_CROP">{t.pond}</option><option value="COMMON">{t.common}</option></select></label>
         {expense.allocationTarget === 'POND_CROP' && <><label className="text-sm text-textSecondary">{t.pond}<select required value={expense.pondId ?? ''} onChange={(event) => { const pond = (ponds.data ?? []).find((item) => item.id === event.target.value); setExpense({ ...expense, pondId: event.target.value, cropId: pond?.activeCrop?.id }); }} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(ponds.data ?? []).map((pond) => <option key={pond.id} value={pond.id}>{pond.name}</option>)}</select></label><label className="text-sm text-textSecondary">{t.crop}<select required value={expense.cropId ?? ''} onChange={(event) => setExpense({ ...expense, cropId: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(ponds.data ?? []).filter((pond) => pond.id === expense.pondId && pond.activeCrop).map((pond) => <option key={pond.activeCrop!.id} value={pond.activeCrop!.id}>{pond.activeCrop!.code}</option>)}</select></label></>}
-        <Field label={t.amountPaise} value={expense.amountPaise} onChange={(value) => setExpense({ ...expense, amountPaise: value })} required />
+        <Field label={language === 'te' ? 'మొత్తం (రూపాయలు)' : 'Amount (₹)'} value={expense.amountPaise} onChange={(value) => setExpense({ ...expense, amountPaise: value })} required />
         <label className="text-sm text-textSecondary">{t.paymentStatus}<select value={expense.paymentStatus ?? 'UNPAID'} onChange={(event) => setExpense({ ...expense, paymentStatus: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="UNPAID">{t.unpaid}</option><option value="PAID">{t.paid}</option><option value="PART_PAID">{t.partPaid}</option></select></label>
         <label className="text-sm text-textSecondary">{t.party}<select value={expense.partyId ?? ''} onChange={(event) => setExpense({ ...expense, partyId: event.target.value || undefined })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(parties.data ?? []).map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label><label className="text-sm text-textSecondary">{t.billPhoto}<input accept="image/*" type="file" capture="environment" onChange={(event) => setBillPhoto(event.target.files?.[0] ?? null)} className="mt-1 block w-full text-textPrimary" /></label>
       </div><button className="mt-5 rounded-lg bg-primary px-4 py-2 text-onPrimary" type="submit">{t.saveExpense}</button></form>
       <form onSubmit={savePayment} className="rounded-xl border border-border bg-surface p-5"><h2 className="text-xl font-semibold">{t.payments}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="text-sm text-textSecondary">{t.party}<select required value={payment.partyId} onChange={(event) => setPayment({ ...payment, partyId: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(parties.data ?? []).map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label>
-        <Field label={t.paidOn} type="date" value={payment.paidOn} onChange={(value) => setPayment({ ...payment, paidOn: value })} /><Field label={t.amountPaise} value={payment.amountPaise} onChange={(value) => setPayment({ ...payment, amountPaise: value })} required /><Field label={t.direction} value={payment.direction} onChange={(value) => setPayment({ ...payment, direction: value })} /><Field label={t.mode} value={payment.mode} onChange={(value) => setPayment({ ...payment, mode: value })} />
+        <Field label={t.paidOn} type="date" value={payment.paidOn} onChange={(value) => setPayment({ ...payment, paidOn: value })} /><Field label={language === 'te' ? 'మొత్తం (రూపాయలు)' : 'Amount (₹)'} value={payment.amountPaise} onChange={(value) => setPayment({ ...payment, amountPaise: value })} required /><Field label={t.direction} value={payment.direction} onChange={(value) => setPayment({ ...payment, direction: value })} /><Field label={t.mode} value={payment.mode} onChange={(value) => setPayment({ ...payment, mode: value })} />
       </div><button className="mt-5 rounded-lg bg-primary px-4 py-2 text-onPrimary" type="submit">{t.savePayment}</button></form>
     </div>
     {message && <p className="mt-4 rounded-lg bg-info/10 p-3 text-info">{message}</p>}

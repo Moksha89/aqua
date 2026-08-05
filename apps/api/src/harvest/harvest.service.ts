@@ -18,6 +18,51 @@ export class HarvestService {
     private readonly scope: QueryScope,
   ) {}
 
+  async events(cropId: string, ctx: Context) {
+    const crop = await this.scopedCrop(cropId, ctx);
+    const events = await this.prisma.harvestEvent.findMany({
+      where: { businessId: ctx.businessId, cropId: crop.id, voidedAt: null },
+      orderBy: [{ harvestDate: 'desc' }, { createdAt: 'desc' }],
+    });
+    return Promise.all(events.map(async (event) => ({
+      ...event,
+      lines: await this.prisma.harvestLine.findMany({ where: { businessId: ctx.businessId, harvestEventId: event.id, voidedAt: null } }),
+      deductions: await this.prisma.harvestDeduction.findMany({ where: { businessId: ctx.businessId, harvestEventId: event.id, voidedAt: null } }),
+    })));
+  }
+
+  async checklistRead(cropId: string, ctx: Context) {
+    await this.scopedCrop(cropId, ctx);
+    return this.prisma.cropClosureChecklist.findMany({
+      where: { businessId: ctx.businessId, cropId, voidedAt: null },
+      orderBy: { step: 'asc' },
+    });
+  }
+
+  async frozenPnl(cropId: string, ctx: Context) {
+    await this.scopedCrop(cropId, ctx);
+    return this.prisma.cropPnl.findFirst({ where: { businessId: ctx.businessId, cropId, isCurrent: true }, orderBy: { version: 'desc' } });
+  }
+
+  async closed(ctx: Context, status?: string) {
+    if (status && status !== 'CLOSED') return [];
+    const crops = await this.prisma.crop.findMany({
+      where: { businessId: ctx.businessId, status: 'CLOSED', voidedAt: null },
+      orderBy: { closedAt: 'desc' },
+    });
+    const allowed = await Promise.all(crops.map(async (crop) => {
+      try { this.scope.assertPondScope(ctx, crop.pondId); return crop; } catch { return null; }
+    }));
+    return allowed.filter((crop): crop is NonNullable<typeof crop> => crop !== null);
+  }
+
+  private async scopedCrop(cropId: string, ctx: Context) {
+    const crop = await this.prisma.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
+    if (!crop) throw new NotFoundException('Crop not found');
+    this.scope.assertPondScope(ctx, crop.pondId);
+    return crop;
+  }
+
   async harvest(cropId: string, body: HarvestInput, ctx: Context) {
     if (!body.lines.length) throw new BadRequestException('Harvest lines are required');
     if (new Set(body.lines.map((line) => line.ratePerKgPaise)).size > 1) throw new BadRequestException('A harvest uses one dated rate card; blended rates are not allowed');
