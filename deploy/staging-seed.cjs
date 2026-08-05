@@ -58,11 +58,24 @@ async function main() {
     { expenseDate: day(4), costHeadId: heads[2].id, allocationTarget: 'COMMON', commonPoolId: commonPool.id, amountPaise: 75000n, paymentStatus: 'UNPAID' },
   ];
   for (const item of expenseData) {
-    const exists = await prisma.expense.findFirst({ where: { businessId: biz.id, expenseDate: item.expenseDate, amountPaise: item.amountPaise } });
-    if (!exists) await prisma.expense.create({ data: { businessId: biz.id, ...item, paymentMode: item.paymentStatus === 'PAID' ? 'CASH' : undefined, ...meta } });
+    const naturalKey = {
+      businessId: biz.id,
+      costHeadId: item.costHeadId,
+      allocationTarget: item.allocationTarget,
+      pondId: item.pondId ?? null,
+      cropId: item.cropId ?? null,
+      commonPoolId: item.commonPoolId ?? null,
+      amountPaise: item.amountPaise,
+      partyId: item.partyId ?? null,
+    };
+    const matches = await prisma.expense.findMany({ where: naturalKey, orderBy: { createdAt: 'asc' }, select: { id: true } });
+    if (matches.length > 1) await prisma.expense.deleteMany({ where: { id: { in: matches.slice(1).map((row) => row.id) } } });
+    if (matches.length === 0) await prisma.expense.create({ data: { businessId: biz.id, ...item, paymentMode: item.paymentStatus === 'PAID' ? 'CASH' : undefined, ...meta } });
   }
-  const payment = await prisma.payment.findFirst({ where: { businessId: biz.id, partyId: parties[0].id, amountPaise: 185000n } });
-  if (!payment) await prisma.payment.create({ data: { businessId: biz.id, partyId: parties[0].id, paidOn: day(3), direction: 'PAYABLE', amountPaise: 185000n, mode: 'CASH', ...meta } });
+  const paymentKey = { businessId: biz.id, partyId: parties[0].id, direction: 'PAYABLE', amountPaise: 185000n, mode: 'CASH' };
+  const payments = await prisma.payment.findMany({ where: paymentKey, orderBy: { createdAt: 'asc' }, select: { id: true } });
+  if (payments.length > 1) await prisma.payment.deleteMany({ where: { id: { in: payments.slice(1).map((row) => row.id) } } });
+  if (payments.length === 0) await prisma.payment.create({ data: { ...paymentKey, paidOn: day(3), ...meta } });
   const limit = await prisma.supplierCreditLimit.findFirst({ where: { businessId: biz.id, partyId: parties[0].id } });
   if (!limit) await prisma.supplierCreditLimit.create({ data: { businessId: biz.id, partyId: parties[0].id, limitPaise: 1500000n, creditPeriodDays: 30, effectiveFrom: day(30), ...meta } });
   const asset = await prisma.asset.findFirst({ where: { businessId: biz.id, name: 'Pond aerator A1' } });
