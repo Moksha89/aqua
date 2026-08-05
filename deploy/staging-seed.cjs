@@ -81,7 +81,8 @@ async function main() {
   const asset = await prisma.asset.findFirst({ where: { businessId: biz.id, name: 'Pond aerator A1' } });
   if (!asset) await prisma.asset.create({ data: { businessId: biz.id, name: 'Pond aerator A1', category: 'AERATOR', pondId: ponds[0].id, purchaseDate: day(90), costPaise: 1200000n, salvagePct: '10', usefulLifeYears: '5', ...meta } });
   const lease = await prisma.leaseAgreement.findFirst({ where: { businessId: biz.id, landlordName: 'Kovur Landowner' } });
-  if (!lease) await prisma.leaseAgreement.create({ data: { businessId: biz.id, landlordName: 'Kovur Landowner', landlordContact: '9000000200', extentAcres: '4.5', ratePerAcrePerAnnumPaise: 900000n, startDate: day(180), endDate: new Date(Date.now() + 185 * 86400000), paymentFrequency: 'QUARTERLY', advancePaise: 300000n, advanceRefundable: true, ...meta } });
+  const leaseAgreement = lease ?? await prisma.leaseAgreement.create({ data: { businessId: biz.id, landlordName: 'Kovur Landowner', landlordContact: '9000000200', extentAcres: '4.5', ratePerAcrePerAnnumPaise: 900000n, startDate: day(180), endDate: new Date(Date.now() + 185 * 86400000), paymentFrequency: 'QUARTERLY', advancePaise: 300000n, advanceRefundable: true, ...meta } });
+  await prisma.pond.update({ where: { id: ponds[1].id }, data: { ownershipType: 'LEASED', leaseAgreementId: leaseAgreement.id, updatedBy: SYS } });
   let rate = await prisma.marketRateReference.findFirst({ where: { businessId: biz.id, speciesId: species.id, key: '30' } });
   if (!rate) rate = await prisma.marketRateReference.create({ data: { businessId: biz.id, rateDate: day(2), region: 'Nellore', speciesId: species.id, basis: 'COUNT', key: '30', ratePerKgPaise: 52000n, ...meta } });
   const harvest = await prisma.harvestEvent.findFirst({ where: { businessId: biz.id, cropId: crops[0].id } });
@@ -91,6 +92,16 @@ async function main() {
   }
   const scrap = await prisma.scrapSale.findFirst({ where: { businessId: biz.id, item: 'Used netting' } });
   if (!scrap) await prisma.scrapSale.create({ data: { businessId: biz.id, cropId: crops[0].id, pondId: ponds[0].id, saleDate: day(6), item: 'Used netting', quantity: '12.500', ratePaise: 8000n, buyerPartyId: parties[1].id, amountPaise: 100000n, ...meta } });
+  const periodStart = new Date('2026-07-01T00:00:00.000Z');
+  const periodEnd = new Date('2026-08-01T00:00:00.000Z');
+  const allocationRun = await prisma.allocationRun.findFirst({ where: { businessId: biz.id, periodStart, periodEnd, trigger: 'MONTH_END' } });
+  if (!allocationRun) {
+    const { AllocationService } = require('../apps/api/dist/allocation/allocation.service');
+    await new AllocationService(prisma).run(
+      { periodStart: periodStart.toISOString(), periodEnd: periodEnd.toISOString(), trigger: 'MONTH_END' },
+      { businessId: biz.id, userId: owner.id, deviceId: SYS },
+    );
+  }
   console.log(`STAGING seed ready for ${biz.name} (${biz.id})`);
 }
 
