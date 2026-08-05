@@ -38,6 +38,7 @@ export class LeaseAgreementDto {
   @ApiProperty({ required: false }) @IsOptional() escalationJson?: object;
   @ApiProperty({ required: false }) @IsOptional() @IsString() documentKey?: string;
   @ApiProperty({ required: false, type: Array }) @IsOptional() customSchedule?: Array<{ dueDate: string; amountPaise: string }>;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() pondId?: string;
 }
 export class SpeciesDto {
   @ApiProperty() @IsString() category!: string;
@@ -235,7 +236,18 @@ export class MastersController {
       startDate: new Date(body.startDate), endDate: new Date(body.endDate),
       paymentFrequency: body.paymentFrequency, advancePaise: BigInt(body.advancePaise),
       advanceRefundable: body.advanceRefundable, escalationJson: body.escalationJson, documentKey: body.documentKey,
-      customSchedule: body.customSchedule,
+      customSchedule: body.customSchedule, pondId: body.pondId,
+    }, this.context(req));
+  }
+  @Patch('lease-agreements/:id')
+  updateLease(@Param('id') id: string, @Body() body: LeaseAgreementDto, @Req() req: AuthenticatedRequest) {
+    return this.masters.updateLease(id, {
+      landlordName: body.landlordName, landlordContact: body.landlordContact,
+      extentAcres: body.extentAcres, ratePerAcrePerAnnumPaise: BigInt(body.ratePerAcrePerAnnumPaise),
+      startDate: new Date(body.startDate), endDate: new Date(body.endDate),
+      paymentFrequency: body.paymentFrequency, advancePaise: BigInt(body.advancePaise),
+      advanceRefundable: body.advanceRefundable, escalationJson: body.escalationJson, documentKey: body.documentKey,
+      pondId: body.pondId,
     }, this.context(req));
   }
   @Post('species')
