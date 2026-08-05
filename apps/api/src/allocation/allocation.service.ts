@@ -15,6 +15,7 @@ export class AllocationService {
     const counts = await Promise.all(runs.map(async (run) => ({
       ...run,
       derivationCount: await this.prisma.apportionedCost.count({ where: { businessId: ctx.businessId, allocationRunId: run.id, cropId: { in: [...allowedCropIds] } } }),
+      allocatedTotalPaise: (await this.prisma.apportionedCost.aggregate({ where: { businessId: ctx.businessId, allocationRunId: run.id, cropId: { in: [...allowedCropIds] } }, _sum: { amountPaise: true } }))._sum.amountPaise ?? 0n,
     })));
     return counts;
   }
@@ -23,8 +24,12 @@ export class AllocationService {
     const run = await this.prisma.allocationRun.findFirst({ where: { id, businessId: ctx.businessId } });
     if (!run) throw new NotFoundException('Allocation run not found');
     const crops = await this.prisma.crop.findMany({ where: { businessId: ctx.businessId, voidedAt: null } });
+    const ponds = await this.prisma.pond.findMany({ where: { businessId: ctx.businessId, voidedAt: null } });
     const allowedCropIds = crops.filter((crop) => ctx.role !== 'AE_OPERATOR' || ctx.pondScope.includes('*') || ctx.pondScope.includes(crop.pondId)).map((crop) => crop.id);
-    return this.prisma.apportionedCost.findMany({ where: { businessId: ctx.businessId, allocationRunId: id, cropId: { in: allowedCropIds } }, orderBy: { createdAt: 'asc' } });
+    const rows = await this.prisma.apportionedCost.findMany({ where: { businessId: ctx.businessId, allocationRunId: id, cropId: { in: allowedCropIds } }, orderBy: { createdAt: 'asc' } });
+    const pondNames = new Map(ponds.map((pond) => [pond.id, pond.name]));
+    const cropDetails = new Map(crops.map((crop) => [crop.id, { code: crop.code, pondName: pondNames.get(crop.pondId) ?? 'Pond' }]));
+    return rows.map((row) => ({ ...row, cropCode: cropDetails.get(row.cropId)?.code ?? 'Crop', pondName: cropDetails.get(row.cropId)?.pondName ?? 'Pond' }));
   }
   async run(body: { periodStart: string; periodEnd: string; trigger?: 'MONTH_END' | 'CLOSURE' }, ctx: Context) {
     return this.prisma.$transaction(async (tx) => {

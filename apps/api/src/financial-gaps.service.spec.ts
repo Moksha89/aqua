@@ -114,6 +114,8 @@ describe('financial gap read scoping', () => {
     const service = new AllocationService({
       allocationRun: { findMany: findManyRuns },
       crop: { findMany: jest.fn().mockResolvedValue([]) },
+      pond: { findMany: jest.fn().mockResolvedValue([]) },
+      apportionedCost: { aggregate: jest.fn().mockResolvedValue({ _sum: { amountPaise: null } }), count: jest.fn().mockResolvedValue(0) },
     } as never);
     await expect(service.runs({ businessId: 'business-b', role: 'AE_OWNER', pondScope: ['*'] })).resolves.toEqual([]);
     expect(findManyRuns).toHaveBeenCalledWith({ where: { businessId: 'business-b' }, orderBy: { createdAt: 'desc' } });
