@@ -134,24 +134,26 @@ export class FinanceService {
     return { harvestRevenuePaise: harvests._sum.netRealisationPaise ?? 0n, idleCostPaise: (idle._sum.leasePaise ?? 0n) + (idle._sum.depreciationPaise ?? 0n) + (idle._sum.otherPaise ?? 0n) };
   }
   async businessPnl(ctx: Context) {
-    const [revenue, direct] = await Promise.all([
+    const [revenue, direct, allocated] = await Promise.all([
       this.prisma.harvestEvent.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { netRealisationPaise: true } }),
       this.prisma.expense.aggregate({ where: { businessId: ctx.businessId, voidedAt: null, ratePending: false }, _sum: { amountPaise: true } }),
+      this.prisma.apportionedCost.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { amountPaise: true } }),
     ]);
     const revenuePaise = revenue._sum.netRealisationPaise ?? 0n;
-    const costPaise = direct._sum.amountPaise ?? 0n;
+    const costPaise = (direct._sum.amountPaise ?? 0n) + (allocated._sum.amountPaise ?? 0n);
     return { revenuePaise, costPaise, netProfitPaise: revenuePaise - costPaise };
   }
   async insights(ctx: Context) {
-    const [revenue, direct, activeCrops, openPayables, latestHarvest] = await Promise.all([
+    const [revenue, direct, allocated, activeCrops, openPayables, latestHarvest] = await Promise.all([
       this.prisma.harvestEvent.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { netRealisationPaise: true } }),
       this.prisma.expense.aggregate({ where: { businessId: ctx.businessId, voidedAt: null, ratePending: false }, _sum: { amountPaise: true } }),
+      this.prisma.apportionedCost.aggregate({ where: { businessId: ctx.businessId, voidedAt: null }, _sum: { amountPaise: true } }),
       this.prisma.crop.count({ where: { businessId: ctx.businessId, status: { in: ['ACTIVE', 'HARVESTING'] }, voidedAt: null } }),
       this.prisma.expense.count({ where: { businessId: ctx.businessId, paymentStatus: { in: ['UNPAID', 'PART_PAID'] }, voidedAt: null } }),
       this.prisma.harvestEvent.findFirst({ where: { businessId: ctx.businessId, voidedAt: null }, orderBy: { harvestDate: 'desc' }, select: { harvestDate: true } }),
     ]);
     const revenuePaise = revenue._sum.netRealisationPaise ?? 0n;
-    const costPaise = direct._sum.amountPaise ?? 0n;
+    const costPaise = (direct._sum.amountPaise ?? 0n) + (allocated._sum.amountPaise ?? 0n);
     const netProfitPaise = revenuePaise - costPaise;
     return {
       generatedAt: new Date().toISOString(),

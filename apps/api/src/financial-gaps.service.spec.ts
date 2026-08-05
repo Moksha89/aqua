@@ -82,7 +82,7 @@ describe('financial gap read scoping', () => {
     };
     const service = new FinanceService(prisma as never);
     const result = await service.insights({ businessId: 'business-b', userId: 'user', deviceId: 'device' });
-    expect(result.figures).toEqual({ revenuePaise: 1000n, costPaise: 400n, netProfitPaise: 600n });
+    expect(result.figures).toEqual({ revenuePaise: 1000n, costPaise: 500n, netProfitPaise: 500n });
     expect(aggregate).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ businessId: 'business-b' }) }));
   });
 
@@ -90,11 +90,13 @@ describe('financial gap read scoping', () => {
     const makePrisma = () => ({
       harvestEvent: { aggregate: jest.fn().mockResolvedValue({ _sum: { netRealisationPaise: 1000n } }), findFirst: jest.fn().mockResolvedValue(null) },
       expense: { aggregate: jest.fn().mockResolvedValue({ _sum: { amountPaise: 400n } }), count: jest.fn().mockResolvedValue(0) },
+      apportionedCost: { aggregate: jest.fn().mockResolvedValue({ _sum: { amountPaise: 100n } }) },
       crop: { count: jest.fn().mockResolvedValue(1) },
     });
     const ctx = { businessId: 'business-b', userId: 'user', deviceId: 'device' };
     const pnl = await new FinanceService(makePrisma() as never).businessPnl(ctx);
     const insights = await new FinanceService(makePrisma() as never).insights(ctx);
+    expect(pnl).toEqual({ revenuePaise: 1000n, costPaise: 500n, netProfitPaise: 500n });
     expect(insights.figures).toEqual(pnl);
   });
 
