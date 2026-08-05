@@ -49,6 +49,13 @@ button, input, select, textarea { font: inherit; }
 .stat-arc .stat-arc-value { stroke:rgb(var(--color-primary)); stroke-dasharray:150 200; }
 .stat-arc span { position:absolute; inset:2.1rem 0 auto; font-size:1.35rem; font-weight:800; }
 .stat-arc small { display:block; color:rgb(var(--color-textSecondary)); font-size:.6rem; letter-spacing:.1em; }
+.pond-context { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem; border:1px solid rgb(var(--color-border)); border-radius:1.25rem; background:rgb(var(--color-surface)); }
+.segmented-control { display:flex; overflow:auto; gap:.35rem; padding:.3rem; border-radius:1.1rem; background:rgb(var(--color-border) / .45); }
+.segmented-control button { flex:1; min-width:max-content; border-radius:.85rem; padding:.7rem .8rem; color:rgb(var(--color-textSecondary)); font-size:.78rem; font-weight:800; }
+.segmented-control button.active { background:rgb(var(--color-surface)); color:rgb(var(--color-primary)); box-shadow:0 2px 7px rgb(var(--color-textPrimary) / .08); }
+.residual-dial { display:grid; place-items:center; width:9rem; height:9rem; margin:.25rem auto 1rem; border:1rem solid rgb(var(--color-secondary) / .25); border-top-color:rgb(var(--color-primary)); border-right-color:rgb(var(--color-primary)); border-radius:50%; text-align:center; }
+.residual-dial span { display:block; color:rgb(var(--color-primary)); font-weight:900; text-transform:uppercase; }
+.residual-dial small { display:block; color:rgb(var(--color-textSecondary)); font-size:.65rem; }
 .eyebrow { color: rgb(var(--color-primary)); font-size:.7rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
 .display-title { color:rgb(var(--color-textPrimary)); font-size:1.8rem; line-height:1.1; font-weight:800; letter-spacing:-.04em; }
 .card { border:1px solid rgb(var(--color-border)); border-radius:1.25rem; background:rgb(var(--color-surface)); box-shadow:0 8px 24px rgb(var(--color-primary) / .06); }
