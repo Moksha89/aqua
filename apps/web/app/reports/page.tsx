@@ -66,7 +66,20 @@ function summary(report: Report | undefined): string {
 }
 function labelKey(key: string): string {
   const withoutUnit = key.replace(/Paise$/i, '');
-  const known: Record<string, string> = { view: 'Summary', expenses: 'Expenses', payments: 'Payments', revenue: 'Revenue', cost: 'Cost', netProfit: 'Net profit' };
+  const known: Record<string, string> = {
+    view: 'Summary',
+    expenses: 'Expenses',
+    payments: 'Payments',
+    revenue: 'Revenue',
+    cost: 'Cost',
+    netProfit: 'Net profit',
+    basis: 'Price by',
+    target: 'Used for',
+    allocation: 'Shared costs',
+    apportioned: 'Shared cost',
+    classification: 'Type',
+    void: 'Removed',
+  };
   return known[withoutUnit] ?? withoutUnit.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 function formatReportValue(value: unknown, key = ''): string {

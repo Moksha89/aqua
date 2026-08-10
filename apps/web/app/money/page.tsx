@@ -29,7 +29,7 @@ const moneyScreens: Array<[string, [string, string], string]> = [
   ['payables', ['Payables', 'చెల్లించాల్సినవి'], 'ph-arrow-up'],
   ['receivables', ['Receivables', 'రావాల్సినవి'], 'ph-arrow-down'],
   ['cash', ['Cash requirement', 'నగదు అవసరం'], 'ph-wallet'],
-  ['allocation', ['Allocation working', 'కేటాయింపు లెక్కలు'], 'ph-git-branch'],
+  ['allocation', ['Shared costs', 'పంచిన ఖర్చులు'], 'ph-git-branch'],
   ['idle-cost', ['Idle pond cost', 'ఖాళీ చెరువు ఖర్చు'], 'ph-pause-circle'],
   ['lease', ['Lease register', 'లీజ్ రిజిస్టర్'], 'ph-file-text'],
   ['assets', ['Assets and disposal', 'ఆస్తులు మరియు విక్రయం'], 'ph-buildings'],

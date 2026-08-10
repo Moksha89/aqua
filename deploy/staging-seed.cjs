@@ -1,4 +1,4 @@
-/* STAGING ONLY: idempotent demo data for AE Farm screenshots and acceptance checks. */
+/* STAGING ONLY: destructive demo reset and fixture data for AE Farm screenshots/checks. */
 const path = require('path');
 process.env.NODE_PATH = [path.join(__dirname, '../apps/api/node_modules'), process.env.NODE_PATH].filter(Boolean).join(path.delimiter);
 require('module').Module._initPaths();
@@ -7,12 +7,58 @@ const prisma = new PrismaClient();
 const SYS = '00000000-0000-0000-0000-000000000000';
 const meta = { createdBy: SYS, updatedBy: SYS, deviceId: SYS };
 const day = (offset) => new Date(Date.now() - offset * 86400000);
+const STAGING_BUSINESS_NAME = 'Demo Aqua Farm';
+const STAGING_OWNER_MOBILE = '9000000001';
+const STAGING_OPERATOR_MOBILE = '9000000002';
+
+async function resetStagingBusiness(tx, { businessId, cropId, pondId }) {
+  // This reset is intentionally destructive, and is scoped to the staging business only.
+  await tx.paymentAllocation.deleteMany({ where: { businessId } });
+  const harvestEvents = await tx.harvestEvent.findMany({ where: { businessId, cropId }, select: { id: true } });
+  const harvestEventIds = harvestEvents.map((event) => event.id);
+  if (harvestEventIds.length > 0) {
+    await tx.harvestDeduction.deleteMany({ where: { businessId, harvestEventId: { in: harvestEventIds } } });
+    await tx.harvestLine.deleteMany({ where: { businessId, harvestEventId: { in: harvestEventIds } } });
+  }
+  await tx.harvestEvent.deleteMany({ where: { businessId, cropId } });
+  await tx.feedLog.deleteMany({ where: { businessId, cropId } });
+  await tx.checkTrayReading.deleteMany({ where: { businessId, cropId } });
+  await tx.checkTray.deleteMany({ where: { businessId, cropId } });
+  await tx.growthSample.deleteMany({ where: { businessId, cropId } });
+  await tx.waterReading.deleteMany({ where: { businessId, cropId } });
+  await tx.medicineApplication.deleteMany({ where: { businessId, cropId } });
+  await tx.healthEvent.deleteMany({ where: { businessId, cropId } });
+  await tx.preparationActivity.deleteMany({ where: { businessId, cropId } });
+  await tx.cropInputMovement.deleteMany({ where: { businessId, cropId } });
+  await tx.cropInputBalance.deleteMany({ where: { businessId, cropId } });
+  await tx.cropClosureChecklist.deleteMany({ where: { businessId, cropId } });
+  await tx.cropPnl.deleteMany({ where: { businessId, cropId } });
+  await tx.expense.deleteMany({ where: { businessId } });
+  await tx.payment.deleteMany({ where: { businessId } });
+  await tx.apportionedCost.deleteMany({ where: { businessId } });
+  await tx.idlePondCost.deleteMany({ where: { businessId } });
+  await tx.allocationRun.deleteMany({ where: { businessId } });
+  await tx.crop.update({
+    where: { id: cropId },
+    data: {
+      status: 'ACTIVE',
+      finalHarvestDate: null,
+      closedAt: null,
+      closedBy: null,
+      reopenedCount: 0,
+      updatedBy: SYS,
+    },
+  });
+  await tx.pond.update({ where: { id: pondId }, data: { status: 'STOCKED', updatedBy: SYS } });
+}
 
 async function main() {
-  let biz = await prisma.aeBusiness.findFirst({ where: { name: 'Demo Aqua Farm' } });
-  if (!biz) biz = await prisma.aeBusiness.create({ data: { name: 'Demo Aqua Farm', language: 'en', currency: 'INR', district: 'Nellore', village: 'Kovur', ...meta } });
-  const owner = await prisma.userAccount.upsert({ where: { mobile: '9000000001' }, update: {}, create: { mobile: '9000000001', name: 'Demo Owner', defaultLanguage: 'en', status: 'ACTIVE', ...meta } });
-  const operator = await prisma.userAccount.upsert({ where: { mobile: '9000000002' }, update: {}, create: { mobile: '9000000002', name: 'Demo Operator', defaultLanguage: 'en', status: 'ACTIVE', ...meta } });
+  const existingBusiness = await prisma.aeBusiness.findFirst({ where: { name: STAGING_BUSINESS_NAME } });
+  const resetRequired = Boolean(existingBusiness);
+  let biz = existingBusiness;
+  if (!biz) biz = await prisma.aeBusiness.create({ data: { name: STAGING_BUSINESS_NAME, language: 'en', currency: 'INR', district: 'Nellore', village: 'Kovur', ...meta } });
+  const owner = await prisma.userAccount.upsert({ where: { mobile: STAGING_OWNER_MOBILE }, update: {}, create: { mobile: STAGING_OWNER_MOBILE, name: 'Demo Owner', defaultLanguage: 'en', status: 'ACTIVE', ...meta } });
+  const operator = await prisma.userAccount.upsert({ where: { mobile: STAGING_OPERATOR_MOBILE }, update: {}, create: { mobile: STAGING_OPERATOR_MOBILE, name: 'Demo Operator', defaultLanguage: 'en', status: 'ACTIVE', ...meta } });
   let farm = await prisma.farm.findFirst({ where: { businessId: biz.id } });
   if (!farm) farm = await prisma.farm.create({ data: { businessId: biz.id, name: 'Kovur Farm', ...meta } });
   const ponds = [];
@@ -32,6 +78,9 @@ async function main() {
     let crop = await prisma.crop.findFirst({ where: { businessId: biz.id, code } });
     if (!crop) crop = await prisma.crop.create({ data: { businessId: biz.id, pondId: pond.id, code, speciesCategory: 'SHRIMP', status: 'ACTIVE', preparationStartDate: day(prep), stockingDate: day(stock), survivalAssumptionPct: '80', feedLoggingEnabled: true, ...meta } });
     crops.push(crop);
+  }
+  if (resetRequired) {
+    await resetStagingBusiness(prisma, { businessId: biz.id, cropId: crops[0].id, pondId: ponds[0].id });
   }
   let closedCrop = await prisma.crop.findFirst({ where: { businessId: biz.id, code: 'CROP-CLOSED' } });
   if (!closedCrop) {

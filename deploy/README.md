@@ -27,6 +27,13 @@ challenge and all normal challenge attempt/consumption checks still apply. The
 API logs a loud warning when this switch is enabled. **Never set
 `DEV_LOGIN_OTP` in production**; leave it unset for production and CI.
 
+`deploy/staging-seed.cjs` is a staging fixture reset, not a production data
+migration. Each run resets the mutable demo records for the business named
+`Demo Aqua Farm` and restores its seeded active crops and financial figures.
+The reset is intentionally destructive within that one staging business so
+browser test records cannot drift the demo. Do not run this script against a
+production business or add it to an application request path.
+
 ## Updating
 
 ```bash

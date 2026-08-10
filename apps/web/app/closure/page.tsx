@@ -21,4 +21,8 @@ export default function ClosurePage() {
 }
 
 function shortDate(value: unknown): string { const date = new Date(String(value ?? '')); return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
-function friendly(value: unknown): string { return String(value ?? '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+function friendly(value: unknown): string {
+  const text = String(value ?? '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const plain: Record<string, string> = { 'Post Occupancy Costs': 'Record pond-use costs', 'Closure Allocation': 'Final shared costs', 'Freeze Pnl': 'Lock the final numbers', Allocation: 'Shared costs', Target: 'Used for', Basis: 'Price by', Void: 'Removed' };
+  return plain[text] ?? text;
+}

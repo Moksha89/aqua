@@ -12,8 +12,8 @@ import { formatPaise, formatQuantity, rupeesToPaise } from '../../../src/lib/mon
 type Screen = 'expense' | 'parties' | 'new-party' | 'ledger' | 'credit' | 'payment' | 'payables' | 'receivables' | 'cash' | 'cash-requirement' | 'allocation' | 'idle-cost' | 'lease' | 'assets' | 'scrap';
 const paise = formatPaise;
 const labels = {
-  en: { expense: 'Expense entry', parties: 'Parties', 'new-party': 'New party', ledger: 'Party ledger', credit: 'Supplier credit', payment: 'Payment', payables: 'Payables', receivables: 'Receivables', cash: 'Cash', 'cash-requirement': 'Cash requirement', allocation: 'Allocation working', 'idle-cost': 'Idle pond cost', lease: 'Lease register', assets: 'Assets and disposal', scrap: 'Scrap sales' },
-  te: { expense: 'ఖర్చు నమోదు', parties: 'పార్టీలు', 'new-party': 'కొత్త పార్టీ', ledger: 'పార్టీ లెడ్జర్', credit: 'సరఫరాదారు క్రెడిట్', payment: 'చెల్లింపు', payables: 'చెల్లించాల్సినవి', receivables: 'రావాల్సినవి', cash: 'నగదు', 'cash-requirement': 'నగదు అవసరం', allocation: 'కేటాయింపు లెక్కలు', 'idle-cost': 'ఖాళీ చెరువు ఖర్చు', lease: 'లీజ్ రిజిస్టర్', assets: 'ఆస్తులు మరియు విక్రయం', scrap: 'స్క్రాప్ అమ్మకాలు' },
+  en: { expense: 'Expense entry', parties: 'Parties', 'new-party': 'New party', ledger: 'Party ledger', credit: 'Supplier credit', payment: 'Payment', payables: 'Payables', receivables: 'Receivables', cash: 'Cash', 'cash-requirement': 'Cash requirement', allocation: 'Shared costs', 'idle-cost': 'Pond costs', lease: 'Lease register', assets: 'Assets and disposal', scrap: 'Scrap sales' },
+  te: { expense: 'ఖర్చు నమోదు', parties: 'పార్టీలు', 'new-party': 'కొత్త పార్టీ', ledger: 'పార్టీ లెడ్జర్', credit: 'సరఫరాదారు క్రెడిట్', payment: 'చెల్లింపు', payables: 'చెల్లించాల్సినవి', receivables: 'రావాల్సినవి', cash: 'నగదు', 'cash-requirement': 'నగదు అవసరం', allocation: 'పంచిన ఖర్చులు', 'idle-cost': 'చెరువు ఖర్చులు', lease: 'లీజ్ రిజిస్టర్', assets: 'ఆస్తులు మరియు విక్రయం', scrap: 'స్క్రాప్ అమ్మకాలు' },
 } as const;
 
 export default function MoneyScreenPage({ params }: { params: { screen: string } }) {
@@ -111,7 +111,7 @@ function ExpenseAction({ parties, language, message, setMessage }: { parties: Ar
   return <form onSubmit={submit} className="grid gap-4"><h2 className="section-title">{language === 'te' ? 'ఖర్చు వివరాలు' : 'Expense details'}</h2>
     <Field label={language === 'te' ? 'ఖర్చు తేదీ' : 'Expense date'} type="date" value={date} onChange={setDate} required />
     <label className="field-label">{language === 'te' ? 'ఖర్చు తల' : 'Cost head'}<select className="field-input" value={costHeadId} onChange={(event) => setCostHeadId(event.target.value)} required><option value="">Select cost head</option>{(heads.data ?? []).map((head) => <option key={head.id} value={head.id}>{head.name}</option>)}</select></label>
-    <label className="field-label">{language === 'te' ? 'కేటాయింపు' : 'Allocation'}<select className="field-input" value={allocationTarget} onChange={(event) => setAllocationTarget(event.target.value)}><option value="POND_CROP">Pond / crop</option><option value="COMMON">Common farm cost</option></select></label>
+    <label className="field-label">{language === 'te' ? 'ఈ ఖర్చు ఎక్కడికి' : 'Where this goes'}<select className="field-input" value={allocationTarget} onChange={(event) => setAllocationTarget(event.target.value)}><option value="POND_CROP">Pond / crop</option><option value="COMMON">Common farm cost</option></select></label>
     {allocationTarget === 'POND_CROP' && <><label className="field-label">{language === 'te' ? 'చెరువు' : 'Pond'}<select className="field-input" value={pondId} onChange={(event) => { setPondId(event.target.value); setCropId(ponds.data?.find((pond) => pond.id === event.target.value)?.activeCrop?.id ?? ''); }} required><option value="">Select pond</option>{(ponds.data ?? []).map((pond) => <option key={pond.id} value={pond.id}>{pond.name}</option>)}</select></label><label className="field-label">{language === 'te' ? 'పంట' : 'Crop'}<select className="field-input" value={cropId} onChange={(event) => setCropId(event.target.value)} required><option value="">Select crop</option>{ponds.data?.find((pond) => pond.id === pondId)?.activeCrop && <option value={ponds.data.find((pond) => pond.id === pondId)!.activeCrop!.id}>{ponds.data.find((pond) => pond.id === pondId)!.activeCrop!.code}</option>}</select></label></>}
     <label className="field-label">{language === 'te' ? 'పార్టీ' : 'Party'}<select className="field-input" value={partyId} onChange={(event) => setPartyId(event.target.value)}><option value="">No party</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label>
     <Field label={language === 'te' ? 'మొత్తం (రూపాయలు)' : 'Amount (₹)'} value={amount} onChange={setAmount} required />
@@ -199,7 +199,17 @@ function Readable({ value, field = '', language = 'en' }: { value: unknown; fiel
 
 function farmerLabel(key: string): string {
   const clean = key.replace(/Paise$/i, '');
-  const known: Record<string, string> = { view: 'Summary', expenses: 'Expenses', payments: 'Payments' };
+  const known: Record<string, string> = {
+    view: 'Summary',
+    expenses: 'Expenses',
+    payments: 'Payments',
+    basis: 'Price by',
+    target: 'Used for',
+    allocation: 'Shared costs',
+    apportioned: 'Shared cost',
+    classification: 'Type',
+    void: 'Removed',
+  };
   return known[clean] ?? clean.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
@@ -215,6 +225,7 @@ function isInternalKey(key: string): boolean { return /^(id|.*Id|businessId|crea
 function formatDate(value: unknown): string { if (typeof value !== 'string') return '—'; const date = new Date(value); return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
 function friendlyStatus(value: unknown, language: 'en' | 'te'): string {
   const text = String(value ?? '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  if (text === 'Void') return language === 'te' ? 'తొలగించారు' : 'Removed';
   if (language === 'te') return text === 'Paid' ? 'చెల్లించారు' : text === 'Unpaid' ? 'చెల్లించలేదు' : text;
   return text;
 }
