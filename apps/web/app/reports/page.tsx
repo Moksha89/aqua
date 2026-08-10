@@ -42,11 +42,12 @@ export default function ReportsPage() {
 }
 
 function ReportView({ report }: { report: Report }) {
-  return <div className="mt-6 grid gap-4 md:grid-cols-3">{Object.entries(report).map(([key, value]) => <article key={key} className="rounded-xl border border-border bg-surface p-4"><h2 className="font-semibold text-textPrimary">{labelKey(key)}</h2><ReadableValue value={value} path={key} /></article>)}</div>;
+  const { t } = useI18n();
+  return <div className="mt-6 grid gap-4 md:grid-cols-3">{Object.entries(report).map(([key, value]) => <article key={key} className="rounded-xl border border-border bg-surface p-4"><h2 className="font-semibold text-textPrimary">{labelKey(key)}</h2><ReadableValue value={value} path={key} workingLabel={t.showWorking} /></article>)}</div>;
 }
-function ReadableValue({ value, path = '' }: { value: unknown; path?: string }) {
-  if (Array.isArray(value)) return <div className="mt-2 space-y-2">{value.map((item, index) => <div key={index} className="rounded-lg border border-border p-2"><p className="text-xs font-bold text-textSecondary">Details</p><ReadableValue value={item} path={path} /></div>)}</div>;
-  if (value && typeof value === 'object') return <div className="mt-2 space-y-1">{Object.entries(value).map(([key, item]) => <div key={key} className="flex justify-between gap-3 text-sm"><span className="text-textSecondary">{labelKey(key)}</span><span className="text-right text-textPrimary">{formatReportValue(item, key)}</span></div>)}</div>;
+function ReadableValue({ value, path = '', workingLabel }: { value: unknown; path?: string; workingLabel: string }) {
+  if (Array.isArray(value)) return <div className="mt-2 space-y-2">{value.map((item, index) => <div key={index} className="rounded-lg border border-border p-2"><p className="text-xs font-bold text-textSecondary">Details</p><ReadableValue value={item} path={path} workingLabel={workingLabel} /></div>)}</div>;
+  if (value && typeof value === 'object') return <Disclosure label={workingLabel}><div className="mt-2 space-y-1">{Object.entries(value).map(([key, item]) => <div key={key} className="flex justify-between gap-3 text-sm"><span className="text-textSecondary">{labelKey(key)}</span><span className="text-right text-textPrimary">{formatReportValue(item, key)}</span></div>)}</div></Disclosure>;
   return <p className="mt-2 text-xl font-semibold text-textPrimary">{formatReportValue(value, path)}</p>;
 }
 function downloadReport(report: Report | undefined, name: string) {
