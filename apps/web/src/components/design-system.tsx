@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode, type RefObject } from 'react';
 
 export function FarmMark({ light = false }: { light?: boolean }) {
   return <span className={`farm-mark ${light ? 'farm-mark-light' : ''}`} aria-label="AE Farm mark">
@@ -65,14 +65,20 @@ export function ActionButton({ children, href, secondary = false, type = 'button
   return href ? <Link className={className} href={href}>{children}</Link> : <button className={className} type={type} onClick={onClick}>{children}</button>;
 }
 
-export function Disclosure({ label, children, defaultOpen = false }: { label: string; children: ReactNode; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
+export function Disclosure({ label, children, defaultOpen = false, summary, open, onOpenChange, contentRef }: { label: string; children: ReactNode; defaultOpen?: boolean; summary?: ReactNode; open?: boolean; onOpenChange?: (open: boolean) => void; contentRef?: RefObject<HTMLDivElement> }) {
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const contentId = useId();
+  const expanded = open ?? internalOpen;
+  const toggle = () => {
+    const next = !expanded;
+    setInternalOpen(next);
+    onOpenChange?.(next);
+  };
   return <div className="disclosure">
-    <button type="button" className="disclosure-trigger tap" aria-expanded={open} aria-controls={contentId} onClick={() => setOpen((value) => !value)}>
-      <span>{label}</span><span aria-hidden="true" className={`disclosure-chevron ${open ? 'is-open' : ''}`}>⌄</span>
+    <button type="button" className="disclosure-trigger tap" aria-expanded={expanded} aria-controls={contentId} onClick={toggle}>
+      <span className="min-w-0"><span className="block">{label}</span>{summary && <span className="muted mt-1 block truncate text-xs font-normal">{summary}</span>}</span><span aria-hidden="true" className={`disclosure-chevron ${expanded ? 'is-open' : ''}`}>⌄</span>
     </button>
-    {open && <div id={contentId} className="disclosure-content">{children}</div>}
+    {expanded && <div id={contentId} ref={contentRef} className="disclosure-content">{children}</div>}
   </div>;
 }
 
