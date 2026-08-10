@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet, apiRequest } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
+import { ChoiceToggle, Disclosure, SelectField } from '../../src/components/design-system';
 
 type Kind = 'feed' | 'growth' | 'water' | 'medicine' | 'health' | 'tray';
 type Pond = components['schemas']['PondListItemDto'];
@@ -29,7 +30,7 @@ export default function DailyEntryPage() {
   const [pondId, setPondId] = useState(params.get('pondId') ?? '');
   const [cropId, setCropId] = useState(params.get('cropId') ?? '');
   const [message, setMessage] = useState('');
-  const [feed, setFeed] = useState<Feed>({ logDate: date(), mealSlot: 'MORNING', feedItemId: '', quantityKg: '' });
+  const [feed, setFeed] = useState<Feed>({ logDate: date(), mealSlot: new Date().getHours() < 14 ? 'MORNING' : 'EVENING', feedItemId: '', quantityKg: '' });
   const [growth, setGrowth] = useState<Growth>({ sampledOn: date(), doc: 0, animalsInSample: 0, sampleWeightG: '' });
   const [water, setWater] = useState<Water>({ readAt: timestamp(), slot: 'MORNING', source: 'POND', ph: '', doMgl: '', temperatureC: '' });
   const [medicine, setMedicine] = useState<Medicine>({ appliedOn: date(), medicineItemId: '', quantity: '', unit: 'KG', method: 'POND', reason: '', costPaise: '0' });

@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiGet, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
-import { Card, PageHeader } from '../../src/components/design-system';
+import { Card, Disclosure, PageHeader } from '../../src/components/design-system';
 import { formatPaise } from '../../src/lib/money';
 
 const reports = [
@@ -35,7 +35,8 @@ export default function ReportsPage() {
   if (!financial) return <section className="rise"><PageHeader eyebrow={t.reports} title={t.reports} subtitle={t.financialUnavailable} /><Card className="card-pad"><p className="muted">{t.financialUnavailable}</p></Card></section>;
   return <section className="rise">
     <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-3xl font-semibold">{t.reports}</h1><div className="flex gap-2"><button type="button" onClick={() => window.print()} className="rounded-lg border border-border px-3 py-2">{t.exportPdf}</button><button type="button" onClick={() => downloadReport(query.data, config[0])} className="rounded-lg border border-border px-3 py-2">{t.exportExcel}</button><button type="button" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${reportLabel(config[1], t)}\n${summary(query.data)}`)}`, '_blank', 'noopener,noreferrer')} className="rounded-lg border border-border px-3 py-2">{t.shareWhatsapp}</button></div></div>
-    <div className="mt-6 flex flex-wrap gap-2">{reports.map((item) => <button type="button" key={item[2]} onClick={() => setSelected(item[2])} className={`rounded-lg border border-border px-3 py-2 text-sm ${selected === item[2] ? 'bg-primary text-onPrimary' : 'bg-surface text-textPrimary'}`}>{reportLabel(item[1], t)}</button>)}</div>
+    <div className="mt-6 flex flex-wrap gap-2">{reports.slice(0, 5).map((item) => <button type="button" key={item[2]} onClick={() => setSelected(item[2])} className={`rounded-lg border border-border px-3 py-2 text-sm ${selected === item[2] ? 'bg-primary text-onPrimary' : 'bg-surface text-textPrimary'}`}>{reportLabel(item[1], t)}</button>)}</div>
+    <Disclosure label={t.officeReports}><div className="flex flex-wrap gap-2">{reports.slice(5).map((item) => <button type="button" key={item[2]} onClick={() => setSelected(item[2])} className={`rounded-lg border border-border px-3 py-2 text-sm ${selected === item[2] ? 'bg-primary text-onPrimary' : 'bg-surface text-textPrimary'}`}>{reportLabel(item[1], t)}</button>)}</div></Disclosure>
     {query.isLoading && <p className="mt-6 text-textSecondary">{t.loading}</p>}{query.error && <p className="mt-6 text-danger">{query.error.message}</p>}{query.data && <ReportView report={query.data} />}
   </section>;
 }

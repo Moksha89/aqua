@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
 export function FarmMark({ light = false }: { light?: boolean }) {
   return <span className={`farm-mark ${light ? 'farm-mark-light' : ''}`} aria-label="AE Farm mark">
@@ -63,4 +63,33 @@ export function EmptyState({ icon = 'ph-drop', title, body, action }: { icon?: s
 export function ActionButton({ children, href, secondary = false, type = 'button', onClick }: { children: ReactNode; href?: string; secondary?: boolean; type?: 'button' | 'submit'; onClick?: () => void }) {
   const className = secondary ? 'secondary-button tap inline-flex items-center justify-center' : 'primary-button tap inline-flex items-center justify-center';
   return href ? <Link className={className} href={href}>{children}</Link> : <button className={className} type={type} onClick={onClick}>{children}</button>;
+}
+
+export function Disclosure({ label, children, defaultOpen = false }: { label: string; children: ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const contentId = useId();
+  return <div className="disclosure">
+    <button type="button" className="disclosure-trigger tap" aria-expanded={open} aria-controls={contentId} onClick={() => setOpen((value) => !value)}>
+      <span>{label}</span><span aria-hidden="true" className={`disclosure-chevron ${open ? 'is-open' : ''}`}>⌄</span>
+    </button>
+    {open && <div id={contentId} className="disclosure-content">{children}</div>}
+  </div>;
+}
+
+export function ChoiceToggle<T extends string>({ label, value, options, onChange, hint }: { label?: string; value: T; options: Array<{ value: T; label: string }>; onChange: (value: T) => void; hint?: string }) {
+  return <fieldset className="choice-toggle">
+    {label && <legend className="field-label">{label}</legend>}
+    <div className="segmented-control" role="radiogroup" aria-label={label}>
+      {options.map((option) => <button type="button" role="radio" aria-checked={value === option.value} className={value === option.value ? 'active' : ''} key={option.value} onClick={() => onChange(option.value)}>{option.label}</button>)}
+    </div>
+    {hint && <p className="field-hint">{hint}</p>}
+  </fieldset>;
+}
+
+export function SelectField({ label, value, options, onChange, required = false, hint }: { label: string; value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void; required?: boolean; hint?: string }) {
+  return <label className="field-label">{label}<select className="field-input" required={required} value={value} onChange={(event) => onChange(event.target.value)}><option value="">—</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{hint && <span className="field-hint">{hint}</span>}</label>;
+}
+
+export function FormSection({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return <section className="form-section"><div className="form-section-heading"><h2 className="section-title">{title}</h2>{hint && <p className="field-hint">{hint}</p>}</div>{children}</section>;
 }

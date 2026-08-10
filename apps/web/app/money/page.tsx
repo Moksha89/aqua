@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet, apiRequest, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
-import { ActionButton, Card, PageHeader, StatCard } from '../../src/components/design-system';
+import { ActionButton, Card, ChoiceToggle, Disclosure, PageHeader, StatCard } from '../../src/components/design-system';
 import { formatPaise, rupeesToPaise } from '../../src/lib/money';
 
 type Pond = components['schemas']['PondListItemDto'];
@@ -43,7 +43,7 @@ export default function MoneyPage() {
   const [message, setMessage] = useState('');
   const [billPhoto, setBillPhoto] = useState<File | null>(null);
   const [selectedParty, setSelectedParty] = useState('');
-  const [expense, setExpense] = useState<Expense>({ expenseDate: new Date().toISOString().slice(0, 10), costHeadId: '', allocationTarget: 'POND_CROP', amountPaise: '', paymentStatus: 'UNPAID' });
+  const [expense, setExpense] = useState<Expense>({ expenseDate: new Date().toISOString().slice(0, 10), costHeadId: '', allocationTarget: 'POND_CROP', amountPaise: '', paymentStatus: 'PAID' });
   const [payment, setPayment] = useState<Payment>({ partyId: '', paidOn: new Date().toISOString().slice(0, 10), direction: 'PAYABLE', amountPaise: '', mode: 'CASH' });
   const ponds = useQuery({ queryKey: ['ponds'], queryFn: () => apiGet<Pond[]>('/masters/ponds'), enabled: financial });
   const costHeads = useQuery({ queryKey: ['cost-heads'], queryFn: () => apiGet<CostHead[]>('/masters/cost-heads'), enabled: financial });
@@ -53,6 +53,13 @@ export default function MoneyPage() {
   const receivables = useQuery({ queryKey: ['receivables'], queryFn: () => apiGet<Receivable[]>('/finance/receivables'), enabled: financial });
   const ledger = useQuery({ queryKey: ['ledger', selectedParty], queryFn: () => apiGet<Ledger>(`/finance/parties/${selectedParty}/ledger`), enabled: financial && Boolean(selectedParty) });
   const headroom = useQuery({ queryKey: ['headroom', selectedParty], queryFn: () => apiGet<Headroom>(`/finance/suppliers/${selectedParty}/headroom`), enabled: financial && Boolean(selectedParty) });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const lastCostHead = window.localStorage.getItem('aqua_last_cost_head');
+    const lastPaymentMode = window.localStorage.getItem('aqua_last_payment_mode');
+    if (lastCostHead) setExpense((value) => value.costHeadId ? value : { ...value, costHeadId: lastCostHead });
+    if (lastPaymentMode) setPayment((value) => ({ ...value, mode: lastPaymentMode }));
+  }, []);
 
   async function saveExpense(event: FormEvent) {
     event.preventDefault();
@@ -64,33 +71,37 @@ export default function MoneyPage() {
         if (!upload.ok) throw new Error(t.attachmentUploadFailed);
         await apiRequest('/attachments/confirm', { method: 'POST', body: JSON.stringify({ attachmentId: presign.attachmentId }) });
       }
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('aqua_last_cost_head', expense.costHeadId);
+      }
       setMessage(t.savedExpense);
     }
     catch (error) { setMessage(error instanceof Error ? error.message : t.saveExpense); }
   }
   async function savePayment(event: FormEvent) {
     event.preventDefault();
-    try { await apiRequest('/finance/payments', { method: 'POST', body: JSON.stringify({ ...payment, amountPaise: rupeesToPaise(payment.amountPaise) }) }); setMessage(t.savedPayment); }
+    try { await apiRequest('/finance/payments', { method: 'POST', body: JSON.stringify({ ...payment, amountPaise: rupeesToPaise(payment.amountPaise) }) }); if (typeof window !== 'undefined') window.localStorage.setItem('aqua_last_payment_mode', payment.mode); setMessage(t.savedPayment); }
     catch (error) { setMessage(error instanceof Error ? error.message : t.savePayment); }
   }
 
   if (!financial) return <section className="rise"><PageHeader eyebrow={t.money} title={t.money} subtitle={t.financialUnavailable} /><Card className="card-pad"><p className="muted">{t.financialUnavailable}</p></Card></section>;
   return <section className="rise">
-    <PageHeader eyebrow={t.money} title="Money at a glance" subtitle={language === 'te' ? 'మీ ఫార్మ్ డబ్బు లావాదేవీలను నిర్వహించండి.' : 'Manage your farm money and payments.'} action={<ActionButton href="/reports"><i className="ph-duotone ph-chart-line-up mr-2" />{t.reports}</ActionButton>} />
+    <PageHeader eyebrow={t.money} title={t.moneyAtGlance} subtitle={t.moneyHint} />
     {pnl.data && <div className="grid grid-cols-3 gap-2"><StatCard label={t.revenue} value={formatPaise(pnl.data.revenuePaise)} /><StatCard label={t.cost} value={formatPaise(pnl.data.costPaise)} tone="warning" /><StatCard label={t.netProfit} value={formatPaise(pnl.data.netProfitPaise)} tone="success" /></div>}
-    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">{moneyScreens.map(([slug, label, icon]) => <Link key={slug} href={`/money/${slug}`} className="pond-tile tap flex items-center gap-3"><i className={`ph-duotone ${icon} shrink-0 text-2xl text-primary`} /><span className="min-w-0 flex-1 text-sm font-extrabold">{language === 'te' ? label[1] : label[0]}</span><i className="ph-duotone ph-caret-right shrink-0 text-textSecondary" /></Link>)}</div>
-    <div className="mt-5 grid grid-cols-2 gap-3"><Link href="/harvest/events" className="pond-tile tap"><i className="ph-duotone ph-fish text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? 'కోత ఈవెంట్లు' : 'Harvest events'}</span></Link><Link href="/harvest/market-rates" className="pond-tile tap"><i className="ph-duotone ph-chart-line-up text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? 'మార్కెట్ రేట్లు' : 'Market rates'}</span></Link><Link href="/closure" className="pond-tile tap"><i className="ph-duotone ph-check-circle text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? 'క్లోజర్ చెక్‌లిస్ట్' : 'Closure checklist'}</span></Link><Link href="/closed-crops" className="pond-tile tap"><i className="ph-duotone ph-archive text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{language === 'te' ? 'మూసిన పంటలు' : 'Closed-crop archive'}</span></Link></div>
+    <div className="mt-5 grid grid-cols-2 gap-3"><Link href="#expense" className="pond-tile tap">{t.recordSpending}</Link><Link href="#payment" className="pond-tile tap">{t.recordPayment}</Link><Link href="/money/payables" className="pond-tile tap">{t.payables}</Link><Link href="/money/receivables" className="pond-tile tap">{t.receivables}</Link></div>
+    <Disclosure label={t.moreMoneyTools}><div className="grid grid-cols-2 gap-3">{moneyScreens.filter(([slug]) => !['expense', 'payment', 'payables', 'receivables'].includes(slug)).map(([slug, label, icon]) => <Link key={slug} href={`/money/${slug}`} className="pond-tile tap flex items-center gap-3"><i className={`ph-duotone ${icon} shrink-0 text-2xl text-primary`} /><span className="min-w-0 flex-1 text-sm font-extrabold">{language === 'te' ? label[1] : label[0]}</span><i className="ph-duotone ph-caret-right shrink-0 text-textSecondary" /></Link>)}</div></Disclosure>
+    <div className="mt-5 grid grid-cols-2 gap-3"><Link href="/harvest/events" className="pond-tile tap"><i className="ph-duotone ph-fish text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.harvestEvents}</span></Link><Link href="/harvest/market-rates" className="pond-tile tap"><i className="ph-duotone ph-chart-line-up text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.marketRates}</span></Link><Link href="/closure" className="pond-tile tap"><i className="ph-duotone ph-check-circle text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.closeCrop}</span></Link><Link href="/closed-crops" className="pond-tile tap"><i className="ph-duotone ph-archive text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.closedCrops}</span></Link></div>
     <div className="mt-8 grid gap-6 lg:grid-cols-2">
-      <form onSubmit={saveExpense} className="rounded-xl border border-border bg-surface p-5"><h2 className="text-xl font-semibold">{t.expense}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <form id="expense" onSubmit={saveExpense} className="rounded-xl border border-border bg-surface p-5"><h2 className="text-xl font-semibold">{t.recordSpending}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Field label={t.expenseDate} type="date" value={expense.expenseDate} onChange={(value) => setExpense({ ...expense, expenseDate: value })} />
         <label className="text-sm text-textSecondary">{t.costHead}<select required value={expense.costHeadId} onChange={(event) => setExpense({ ...expense, costHeadId: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(costHeads.data ?? []).map((head) => <option key={head.id} value={head.id}>{head.name}</option>)}</select></label>
         <label className="text-sm text-textSecondary">{t.allocation}<select value={expense.allocationTarget} onChange={(event) => setExpense({ ...expense, allocationTarget: event.target.value as Expense['allocationTarget'] })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="POND_CROP">{t.pond}</option><option value="COMMON">{t.common}</option></select></label>
         {expense.allocationTarget === 'POND_CROP' && <><label className="text-sm text-textSecondary">{t.pond}<select required value={expense.pondId ?? ''} onChange={(event) => { const pond = (ponds.data ?? []).find((item) => item.id === event.target.value); setExpense({ ...expense, pondId: event.target.value, cropId: pond?.activeCrop?.id }); }} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(ponds.data ?? []).map((pond) => <option key={pond.id} value={pond.id}>{pond.name}</option>)}</select></label><label className="text-sm text-textSecondary">{t.crop}<select required value={expense.cropId ?? ''} onChange={(event) => setExpense({ ...expense, cropId: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(ponds.data ?? []).filter((pond) => pond.id === expense.pondId && pond.activeCrop).map((pond) => <option key={pond.activeCrop!.id} value={pond.activeCrop!.id}>{pond.activeCrop!.code}</option>)}</select></label></>}
         <Field label={language === 'te' ? 'మొత్తం (రూపాయలు)' : 'Amount (₹)'} value={expense.amountPaise} onChange={(value) => setExpense({ ...expense, amountPaise: value })} required />
-        <label className="text-sm text-textSecondary">{t.paymentStatus}<select value={expense.paymentStatus ?? 'UNPAID'} onChange={(event) => setExpense({ ...expense, paymentStatus: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="UNPAID">{t.unpaid}</option><option value="PAID">{t.paid}</option><option value="PART_PAID">{t.partPaid}</option></select></label>
+        <ChoiceToggle label={t.paymentStatus} value={expense.paymentStatus ?? 'PAID'} onChange={(value) => setExpense({ ...expense, paymentStatus: value })} options={[{ value: 'PAID', label: t.paid }, { value: 'UNPAID', label: t.unpaid }, { value: 'PART_PAID', label: t.partPaid }]} />
         <label className="text-sm text-textSecondary">{t.party}<select value={expense.partyId ?? ''} onChange={(event) => setExpense({ ...expense, partyId: event.target.value || undefined })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(parties.data ?? []).map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label><label className="text-sm text-textSecondary">{t.billPhoto}<input accept="image/*" type="file" capture="environment" onChange={(event) => setBillPhoto(event.target.files?.[0] ?? null)} className="mt-1 block w-full text-textPrimary" /></label>
       </div><button className="mt-5 rounded-lg bg-primary px-4 py-2 text-onPrimary" type="submit">{t.saveExpense}</button></form>
-      <form onSubmit={savePayment} className="rounded-xl border border-border bg-surface p-5"><h2 className="text-xl font-semibold">{t.payments}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <form id="payment" onSubmit={savePayment} className="rounded-xl border border-border bg-surface p-5"><h2 className="text-xl font-semibold">{t.recordPayment}</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="text-sm text-textSecondary">{t.party}<select required value={payment.partyId} onChange={(event) => setPayment({ ...payment, partyId: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-3 text-textPrimary"><option value="">—</option>{(parties.data ?? []).map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></label>
         <Field label={t.paidOn} type="date" value={payment.paidOn} onChange={(value) => setPayment({ ...payment, paidOn: value })} /><Field label={language === 'te' ? 'మొత్తం (రూపాయలు)' : 'Amount (₹)'} value={payment.amountPaise} onChange={(value) => setPayment({ ...payment, amountPaise: value })} required /><Field label={t.direction} value={payment.direction} onChange={(value) => setPayment({ ...payment, direction: value })} /><Field label={t.mode} value={payment.mode} onChange={(value) => setPayment({ ...payment, mode: value })} />
       </div><button className="mt-5 rounded-lg bg-primary px-4 py-2 text-onPrimary" type="submit">{t.savePayment}</button></form>

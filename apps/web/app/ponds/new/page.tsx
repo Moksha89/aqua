@@ -4,7 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiGet, apiRequest } from '../../../src/lib/api';
-import { ActionButton, Card, Field, PageHeader } from '../../../src/components/design-system';
+import { ActionButton, Card, ChoiceToggle, Field, PageHeader, SelectField } from '../../../src/components/design-system';
 import { useI18n } from '../../../src/lib/i18n';
 
 type Farm = { id: string; name: string };
@@ -26,5 +26,5 @@ export default function NewPondPage() {
       router.replace('/ponds');
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to create pond'); }
   }
-  return <div className="rise"><PageHeader eyebrow={t.ponds} title={t.addEntry} subtitle="Set up the pond master before recording daily work." /><Card className="card-pad"><form onSubmit={submit} className="grid gap-4"><label className="field-label">Farm<select className="field-input" required value={farmId} onChange={(event) => setFarmId(event.target.value)}><option value="">Select farm</option>{(farms.data ?? []).map((farm) => <option key={farm.id} value={farm.id}>{farm.name}</option>)}</select></label><Field label="Pond name" value={name} onChange={setName} required /><Field label="Pond code" value={code} onChange={setCode} required /><Field label="Extent (acres)" type="number" value={extentAcres} onChange={setExtentAcres} required /><label className="field-label">Ownership<select className="field-input" value={ownershipType} onChange={(event) => setOwnershipType(event.target.value)}><option value="OWN">Own</option><option value="LEASED">Leased</option></select></label><ActionButton type="submit">{t.addEntry}</ActionButton>{message && <p className="text-sm text-danger">{message}</p>}</form></Card></div>;
+  return <div className="rise"><PageHeader eyebrow={t.ponds} title={t.addEntry} subtitle={t.setUpPondHint} /><Card className="card-pad"><form onSubmit={submit} className="grid gap-4"><SelectField label={t.farm} required value={farmId} onChange={setFarmId} options={(farms.data ?? []).map((farm) => ({ value: farm.id, label: farm.name }))} /><Field label={t.pondName} value={name} onChange={setName} required /><Field label={t.pondCode} value={code} onChange={setCode} required /><Field label={t.extentAcres} type="number" value={extentAcres} onChange={setExtentAcres} required /><ChoiceToggle label={t.ownership} value={ownershipType} onChange={setOwnershipType} options={[{ value: 'OWN', label: t.own }, { value: 'LEASED', label: t.leased }]} /><ActionButton type="submit">{t.addEntry}</ActionButton>{message && <p className="text-sm text-danger">{message}</p>}</form></Card></div>;
 }
