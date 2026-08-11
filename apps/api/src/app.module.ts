@@ -15,9 +15,10 @@ import { AllocationModule } from './allocation/allocation.module';
 import { ThemeModule } from './theme/theme.module';
 import { SyncModule } from './sync/sync.module';
 import { AttachmentsModule } from './attachments/attachments.module';
+import { ScrapModule } from './scrap/scrap.module';
 
 @Module({
-  imports: [PrismaModule, HealthModule, AuthModule, CropModule, AuthorizationModule, MastersModule, OperationsModule, FinanceModule, HarvestModule, AllocationModule, ThemeModule, SyncModule, AttachmentsModule],
+  imports: [PrismaModule, HealthModule, AuthModule, CropModule, AuthorizationModule, MastersModule, OperationsModule, FinanceModule, HarvestModule, AllocationModule, ThemeModule, SyncModule, AttachmentsModule, ScrapModule],
   providers: [AuditInterceptor],
 })
 export class AppModule {

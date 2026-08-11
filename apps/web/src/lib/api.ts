@@ -8,6 +8,8 @@ export type Session = {
   refreshToken: string;
   businessId?: string;
   userId?: string;
+  mobile?: string;
+  businessName?: string;
   role?: string;
   financialAccess?: boolean;
 };
