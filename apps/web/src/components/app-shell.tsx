@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { clearSession, getSession, type Session } from '../lib/api';
+import { FarmMark } from './design-system';
 import { useI18n } from '../lib/i18n';
 
 export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -15,21 +16,32 @@ export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) 
     const current = getSession();
     setSession(current);
     if (!current && pathname !== '/login') router.replace('/login');
+    if (current && !current.businessId && pathname !== '/business' && pathname !== '/login') router.replace('/business');
     if (current && pathname === '/login') router.replace('/');
   }, [pathname, router]);
   if (pathname === '/login') return <>{children}</>;
-  if (!session) return <main className="flex min-h-screen items-center justify-center bg-background text-textSecondary">{t.loading}</main>;
+  if (!session) return <main className="app-frame flex min-h-screen items-center justify-center"><span className="muted">{t.loading}</span></main>;
   const tabs = [
-    { href: '/', label: t.home },
-    { href: '/ponds', label: t.ponds },
-    { href: '/daily-entry', label: t.daily },
-    ...(session.financialAccess === false || (session.role === 'AE_OPERATOR' && session.financialAccess !== true) ? [] : [{ href: '/money', label: t.money }]),
-    { href: '/more', label: t.more },
+    { href: '/', label: t.home, icon: 'ph-house' },
+    { href: '/ponds', label: t.ponds, icon: 'ph-drop' },
+    { href: '/daily-entry', label: t.daily, icon: 'ph-plus' },
+    ...(session.financialAccess === true ? [{ href: '/money', label: t.money, icon: 'ph-wallet' }] : []),
+    { href: '/more', label: t.more, icon: 'ph-list' },
   ];
-  return <div className="min-h-screen bg-background pb-20 text-textPrimary">
-    <header className="border-b border-border bg-surface"><div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3"><Link className="font-semibold text-primary" href="/">AE Farm</Link><div className="flex items-center gap-3"><button className="text-sm text-textSecondary" onClick={() => setLanguage(language === 'en' ? 'te' : 'en')}>{language === 'en' ? 'తెలుగు' : 'English'}</button><button className="text-sm text-danger" onClick={() => { clearSession(); router.replace('/login'); }}>Sign out</button></div></div></header>
-    <main className="mx-auto max-w-6xl px-4 py-5">{children}</main>
-    <button aria-label={t.quickAdd} className="fixed bottom-20 right-5 rounded-full bg-primary px-5 py-3 font-semibold text-onPrimary shadow-lg" onClick={() => router.push('/daily-entry')}>+ {t.quickAdd}</button>
-    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface"><div className="mx-auto flex max-w-6xl justify-around px-2 py-2">{tabs.map((tab) => <Link key={tab.href} className={`rounded-lg px-3 py-2 text-sm ${pathname === tab.href ? 'bg-primary text-onPrimary' : 'text-textSecondary'}`} href={tab.href}>{tab.label}</Link>)}</div></nav>
+  return <div className="app-frame text-textPrimary">
+    <header className="app-topbar">
+      <Link className="app-brand" href="/"><FarmMark /><span><strong>{session.businessName ?? 'AE Farm'}</strong>{session.mobile && <small>{session.mobile}</small>}</span></Link>
+      <div className="flex items-center gap-3">
+        <button aria-label="Notifications" className="header-icon"><i className="ph-duotone ph-bell" /></button>
+        <button aria-label="Change language" className="muted text-xs font-bold" onClick={() => setLanguage(language === 'en' ? 'te' : 'en')}>{language === 'en' ? 'తెలుగు' : 'English'}</button>
+        <button aria-label="Sign out" className="grid h-10 w-10 place-items-center rounded-full bg-primary font-bold text-onPrimary" onClick={() => { clearSession(); router.replace('/login'); }}>AF</button>
+      </div>
+    </header>
+    <main className="app-content">{children}</main>
+    <nav className="bottom-nav"><div className="bottom-nav-inner">
+      {tabs.map((tab, index) => index === 2
+        ? <div className="bottom-tab fab-space" key={tab.href}><button aria-label={t.quickAdd} className="fab tap" onClick={() => router.push('/daily-entry')}><i className="ph-duotone ph-plus" /></button><span>{t.quickAdd}</span></div>
+        : <Link key={tab.href} className={`bottom-tab ${pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href)) ? 'active' : ''}`} href={tab.href}><i className={`ph-duotone ${tab.icon} text-xl`} /><span>{tab.label}</span></Link>)}
+    </div></nav>
   </div>;
 }

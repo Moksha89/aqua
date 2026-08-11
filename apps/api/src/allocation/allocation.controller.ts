@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString } from 'class-validator';
 import { AuthenticatedRequest, JwtGuard } from '../auth/jwt.guard';
@@ -12,5 +12,7 @@ export class AllocationController {
   constructor(private readonly allocations: AllocationService) {}
   private ctx(r: AuthenticatedRequest) { return { businessId: r.user!.businessId!, userId: r.user!.id, deviceId: r.user!.deviceId }; }
   @Post('runs') run(@Body() b: RunDto, @Req() r: AuthenticatedRequest) { return this.allocations.run(b, this.ctx(r)); }
+  @Get('runs') runs(@Req() r: AuthenticatedRequest) { return this.allocations.runs({ businessId: r.user!.businessId!, pondScope: r.user!.pondScope, role: r.user!.role }); }
+  @Get('runs/:id/derivation') derivation(@Param('id') id: string, @Req() r: AuthenticatedRequest) { return this.allocations.derivation(id, { businessId: r.user!.businessId!, pondScope: r.user!.pondScope, role: r.user!.role }); }
   @Post('idle-pond-costs') idle(@Body() b: IdleDto, @Req() r: AuthenticatedRequest) { return this.allocations.idle(b, this.ctx(r)); }
 }

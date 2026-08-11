@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../platform/prisma.service';
 import { QueryScope, ScopeUser } from '../authorization/query-scope';
@@ -33,6 +33,18 @@ export class MastersService {
   get asset(): Delegate { return this.prisma.asset; }
   get costHead(): Delegate { return this.prisma.costHead; }
   get preparationTemplate(): Delegate { return this.prisma.preparationTemplate; }
+  get marketRateReference(): Delegate { return this.prisma.marketRateReference; }
+
+  async validateLeaseExtent(businessId: string, extentAcres: number, pondId?: string, client?: PrismaService, leaseAgreementId?: string): Promise<void> {
+    if (!pondId && !leaseAgreementId) return;
+    const prisma = client ?? this.prisma;
+    const where = pondId ? { id: pondId, businessId, voidedAt: null } : { leaseAgreementId, businessId, voidedAt: null };
+    const pond = await prisma.pond.findFirst({ where, select: { extentAcres: true } });
+    if (!pond) throw new BadRequestException('Attached pond was not found.');
+    if (new Prisma.Decimal(String(extentAcres)).gt(pond.extentAcres)) {
+      throw new BadRequestException('Lease extent cannot exceed the attached pond extent.');
+    }
+  }
 
   async listPonds(user: ScopeUser): Promise<PondListItemDto[]> {
     const ponds = await this.prisma.pond.findMany({ where: { ...this.scope.pondWhere(user), voidedAt: null } });
@@ -173,9 +185,14 @@ export class MastersService {
 
   async createLease(data: Record<string, unknown>, context: MasterContext): Promise<unknown> {
     return this.prisma.$transaction(async (tx) => {
+      const pondId = data.pondId as string | undefined;
+      const leaseData = { ...data };
+      delete leaseData.pondId;
+      await this.validateLeaseExtent(context.businessId, Number(leaseData.extentAcres), pondId, tx as unknown as PrismaService);
       const lease = await tx.leaseAgreement.create({
-        data: { ...data, businessId: context.businessId, createdBy: context.userId, updatedBy: context.userId, deviceId: context.deviceId } as Prisma.LeaseAgreementUncheckedCreateInput,
+        data: { ...leaseData, businessId: context.businessId, createdBy: context.userId, updatedBy: context.userId, deviceId: context.deviceId } as Prisma.LeaseAgreementUncheckedCreateInput,
       });
+      if (pondId) await tx.pond.update({ where: { id: pondId }, data: { leaseAgreementId: lease.id, ownershipType: 'LEASED', updatedBy: context.userId } });
       const start = new Date(data.startDate as Date);
       const end = new Date(data.endDate as Date);
       const frequency = String(data.paymentFrequency).toUpperCase();
@@ -207,6 +224,29 @@ export class MastersService {
           userId: context.userId, deviceId: context.deviceId, at: new Date(), before: Prisma.JsonNull,
           after: lease as never, createdBy: context.userId, updatedBy: context.userId },
       });
+      return lease;
+    });
+  }
+
+  async updateLease(id: string, data: Record<string, unknown>, context: MasterContext): Promise<unknown> {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.leaseAgreement.findFirst({ where: { id, businessId: context.businessId, voidedAt: null } });
+      if (!existing) throw new BadRequestException('Lease agreement was not found.');
+      const pondId = data.pondId as string | undefined;
+      const leaseData = { ...data };
+      delete leaseData.pondId;
+      await this.validateLeaseExtent(context.businessId, Number(leaseData.extentAcres), pondId, tx as unknown as PrismaService, id);
+      const previousPond = await tx.pond.findFirst({ where: { businessId: context.businessId, leaseAgreementId: id, voidedAt: null } });
+      const lease = await tx.leaseAgreement.update({
+        where: { id },
+        data: { ...leaseData, updatedBy: context.userId },
+      });
+      if (pondId) {
+        const relinkedPond = await tx.pond.update({ where: { id: pondId }, data: { leaseAgreementId: id, ownershipType: 'LEASED', updatedBy: context.userId } });
+        if (previousPond && previousPond.id !== pondId) await tx.pond.update({ where: { id: previousPond.id }, data: { leaseAgreementId: null, ownershipType: 'OWN', updatedBy: context.userId } });
+        await this.audit(context, relinkedPond.id, 'UPDATE', previousPond, relinkedPond);
+      }
+      await this.audit(context, id, 'UPDATE', existing, lease);
       return lease;
     });
   }
