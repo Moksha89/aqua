@@ -64,6 +64,7 @@ export class FinanceController {
   @Get('reports/pond-history') @ApiResponse({ type: PondHistoryReportDto }) pondHistory(@Req() r: AuthenticatedRequest) { return this.finance.pondHistory(this.ctx(r)); }
   @Get('reports/lifetime-profitability') @ApiResponse({ type: LifetimeProfitabilityReportDto }) lifetimeProfitability(@Req() r: AuthenticatedRequest) { return this.finance.lifetimeProfitability(this.ctx(r)); }
   @Get('reports/business-pnl') @ApiResponse({ type: BusinessPnlReportDto }) businessPnl(@Req() r: AuthenticatedRequest) { return this.finance.businessPnl(this.ctx(r)); }
+  @Get('reports/insights') insights(@Req() r: AuthenticatedRequest) { return this.finance.insights(this.ctx(r)); }
   @Get('reports/cost-head-analysis') @ApiResponse({ type: CostHeadAnalysisReportDto }) costHeadAnalysis(@Req() r: AuthenticatedRequest) { return this.finance.costHeadAnalysis(this.ctx(r)); }
   @Get('reports/asset-register') @ApiResponse({ type: AssetRegisterReportDto }) assetRegister(@Req() r: AuthenticatedRequest) { return this.finance.assetRegister(this.ctx(r)); }
   @Get('reports/lease-register') @ApiResponse({ type: LeaseRegisterReportDto }) leaseRegister(@Req() r: AuthenticatedRequest) { return this.finance.leaseRegister(this.ctx(r)); }

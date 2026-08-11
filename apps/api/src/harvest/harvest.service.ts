@@ -9,6 +9,7 @@ import type { CloseCropResponseDto } from './harvest.controller';
 type Context = ScopeUser & { deviceId: string };
 type Line = { speciesId?: string; basis: 'COUNT' | 'GRADE'; key: string; quantityKg: string; ratePerKgPaise: string };
 type HarvestInput = { harvestDate: string; doc: number; type: 'PARTIAL' | 'FINAL'; reason: 'TARGET_SIZE' | 'MARKET_RATE' | 'DISEASE' | 'SEASON_END' | 'OTHER'; sampleTaken: boolean; sampleCount?: number; sampleWeightG?: string; buyerPartyId?: string; receivableDueDate?: string; lines: Line[]; deductions?: Array<{ kind: string; amountPaise: string }> };
+const CLOSURE_STEPS = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION', 'FREEZE_PNL'] as const;
 
 @Injectable()
 export class HarvestService {
@@ -17,6 +18,61 @@ export class HarvestService {
     private readonly allocations: AllocationService,
     private readonly scope: QueryScope,
   ) {}
+
+  async events(cropId: string, ctx: Context) {
+    const crop = await this.scopedCrop(cropId, ctx);
+    const events = await this.prisma.harvestEvent.findMany({
+      where: { businessId: ctx.businessId, cropId: crop.id, voidedAt: null },
+      orderBy: [{ harvestDate: 'desc' }, { createdAt: 'desc' }],
+    });
+    return Promise.all(events.map(async (event) => ({
+      ...event,
+      lines: await this.prisma.harvestLine.findMany({ where: { businessId: ctx.businessId, harvestEventId: event.id, voidedAt: null } }),
+      deductions: await this.prisma.harvestDeduction.findMany({ where: { businessId: ctx.businessId, harvestEventId: event.id, voidedAt: null } }),
+    })));
+  }
+
+  async checklistRead(cropId: string, ctx: Context) {
+    await this.scopedCrop(cropId, ctx);
+    const existing = await this.prisma.cropClosureChecklist.findMany({
+      where: { businessId: ctx.businessId, cropId, voidedAt: null },
+      orderBy: { step: 'asc' },
+    });
+    const byStep = new Map(existing.map((item) => [item.step, item]));
+    return CLOSURE_STEPS.map((step) => byStep.get(step) ?? {
+      id: null,
+      businessId: ctx.businessId,
+      cropId,
+      step,
+      status: 'PENDING',
+      note: null,
+      virtual: true,
+    });
+  }
+
+  async frozenPnl(cropId: string, ctx: Context) {
+    await this.scopedCrop(cropId, ctx);
+    return this.prisma.cropPnl.findFirst({ where: { businessId: ctx.businessId, cropId, isCurrent: true }, orderBy: { version: 'desc' } });
+  }
+
+  async closed(ctx: Context, status?: string) {
+    if (status && status !== 'CLOSED') return [];
+    const crops = await this.prisma.crop.findMany({
+      where: { businessId: ctx.businessId, status: 'CLOSED', voidedAt: null },
+      orderBy: { closedAt: 'desc' },
+    });
+    const allowed = await Promise.all(crops.map(async (crop) => {
+      try { this.scope.assertPondScope(ctx, crop.pondId); return crop; } catch { return null; }
+    }));
+    return allowed.filter((crop): crop is NonNullable<typeof crop> => crop !== null);
+  }
+
+  private async scopedCrop(cropId: string, ctx: Context) {
+    const crop = await this.prisma.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
+    if (!crop) throw new NotFoundException('Crop not found');
+    this.scope.assertPondScope(ctx, crop.pondId);
+    return crop;
+  }
 
   async harvest(cropId: string, body: HarvestInput, ctx: Context) {
     if (!body.lines.length) throw new BadRequestException('Harvest lines are required');
@@ -77,7 +133,7 @@ export class HarvestService {
   async checklist(cropId: string, ctx: Context) {
     const crop = await this.prisma.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null } });
     if (!crop) throw new NotFoundException('Crop not found');
-    const steps = ['CONFIRM_HARVESTS', 'ZERO_COST_HEADS', 'RECONCILE_FEED_STOCK', 'POST_OCCUPANCY_COSTS', 'CLOSURE_ALLOCATION', 'FREEZE_PNL'];
+    const steps = CLOSURE_STEPS;
     return this.prisma.$transaction(async (tx) => {
       for (const step of steps) {
         const existing = await tx.cropClosureChecklist.findFirst({ where: { businessId: ctx.businessId, cropId, step, voidedAt: null } });
