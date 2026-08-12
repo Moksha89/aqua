@@ -27,12 +27,21 @@ challenge and all normal challenge attempt/consumption checks still apply. The
 API logs a loud warning when this switch is enabled. **Never set
 `DEV_LOGIN_OTP` in production**; leave it unset for production and CI.
 
-`deploy/staging-seed.cjs` is a staging fixture reset, not a production data
-migration. Each run resets the mutable demo records for the business named
-`Demo Aqua Farm` and restores its seeded active crops and financial figures.
-The reset is intentionally destructive within that one staging business so
-browser test records cannot drift the demo. Do not run this script against a
-production business or add it to an application request path.
+`deploy/staging-seed.cjs` is a **staging-only fixture reset**, not a production
+data migration. The API image carries this script solely so a maintainer can
+run the one-off reset command below; it is not invoked by the API and never
+runs automatically on boot:
+
+```bash
+docker compose --env-file .env -f deploy/docker-compose.prod.yml run --rm api \
+  node /repo/deploy/staging-seed.cjs
+```
+
+Each run is intentionally destructive within the single staging business
+named `Demo Aqua Farm`: it resets mutable demo records and restores the seeded
+active crops and financial figures. **Do not run this command against a
+production business, expose it through an application request path, or add it
+to container startup.**
 
 ## Updating
 
