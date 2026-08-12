@@ -90,6 +90,8 @@ async function main() {
   if (!frozen) await prisma.cropPnl.create({ data: { businessId: biz.id, cropId: closedCrop.id, version: 1, generatedAt: day(100), generatedBy: owner.id, payload: { status: 'FROZEN', revenuePaise: '840000', costPaise: '560000', netProfitPaise: '280000', source: 'staging-seed' }, isCurrent: true, ...meta } });
   let species = await prisma.species.findFirst({ where: { businessId: biz.id, name: 'Vannamei shrimp' } });
   if (!species) species = await prisma.species.create({ data: { businessId: biz.id, category: 'SHRIMP', name: 'Vannamei shrimp', defaultDocDays: 120, ...meta } });
+  let feedItem = await prisma.feedItem.findFirst({ where: { businessId: biz.id, brand: 'Demo Feed', gradeCode: 'G1', voidedAt: null } });
+  if (!feedItem) feedItem = await prisma.feedItem.create({ data: { businessId: biz.id, brand: 'Demo Feed', feedType: 'PELLET', gradeCode: 'G1', bagWeightKg: '25', ...meta } });
   const heads = [];
   for (const [code, name, classification] of [['FEED', 'Feed', 'DIRECT'], ['POWER', 'Power', 'DIRECT'], ['LABOUR', 'Labour', 'DIRECT']]) {
     let head = await prisma.costHead.findFirst({ where: { businessId: biz.id, code } });

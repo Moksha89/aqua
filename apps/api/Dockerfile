@@ -11,6 +11,7 @@ WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/
 COPY apps/api/prisma apps/api/prisma
+COPY deploy/staging-seed.cjs deploy/staging-seed.cjs
 RUN pnpm install --frozen-lockfile --filter @aqua/api...
 COPY apps/api apps/api
 RUN pnpm --filter @aqua/api exec prisma generate \
@@ -25,6 +26,7 @@ COPY --from=build /repo/apps/api/node_modules apps/api/node_modules
 COPY --from=build /repo/apps/api/package.json apps/api/package.json
 COPY --from=build /repo/apps/api/prisma apps/api/prisma
 COPY --from=build /repo/apps/api/dist apps/api/dist
+COPY --from=build /repo/deploy/staging-seed.cjs deploy/staging-seed.cjs
 WORKDIR /repo/apps/api
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

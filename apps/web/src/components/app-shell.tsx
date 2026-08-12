@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react';
 import { clearSession, getSession, type Session } from '../lib/api';
 import { FarmMark } from './design-system';
 import { useI18n } from '../lib/i18n';
+import { QuickAddSheet } from './quick-add-sheet';
 
 export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
   const router = useRouter();
   const { t, language, setLanguage } = useI18n();
   const [session, setSession] = useState<Session | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   useEffect(() => {
     const current = getSession();
     setSession(current);
@@ -40,8 +42,9 @@ export function AppShell({ children }: Readonly<{ children: React.ReactNode }>) 
     <main className="app-content">{children}</main>
     <nav className="bottom-nav"><div className="bottom-nav-inner">
       {tabs.map((tab, index) => index === 2
-        ? <div className="bottom-tab fab-space" key={tab.href}><button aria-label={t.quickAdd} className="fab tap" onClick={() => router.push('/daily-entry')}><i className="ph-duotone ph-plus" /></button><span>{t.quickAdd}</span></div>
+        ? <div className="bottom-tab fab-space" key={tab.href}><button aria-label={t.quickAdd} className="fab tap" onClick={() => setQuickAddOpen(true)}><i className="ph-duotone ph-plus" /></button><span>{t.quickAdd}</span></div>
         : <Link key={tab.href} className={`bottom-tab ${pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href)) ? 'active' : ''}`} href={tab.href}><i className={`ph-duotone ${tab.icon} text-xl`} /><span>{tab.label}</span></Link>)}
     </div></nav>
+    {quickAddOpen && <QuickAddSheet onClose={() => setQuickAddOpen(false)} />}
   </div>;
 }

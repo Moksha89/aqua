@@ -7,7 +7,8 @@ import { apiGet, apiRequest, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
 import { ActionButton, Card, ChoiceToggle, Disclosure, FormSection, PageHeader, SelectField, StatCard } from '../../src/components/design-system';
-import { formatPaise, rupeesToPaise } from '../../src/lib/money';
+import { formatPaise } from '../../src/lib/money';
+import { saveExpenseEntry, savePaymentEntry } from '../../src/lib/entry-actions';
 
 type Pond = components['schemas']['PondListItemDto'];
 type CostHead = components['schemas']['CostHeadListDto'];
@@ -81,7 +82,7 @@ export default function MoneyPage() {
       return;
     }
     try {
-      const created = await apiRequest<{ id: string }>('/finance/expenses', { method: 'POST', body: JSON.stringify({ ...expense, amountPaise: rupeesToPaise(expense.amountPaise) }) });
+      const created = await saveExpenseEntry<{ id: string }>(expense);
       if (billPhoto) {
         const presign = await apiRequest<{ attachmentId: string; uploadUrl: string }>('/attachments/presign', { method: 'POST', body: JSON.stringify({ ownerType: 'EXPENSE', ownerId: created.id, fileName: billPhoto.name, contentType: billPhoto.type, sizeBytes: billPhoto.size }) });
         const upload = await fetch(presign.uploadUrl, { method: 'PUT', headers: { 'content-type': billPhoto.type }, body: billPhoto });
@@ -103,7 +104,7 @@ export default function MoneyPage() {
       window.setTimeout(() => document.getElementById('payment-party')?.focus(), 0);
       return;
     }
-    try { await apiRequest('/finance/payments', { method: 'POST', body: JSON.stringify({ ...payment, amountPaise: rupeesToPaise(payment.amountPaise) }) }); if (typeof window !== 'undefined') window.localStorage.setItem('aqua_last_payment_mode', payment.mode); setMessage(t.savedPayment); }
+    try { await savePaymentEntry(payment); if (typeof window !== 'undefined') window.localStorage.setItem('aqua_last_payment_mode', payment.mode); setMessage(t.savedPayment); }
     catch (error) { setMessage(error instanceof Error ? error.message : t.savePayment); }
   }
 
@@ -113,7 +114,7 @@ export default function MoneyPage() {
     {pnl.data && <div className="grid grid-cols-3 gap-2"><StatCard label={t.revenue} value={formatPaise(pnl.data.revenuePaise)} /><StatCard label={t.cost} value={formatPaise(pnl.data.costPaise)} tone="warning" /><StatCard label={t.netProfit} value={formatPaise(pnl.data.netProfitPaise)} tone="success" /></div>}
     <div className="mt-5 grid grid-cols-2 gap-3"><Link href="#expense" className="pond-tile tap flex min-h-24 items-center gap-3"><i className="ph-duotone ph-receipt text-2xl text-primary" /><span className="text-sm font-extrabold">{t.recordSpending}</span></Link><Link href="#payment" className="pond-tile tap flex min-h-24 items-center gap-3"><i className="ph-duotone ph-money text-2xl text-primary" /><span className="text-sm font-extrabold">{t.recordPayment}</span></Link><Link href="/money/payables" className="pond-tile tap flex min-h-24 items-center gap-3"><i className="ph-duotone ph-arrow-up text-2xl text-primary" /><span className="text-sm font-extrabold">{t.payables}</span></Link><Link href="/money/receivables" className="pond-tile tap flex min-h-24 items-center gap-3"><i className="ph-duotone ph-arrow-down text-2xl text-primary" /><span className="text-sm font-extrabold">{t.receivables}</span></Link></div>
     <Disclosure label={t.moreMoneyTools}><div className="grid grid-cols-2 gap-3">{moneyScreens.filter(([slug]) => !['expense', 'payment', 'payables', 'receivables'].includes(slug)).map(([slug, label, icon]) => <Link key={slug} href={`/money/${slug}`} className="pond-tile tap flex items-center gap-3"><i className={`ph-duotone ${icon} shrink-0 text-2xl text-primary`} /><span className="min-w-0 flex-1 text-sm font-extrabold">{language === 'te' ? label[1] : label[0]}</span><i className="ph-duotone ph-caret-right shrink-0 text-textSecondary" /></Link>)}</div></Disclosure>
-    <div className="mt-5 grid grid-cols-2 gap-3"><Link href="/harvest/events" className="pond-tile tap"><i className="ph-duotone ph-fish text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.harvestEvents}</span></Link><Link href="/harvest/market-rates" className="pond-tile tap"><i className="ph-duotone ph-chart-line-up text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.marketRates}</span></Link><Link href="/closure" className="pond-tile tap"><i className="ph-duotone ph-check-circle text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.closeCrop}</span></Link><Link href="/closed-crops" className="pond-tile tap"><i className="ph-duotone ph-archive text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.closedCrops}</span></Link></div>
+    <Disclosure label={t.moreDetails} summary={t.moneyHint}><div className="mt-5 grid grid-cols-2 gap-3"><Link href="/harvest/events" className="pond-tile tap"><i className="ph-duotone ph-fish text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.harvestEvents}</span></Link><Link href="/harvest/market-rates" className="pond-tile tap"><i className="ph-duotone ph-chart-line-up text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.marketRates}</span></Link><Link href="/closure" className="pond-tile tap"><i className="ph-duotone ph-check-circle text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.closeCrop}</span></Link><Link href="/closed-crops" className="pond-tile tap"><i className="ph-duotone ph-archive text-2xl text-primary" /><span className="mt-2 block text-sm font-extrabold">{t.closedCrops}</span></Link></div></Disclosure>
     <div className="mt-8 grid gap-6 lg:grid-cols-2">
       <form id="expense" onSubmit={saveExpense} className="rounded-xl border border-border bg-surface p-5"><h2 className="text-xl font-semibold">{t.recordSpending}</h2><FormSection title={t.whatYouSpent}><Field label={t.amountRupees} value={expense.amountPaise} onChange={(value) => setExpense({ ...expense, amountPaise: value })} required /></FormSection><Disclosure label={t.moreDetails} open={expenseDetailsOpen} onOpenChange={setExpenseDetailsOpen} summary={expenseSummary(expense, ponds.data ?? [], costHeads.data ?? [], t)}><div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Field label={t.expenseDate} type="date" value={expense.expenseDate} onChange={(value) => setExpense({ ...expense, expenseDate: value })} />
