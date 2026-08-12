@@ -34,7 +34,6 @@ export function QuickAddSheet({ onClose }: { onClose: () => void }) {
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'BANK' | 'OTHER'>('CASH');
   const [sampleWeight, setSampleWeight] = useState('');
   const [sampleAnimals, setSampleAnimals] = useState('');
-  const [sampleDoc, setSampleDoc] = useState('');
   const ponds = useQuery({ queryKey: ['quick-add-ponds'], queryFn: () => apiGet<Pond[]>('/masters/ponds') });
   const feedItems = useQuery({ queryKey: ['quick-add-feed-items'], queryFn: () => apiGet<FeedItem[]>('/masters/feed-items') });
   const costHeads = useQuery({ queryKey: ['quick-add-cost-heads'], queryFn: () => apiGet<CostHead[]>('/masters/cost-heads'), enabled: financial });
@@ -62,7 +61,6 @@ export function QuickAddSheet({ onClose }: { onClose: () => void }) {
       if (parsed.mealSlot) setFeedSlot(parsed.mealSlot);
       if (parsed.quantityKg) setFeedQuantity(parsed.quantityKg);
     } catch {
-      // Ignore stale local defaults.
     }
   }, [cropId]);
   useEffect(() => {
@@ -126,7 +124,7 @@ export function QuickAddSheet({ onClose }: { onClose: () => void }) {
         await savePaymentEntry({ partyId, paidOn: today(), direction: 'PAYABLE', amountPaise: amount, mode: paymentMode });
         window.localStorage.setItem('aqua_last_payment_mode', paymentMode);
       } else {
-        await saveGrowthSample(cropId, { sampledOn: today(), doc: Number(sampleDoc || 0), animalsInSample: Number(sampleAnimals), sampleWeightG: sampleWeight });
+        await saveGrowthSample(cropId, { sampledOn: today(), doc: Number(activePond?.activeCrop?.doc.value ?? 0), animalsInSample: Number(sampleAnimals), sampleWeightG: sampleWeight });
       }
       setMessage(t.quickSaved);
       setAmount('');
@@ -150,7 +148,7 @@ export function QuickAddSheet({ onClose }: { onClose: () => void }) {
     <section className="quick-sheet" role="dialog" aria-modal="true" aria-labelledby="quick-add-title">
       <div className="flex items-start justify-between gap-3"><div><p className="eyebrow">{t.quickAdd}</p><h2 id="quick-add-title" className="display-title">{t.quickAddTitle}</h2></div><button type="button" className="header-icon" aria-label={t.close} onClick={onClose}>×</button></div>
       <div className="mt-5 grid grid-cols-4 gap-2">
-        {quickKinds.map((item) => <button type="button" key={item} className={`quick-kind tap ${kind === item ? 'active' : ''}`} onClick={() => selectKind(item)}><i className={`ph-duotone ${item === 'feed' ? 'ph-bowl-food' : item === 'expense' ? 'ph-receipt' : item === 'payment' ? 'ph-money' : 'ph-chart-line-up'}`} /><span>{t[item === 'expense' ? 'spending' : item]}</span></button>)}
+        {quickKinds.map((item) => <button type="button" key={item} className={`quick-kind tap ${kind === item ? 'active' : ''}`} onClick={() => selectKind(item)}><i className={`ph-duotone ${item === 'feed' ? 'ph-bowl-food' : item === 'expense' ? 'ph-receipt' : item === 'payment' ? 'ph-money' : 'ph-chart-line-up'}`} /><span>{t[item === 'expense' ? 'spending' : item === 'payment' ? 'paymentOut' : item]}</span></button>)}
       </div>
       <form onSubmit={submit} className="mt-5 grid gap-4">
         {kind === 'feed' && <><Field label={t.quantityKg} value={feedQuantity} onChange={setFeedQuantity} required /><SelectField label={t.feedItem} value={feedItemId} onChange={setFeedItemId} options={(feedItems.data ?? []).map((item) => ({ value: item.id, label: `${item.brand} · ${item.gradeCode}` }))} required /><ChoiceToggle label={t.mealSlot} value={feedSlot} onChange={setFeedSlot} options={[{ value: 'MORNING', label: t.morning }, { value: 'EVENING', label: t.evening }]} /></>}
@@ -162,7 +160,7 @@ export function QuickAddSheet({ onClose }: { onClose: () => void }) {
             {kind !== 'payment' && <SelectField label={t.pond} value={pondId} onChange={choosePond} options={livePonds.map((pond) => ({ value: pond.id, label: pond.name }))} required hint={livePonds.length > 1 ? t.quickChoosePond : undefined} />}
             {kind === 'expense' && <SelectField label={t.costHead} value={costHeadId} onChange={setCostHeadId} options={(costHeads.data ?? []).map((head) => ({ value: head.id, label: head.name }))} required />}
             {kind === 'payment' && <><SelectField label={t.party} value={partyId} onChange={setPartyId} options={(parties.data ?? []).map((party) => ({ value: party.id, label: party.name }))} required /><ChoiceToggle label={t.mode} value={paymentMode} onChange={setPaymentMode} options={[{ value: 'CASH', label: t.cash }, { value: 'BANK', label: t.bank }, { value: 'OTHER', label: t.other }]} /></>}
-            {kind === 'growth' && <><Field label={t.animalsSample} type="number" value={sampleAnimals} onChange={setSampleAnimals} required /><Field label={t.doc} type="number" value={sampleDoc} onChange={setSampleDoc} /></>}
+            {kind === 'growth' && <Field label={t.animalsSample} type="number" value={sampleAnimals} onChange={setSampleAnimals} required />}
           </div>
         </Disclosure>
         <button type="submit" className="primary-button">{t.saveEntry}</button>
