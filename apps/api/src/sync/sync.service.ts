@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { QueryScope, ScopeUser } from '../authorization/query-scope';
 import { PrismaService } from '../platform/prisma.service';
@@ -8,6 +8,7 @@ import { SyncPushDto } from './sync.dto';
 import { UserRole } from '../auth/roles';
 type Context = ScopeUser & { deviceId: string };
 const financial = new Set(['expense', 'payment', 'harvestEvent', 'harvestLine', 'attendanceLog', 'medicineApplication']);
+const isFinancialEntity = (entity: string) => financial.has(entity);
 const asJson = (value: unknown) => JSON.parse(JSON.stringify(value, (_key, item) => typeof item === 'bigint' ? item.toString() : item)) as Prisma.InputJsonValue;
 const text = (payload: Record<string, unknown>, key: string) => {
   const value = payload[key];
@@ -106,9 +107,14 @@ export class SyncService {
   private async applyRecord(tx: Prisma.TransactionClient, record: SyncPushDto['records'][number], ctx: Context) {
     const prior = await tx.outboxReceipt.findUnique({ where: { idempotencyKey: record.idempotencyKey } });
     if (prior) return { id: record.id, status: 'duplicate' };
-    if (financial.has(record.entity) && !ctx.financialAccess && ctx.role !== UserRole.OWNER) return { id: record.id, status: 'rejected', reason: 'Financial access is not enabled' };
+    if (isFinancialEntity(record.entity) && !ctx.financialAccess && ctx.role !== UserRole.OWNER) return { id: record.id, status: 'rejected', reason: 'Financial access is not enabled' };
     const payload = record.payload;
-    const normalized = record.entity === 'feedLog' ? safeFeedLog(payload) : record.entity === 'waterReading' ? safeWaterReading(payload) : record.entity === 'expense' ? safeExpense(payload) : record.entity === 'growthSample' ? safeGrowthSample(payload) : record.entity === 'checkTrayReading' ? safeTrayReading(payload) : record.entity === 'medicineApplication' ? safeMedicine(payload) : record.entity === 'healthEvent' ? safeHealth(payload) : record.entity === 'attendanceLog' ? safeAttendance(payload) : record.entity === 'payment' ? safePayment(payload) : record.entity === 'harvestEvent' ? safeHarvestEvent(payload) : record.entity === 'harvestLine' ? safeHarvestLine(payload) : safePreparation(payload);
+    let normalized: object;
+    try {
+      normalized = record.entity === 'feedLog' ? safeFeedLog(payload) : record.entity === 'waterReading' ? safeWaterReading(payload) : record.entity === 'expense' ? safeExpense(payload) : record.entity === 'growthSample' ? safeGrowthSample(payload) : record.entity === 'checkTrayReading' ? safeTrayReading(payload) : record.entity === 'medicineApplication' ? safeMedicine(payload) : record.entity === 'healthEvent' ? safeHealth(payload) : record.entity === 'attendanceLog' ? safeAttendance(payload) : record.entity === 'payment' ? safePayment(payload) : record.entity === 'harvestEvent' ? safeHarvestEvent(payload) : record.entity === 'harvestLine' ? safeHarvestLine(payload) : safePreparation(payload);
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : 'Invalid sync payload');
+    }
     const cropId = typeof payload.cropId === 'string' ? payload.cropId : undefined;
     if (cropId) {
       const crop = await tx.crop.findFirst({ where: { id: cropId, businessId: ctx.businessId, voidedAt: null }, select: { status: true } });
@@ -131,7 +137,7 @@ export class SyncService {
                         : record.entity === 'harvestLine' ? await tx.harvestLine.findFirst({ where: { id: record.id, businessId: ctx.businessId } })
                           : await tx.preparationActivity.findFirst({ where: { id: record.id, businessId: ctx.businessId } });
     const existingRev = existing && typeof existing === 'object' && 'rev' in existing ? existing.rev as bigint : 0n;
-    if (existing && record.entity === 'expense') {
+    if (existing && isFinancialEntity(record.entity)) {
       await tx.syncConflict.create({ data: { businessId: ctx.businessId, entity: record.entity, entityId: record.id, class: 'FINANCIAL', serverRev: existingRev, clientPayload: asJson(record.payload), serverPayload: asJson(existing), status: 'OPEN', createdBy: ctx.userId, updatedBy: ctx.userId, deviceId: ctx.deviceId } });
       return { id: record.id, status: 'conflict', reason: 'Financial record requires explicit resolution' };
     }

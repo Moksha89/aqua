@@ -1,16 +1,21 @@
-# aqua_mobile
+# AE Farm mobile
 
-A new Flutter project.
+Offline-first Flutter client foundation and farmer shell.
 
-## Getting Started
+## Development
 
-This project is a starting point for a Flutter application.
+```sh
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter analyze
+flutter test
+flutter run --dart-define=AQUA_API_URL=http://10.0.2.2:3000/api/v1
+```
 
-A few resources to get you started if this is your first Flutter project:
+The Android emulator reaches a host API through `10.0.2.2`. Physical devices
+need an API URL reachable from the device.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The local Drift database stores ponds, crops, daily entries, sync outbox
+records, conflict markers, cursor metadata and the server-provided theme.
+Daily entries are written to SQLite before any network request. The outbox
+uses client UUIDs as idempotency keys and syncs opportunistically.

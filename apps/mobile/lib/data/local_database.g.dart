@@ -1645,6 +1645,2041 @@ class SyncConflictsCompanion extends UpdateCompanion<SyncConflict> {
   }
 }
 
+class $LocalPondsTable extends LocalPonds
+    with TableInfo<$LocalPondsTable, LocalPond> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalPondsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attentionMeta = const VerificationMeta(
+    'attention',
+  );
+  @override
+  late final GeneratedColumn<String> attention = GeneratedColumn<String>(
+    'attention',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('GREEN'),
+  );
+  static const VerificationMeta _attentionReasonMeta = const VerificationMeta(
+    'attentionReason',
+  );
+  @override
+  late final GeneratedColumn<String> attentionReason = GeneratedColumn<String>(
+    'attention_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cropJsonMeta = const VerificationMeta(
+    'cropJson',
+  );
+  @override
+  late final GeneratedColumn<String> cropJson = GeneratedColumn<String>(
+    'crop_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    code,
+    attention,
+    attentionReason,
+    cropJson,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_ponds';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalPond> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('attention')) {
+      context.handle(
+        _attentionMeta,
+        attention.isAcceptableOrUnknown(data['attention']!, _attentionMeta),
+      );
+    }
+    if (data.containsKey('attention_reason')) {
+      context.handle(
+        _attentionReasonMeta,
+        attentionReason.isAcceptableOrUnknown(
+          data['attention_reason']!,
+          _attentionReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('crop_json')) {
+      context.handle(
+        _cropJsonMeta,
+        cropJson.isAcceptableOrUnknown(data['crop_json']!, _cropJsonMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalPond map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalPond(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      name:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}name'],
+          )!,
+      code:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}code'],
+          )!,
+      attention:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}attention'],
+          )!,
+      attentionReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attention_reason'],
+      ),
+      cropJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}crop_json'],
+      ),
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}updated_at'],
+          )!,
+    );
+  }
+
+  @override
+  $LocalPondsTable createAlias(String alias) {
+    return $LocalPondsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalPond extends DataClass implements Insertable<LocalPond> {
+  final String id;
+  final String name;
+  final String code;
+  final String attention;
+  final String? attentionReason;
+  final String? cropJson;
+  final int updatedAt;
+  const LocalPond({
+    required this.id,
+    required this.name,
+    required this.code,
+    required this.attention,
+    this.attentionReason,
+    this.cropJson,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['code'] = Variable<String>(code);
+    map['attention'] = Variable<String>(attention);
+    if (!nullToAbsent || attentionReason != null) {
+      map['attention_reason'] = Variable<String>(attentionReason);
+    }
+    if (!nullToAbsent || cropJson != null) {
+      map['crop_json'] = Variable<String>(cropJson);
+    }
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  LocalPondsCompanion toCompanion(bool nullToAbsent) {
+    return LocalPondsCompanion(
+      id: Value(id),
+      name: Value(name),
+      code: Value(code),
+      attention: Value(attention),
+      attentionReason:
+          attentionReason == null && nullToAbsent
+              ? const Value.absent()
+              : Value(attentionReason),
+      cropJson:
+          cropJson == null && nullToAbsent
+              ? const Value.absent()
+              : Value(cropJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LocalPond.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalPond(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      code: serializer.fromJson<String>(json['code']),
+      attention: serializer.fromJson<String>(json['attention']),
+      attentionReason: serializer.fromJson<String?>(json['attentionReason']),
+      cropJson: serializer.fromJson<String?>(json['cropJson']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'code': serializer.toJson<String>(code),
+      'attention': serializer.toJson<String>(attention),
+      'attentionReason': serializer.toJson<String?>(attentionReason),
+      'cropJson': serializer.toJson<String?>(cropJson),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  LocalPond copyWith({
+    String? id,
+    String? name,
+    String? code,
+    String? attention,
+    Value<String?> attentionReason = const Value.absent(),
+    Value<String?> cropJson = const Value.absent(),
+    int? updatedAt,
+  }) => LocalPond(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    code: code ?? this.code,
+    attention: attention ?? this.attention,
+    attentionReason:
+        attentionReason.present ? attentionReason.value : this.attentionReason,
+    cropJson: cropJson.present ? cropJson.value : this.cropJson,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  LocalPond copyWithCompanion(LocalPondsCompanion data) {
+    return LocalPond(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      code: data.code.present ? data.code.value : this.code,
+      attention: data.attention.present ? data.attention.value : this.attention,
+      attentionReason:
+          data.attentionReason.present
+              ? data.attentionReason.value
+              : this.attentionReason,
+      cropJson: data.cropJson.present ? data.cropJson.value : this.cropJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPond(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('code: $code, ')
+          ..write('attention: $attention, ')
+          ..write('attentionReason: $attentionReason, ')
+          ..write('cropJson: $cropJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    code,
+    attention,
+    attentionReason,
+    cropJson,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalPond &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.code == this.code &&
+          other.attention == this.attention &&
+          other.attentionReason == this.attentionReason &&
+          other.cropJson == this.cropJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LocalPondsCompanion extends UpdateCompanion<LocalPond> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> code;
+  final Value<String> attention;
+  final Value<String?> attentionReason;
+  final Value<String?> cropJson;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const LocalPondsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.code = const Value.absent(),
+    this.attention = const Value.absent(),
+    this.attentionReason = const Value.absent(),
+    this.cropJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalPondsCompanion.insert({
+    required String id,
+    required String name,
+    required String code,
+    this.attention = const Value.absent(),
+    this.attentionReason = const Value.absent(),
+    this.cropJson = const Value.absent(),
+    required int updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       code = Value(code),
+       updatedAt = Value(updatedAt);
+  static Insertable<LocalPond> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? code,
+    Expression<String>? attention,
+    Expression<String>? attentionReason,
+    Expression<String>? cropJson,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (code != null) 'code': code,
+      if (attention != null) 'attention': attention,
+      if (attentionReason != null) 'attention_reason': attentionReason,
+      if (cropJson != null) 'crop_json': cropJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalPondsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? code,
+    Value<String>? attention,
+    Value<String?>? attentionReason,
+    Value<String?>? cropJson,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalPondsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      code: code ?? this.code,
+      attention: attention ?? this.attention,
+      attentionReason: attentionReason ?? this.attentionReason,
+      cropJson: cropJson ?? this.cropJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (attention.present) {
+      map['attention'] = Variable<String>(attention.value);
+    }
+    if (attentionReason.present) {
+      map['attention_reason'] = Variable<String>(attentionReason.value);
+    }
+    if (cropJson.present) {
+      map['crop_json'] = Variable<String>(cropJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalPondsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('code: $code, ')
+          ..write('attention: $attention, ')
+          ..write('attentionReason: $attentionReason, ')
+          ..write('cropJson: $cropJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalCropsTable extends LocalCrops
+    with TableInfo<$LocalCropsTable, LocalCrop> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalCropsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pondIdMeta = const VerificationMeta('pondId');
+  @override
+  late final GeneratedColumn<String> pondId = GeneratedColumn<String>(
+    'pond_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _figuresJsonMeta = const VerificationMeta(
+    'figuresJson',
+  );
+  @override
+  late final GeneratedColumn<String> figuresJson = GeneratedColumn<String>(
+    'figures_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    pondId,
+    code,
+    status,
+    figuresJson,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_crops';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalCrop> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('pond_id')) {
+      context.handle(
+        _pondIdMeta,
+        pondId.isAcceptableOrUnknown(data['pond_id']!, _pondIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pondIdMeta);
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('figures_json')) {
+      context.handle(
+        _figuresJsonMeta,
+        figuresJson.isAcceptableOrUnknown(
+          data['figures_json']!,
+          _figuresJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalCrop map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalCrop(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      pondId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}pond_id'],
+          )!,
+      code:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}code'],
+          )!,
+      status:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}status'],
+          )!,
+      figuresJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}figures_json'],
+      ),
+      updatedAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}updated_at'],
+          )!,
+    );
+  }
+
+  @override
+  $LocalCropsTable createAlias(String alias) {
+    return $LocalCropsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalCrop extends DataClass implements Insertable<LocalCrop> {
+  final String id;
+  final String pondId;
+  final String code;
+  final String status;
+  final String? figuresJson;
+  final int updatedAt;
+  const LocalCrop({
+    required this.id,
+    required this.pondId,
+    required this.code,
+    required this.status,
+    this.figuresJson,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['pond_id'] = Variable<String>(pondId);
+    map['code'] = Variable<String>(code);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || figuresJson != null) {
+      map['figures_json'] = Variable<String>(figuresJson);
+    }
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  LocalCropsCompanion toCompanion(bool nullToAbsent) {
+    return LocalCropsCompanion(
+      id: Value(id),
+      pondId: Value(pondId),
+      code: Value(code),
+      status: Value(status),
+      figuresJson:
+          figuresJson == null && nullToAbsent
+              ? const Value.absent()
+              : Value(figuresJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LocalCrop.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalCrop(
+      id: serializer.fromJson<String>(json['id']),
+      pondId: serializer.fromJson<String>(json['pondId']),
+      code: serializer.fromJson<String>(json['code']),
+      status: serializer.fromJson<String>(json['status']),
+      figuresJson: serializer.fromJson<String?>(json['figuresJson']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'pondId': serializer.toJson<String>(pondId),
+      'code': serializer.toJson<String>(code),
+      'status': serializer.toJson<String>(status),
+      'figuresJson': serializer.toJson<String?>(figuresJson),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  LocalCrop copyWith({
+    String? id,
+    String? pondId,
+    String? code,
+    String? status,
+    Value<String?> figuresJson = const Value.absent(),
+    int? updatedAt,
+  }) => LocalCrop(
+    id: id ?? this.id,
+    pondId: pondId ?? this.pondId,
+    code: code ?? this.code,
+    status: status ?? this.status,
+    figuresJson: figuresJson.present ? figuresJson.value : this.figuresJson,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  LocalCrop copyWithCompanion(LocalCropsCompanion data) {
+    return LocalCrop(
+      id: data.id.present ? data.id.value : this.id,
+      pondId: data.pondId.present ? data.pondId.value : this.pondId,
+      code: data.code.present ? data.code.value : this.code,
+      status: data.status.present ? data.status.value : this.status,
+      figuresJson:
+          data.figuresJson.present ? data.figuresJson.value : this.figuresJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalCrop(')
+          ..write('id: $id, ')
+          ..write('pondId: $pondId, ')
+          ..write('code: $code, ')
+          ..write('status: $status, ')
+          ..write('figuresJson: $figuresJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, pondId, code, status, figuresJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalCrop &&
+          other.id == this.id &&
+          other.pondId == this.pondId &&
+          other.code == this.code &&
+          other.status == this.status &&
+          other.figuresJson == this.figuresJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LocalCropsCompanion extends UpdateCompanion<LocalCrop> {
+  final Value<String> id;
+  final Value<String> pondId;
+  final Value<String> code;
+  final Value<String> status;
+  final Value<String?> figuresJson;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const LocalCropsCompanion({
+    this.id = const Value.absent(),
+    this.pondId = const Value.absent(),
+    this.code = const Value.absent(),
+    this.status = const Value.absent(),
+    this.figuresJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalCropsCompanion.insert({
+    required String id,
+    required String pondId,
+    required String code,
+    required String status,
+    this.figuresJson = const Value.absent(),
+    required int updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       pondId = Value(pondId),
+       code = Value(code),
+       status = Value(status),
+       updatedAt = Value(updatedAt);
+  static Insertable<LocalCrop> custom({
+    Expression<String>? id,
+    Expression<String>? pondId,
+    Expression<String>? code,
+    Expression<String>? status,
+    Expression<String>? figuresJson,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (pondId != null) 'pond_id': pondId,
+      if (code != null) 'code': code,
+      if (status != null) 'status': status,
+      if (figuresJson != null) 'figures_json': figuresJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalCropsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? pondId,
+    Value<String>? code,
+    Value<String>? status,
+    Value<String?>? figuresJson,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalCropsCompanion(
+      id: id ?? this.id,
+      pondId: pondId ?? this.pondId,
+      code: code ?? this.code,
+      status: status ?? this.status,
+      figuresJson: figuresJson ?? this.figuresJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (pondId.present) {
+      map['pond_id'] = Variable<String>(pondId.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (figuresJson.present) {
+      map['figures_json'] = Variable<String>(figuresJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalCropsCompanion(')
+          ..write('id: $id, ')
+          ..write('pondId: $pondId, ')
+          ..write('code: $code, ')
+          ..write('status: $status, ')
+          ..write('figuresJson: $figuresJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DailyEntriesTable extends DailyEntries
+    with TableInfo<$DailyEntriesTable, DailyEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DailyEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pondIdMeta = const VerificationMeta('pondId');
+  @override
+  late final GeneratedColumn<String> pondId = GeneratedColumn<String>(
+    'pond_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cropIdMeta = const VerificationMeta('cropId');
+  @override
+  late final GeneratedColumn<String> cropId = GeneratedColumn<String>(
+    'crop_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncStateMeta = const VerificationMeta(
+    'syncState',
+  );
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+    'sync_state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('PENDING'),
+  );
+  static const VerificationMeta _conflictMarkerMeta = const VerificationMeta(
+    'conflictMarker',
+  );
+  @override
+  late final GeneratedColumn<String> conflictMarker = GeneratedColumn<String>(
+    'conflict_marker',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    pondId,
+    cropId,
+    kind,
+    payloadJson,
+    syncState,
+    conflictMarker,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'daily_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DailyEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('pond_id')) {
+      context.handle(
+        _pondIdMeta,
+        pondId.isAcceptableOrUnknown(data['pond_id']!, _pondIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pondIdMeta);
+    }
+    if (data.containsKey('crop_id')) {
+      context.handle(
+        _cropIdMeta,
+        cropId.isAcceptableOrUnknown(data['crop_id']!, _cropIdMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(
+        _syncStateMeta,
+        syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta),
+      );
+    }
+    if (data.containsKey('conflict_marker')) {
+      context.handle(
+        _conflictMarkerMeta,
+        conflictMarker.isAcceptableOrUnknown(
+          data['conflict_marker']!,
+          _conflictMarkerMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DailyEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DailyEntry(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      pondId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}pond_id'],
+          )!,
+      cropId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}crop_id'],
+      ),
+      kind:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}kind'],
+          )!,
+      payloadJson:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}payload_json'],
+          )!,
+      syncState:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}sync_state'],
+          )!,
+      conflictMarker: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conflict_marker'],
+      ),
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}created_at'],
+          )!,
+    );
+  }
+
+  @override
+  $DailyEntriesTable createAlias(String alias) {
+    return $DailyEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class DailyEntry extends DataClass implements Insertable<DailyEntry> {
+  final String id;
+  final String pondId;
+  final String? cropId;
+  final String kind;
+  final String payloadJson;
+  final String syncState;
+  final String? conflictMarker;
+  final int createdAt;
+  const DailyEntry({
+    required this.id,
+    required this.pondId,
+    this.cropId,
+    required this.kind,
+    required this.payloadJson,
+    required this.syncState,
+    this.conflictMarker,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['pond_id'] = Variable<String>(pondId);
+    if (!nullToAbsent || cropId != null) {
+      map['crop_id'] = Variable<String>(cropId);
+    }
+    map['kind'] = Variable<String>(kind);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['sync_state'] = Variable<String>(syncState);
+    if (!nullToAbsent || conflictMarker != null) {
+      map['conflict_marker'] = Variable<String>(conflictMarker);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  DailyEntriesCompanion toCompanion(bool nullToAbsent) {
+    return DailyEntriesCompanion(
+      id: Value(id),
+      pondId: Value(pondId),
+      cropId:
+          cropId == null && nullToAbsent ? const Value.absent() : Value(cropId),
+      kind: Value(kind),
+      payloadJson: Value(payloadJson),
+      syncState: Value(syncState),
+      conflictMarker:
+          conflictMarker == null && nullToAbsent
+              ? const Value.absent()
+              : Value(conflictMarker),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory DailyEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DailyEntry(
+      id: serializer.fromJson<String>(json['id']),
+      pondId: serializer.fromJson<String>(json['pondId']),
+      cropId: serializer.fromJson<String?>(json['cropId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+      conflictMarker: serializer.fromJson<String?>(json['conflictMarker']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'pondId': serializer.toJson<String>(pondId),
+      'cropId': serializer.toJson<String?>(cropId),
+      'kind': serializer.toJson<String>(kind),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'syncState': serializer.toJson<String>(syncState),
+      'conflictMarker': serializer.toJson<String?>(conflictMarker),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  DailyEntry copyWith({
+    String? id,
+    String? pondId,
+    Value<String?> cropId = const Value.absent(),
+    String? kind,
+    String? payloadJson,
+    String? syncState,
+    Value<String?> conflictMarker = const Value.absent(),
+    int? createdAt,
+  }) => DailyEntry(
+    id: id ?? this.id,
+    pondId: pondId ?? this.pondId,
+    cropId: cropId.present ? cropId.value : this.cropId,
+    kind: kind ?? this.kind,
+    payloadJson: payloadJson ?? this.payloadJson,
+    syncState: syncState ?? this.syncState,
+    conflictMarker:
+        conflictMarker.present ? conflictMarker.value : this.conflictMarker,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  DailyEntry copyWithCompanion(DailyEntriesCompanion data) {
+    return DailyEntry(
+      id: data.id.present ? data.id.value : this.id,
+      pondId: data.pondId.present ? data.pondId.value : this.pondId,
+      cropId: data.cropId.present ? data.cropId.value : this.cropId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      payloadJson:
+          data.payloadJson.present ? data.payloadJson.value : this.payloadJson,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+      conflictMarker:
+          data.conflictMarker.present
+              ? data.conflictMarker.value
+              : this.conflictMarker,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailyEntry(')
+          ..write('id: $id, ')
+          ..write('pondId: $pondId, ')
+          ..write('cropId: $cropId, ')
+          ..write('kind: $kind, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('syncState: $syncState, ')
+          ..write('conflictMarker: $conflictMarker, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    pondId,
+    cropId,
+    kind,
+    payloadJson,
+    syncState,
+    conflictMarker,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DailyEntry &&
+          other.id == this.id &&
+          other.pondId == this.pondId &&
+          other.cropId == this.cropId &&
+          other.kind == this.kind &&
+          other.payloadJson == this.payloadJson &&
+          other.syncState == this.syncState &&
+          other.conflictMarker == this.conflictMarker &&
+          other.createdAt == this.createdAt);
+}
+
+class DailyEntriesCompanion extends UpdateCompanion<DailyEntry> {
+  final Value<String> id;
+  final Value<String> pondId;
+  final Value<String?> cropId;
+  final Value<String> kind;
+  final Value<String> payloadJson;
+  final Value<String> syncState;
+  final Value<String?> conflictMarker;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const DailyEntriesCompanion({
+    this.id = const Value.absent(),
+    this.pondId = const Value.absent(),
+    this.cropId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.conflictMarker = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DailyEntriesCompanion.insert({
+    required String id,
+    required String pondId,
+    this.cropId = const Value.absent(),
+    required String kind,
+    required String payloadJson,
+    this.syncState = const Value.absent(),
+    this.conflictMarker = const Value.absent(),
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       pondId = Value(pondId),
+       kind = Value(kind),
+       payloadJson = Value(payloadJson),
+       createdAt = Value(createdAt);
+  static Insertable<DailyEntry> custom({
+    Expression<String>? id,
+    Expression<String>? pondId,
+    Expression<String>? cropId,
+    Expression<String>? kind,
+    Expression<String>? payloadJson,
+    Expression<String>? syncState,
+    Expression<String>? conflictMarker,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (pondId != null) 'pond_id': pondId,
+      if (cropId != null) 'crop_id': cropId,
+      if (kind != null) 'kind': kind,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (syncState != null) 'sync_state': syncState,
+      if (conflictMarker != null) 'conflict_marker': conflictMarker,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DailyEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? pondId,
+    Value<String?>? cropId,
+    Value<String>? kind,
+    Value<String>? payloadJson,
+    Value<String>? syncState,
+    Value<String?>? conflictMarker,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return DailyEntriesCompanion(
+      id: id ?? this.id,
+      pondId: pondId ?? this.pondId,
+      cropId: cropId ?? this.cropId,
+      kind: kind ?? this.kind,
+      payloadJson: payloadJson ?? this.payloadJson,
+      syncState: syncState ?? this.syncState,
+      conflictMarker: conflictMarker ?? this.conflictMarker,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (pondId.present) {
+      map['pond_id'] = Variable<String>(pondId.value);
+    }
+    if (cropId.present) {
+      map['crop_id'] = Variable<String>(cropId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (conflictMarker.present) {
+      map['conflict_marker'] = Variable<String>(conflictMarker.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailyEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('pondId: $pondId, ')
+          ..write('cropId: $cropId, ')
+          ..write('kind: $kind, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('syncState: $syncState, ')
+          ..write('conflictMarker: $conflictMarker, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AttachmentQueueTable extends AttachmentQueue
+    with TableInfo<$AttachmentQueueTable, AttachmentQueueData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AttachmentQueueTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownerTypeMeta = const VerificationMeta(
+    'ownerType',
+  );
+  @override
+  late final GeneratedColumn<String> ownerType = GeneratedColumn<String>(
+    'owner_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentTypeMeta = const VerificationMeta(
+    'contentType',
+  );
+  @override
+  late final GeneratedColumn<String> contentType = GeneratedColumn<String>(
+    'content_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('PENDING_UPLOAD'),
+  );
+  static const VerificationMeta _attachmentIdMeta = const VerificationMeta(
+    'attachmentId',
+  );
+  @override
+  late final GeneratedColumn<String> attachmentId = GeneratedColumn<String>(
+    'attachment_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _errorMeta = const VerificationMeta('error');
+  @override
+  late final GeneratedColumn<String> error = GeneratedColumn<String>(
+    'error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    ownerType,
+    ownerId,
+    localPath,
+    fileName,
+    contentType,
+    state,
+    attachmentId,
+    error,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'attachment_queue';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AttachmentQueueData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('owner_type')) {
+      context.handle(
+        _ownerTypeMeta,
+        ownerType.isAcceptableOrUnknown(data['owner_type']!, _ownerTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerTypeMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localPathMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('content_type')) {
+      context.handle(
+        _contentTypeMeta,
+        contentType.isAcceptableOrUnknown(
+          data['content_type']!,
+          _contentTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contentTypeMeta);
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    }
+    if (data.containsKey('attachment_id')) {
+      context.handle(
+        _attachmentIdMeta,
+        attachmentId.isAcceptableOrUnknown(
+          data['attachment_id']!,
+          _attachmentIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('error')) {
+      context.handle(
+        _errorMeta,
+        error.isAcceptableOrUnknown(data['error']!, _errorMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AttachmentQueueData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AttachmentQueueData(
+      id:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}id'],
+          )!,
+      ownerType:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}owner_type'],
+          )!,
+      ownerId:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}owner_id'],
+          )!,
+      localPath:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}local_path'],
+          )!,
+      fileName:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}file_name'],
+          )!,
+      contentType:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}content_type'],
+          )!,
+      state:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.string,
+            data['${effectivePrefix}state'],
+          )!,
+      attachmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attachment_id'],
+      ),
+      error: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error'],
+      ),
+      createdAt:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.int,
+            data['${effectivePrefix}created_at'],
+          )!,
+    );
+  }
+
+  @override
+  $AttachmentQueueTable createAlias(String alias) {
+    return $AttachmentQueueTable(attachedDatabase, alias);
+  }
+}
+
+class AttachmentQueueData extends DataClass
+    implements Insertable<AttachmentQueueData> {
+  final String id;
+  final String ownerType;
+  final String ownerId;
+  final String localPath;
+  final String fileName;
+  final String contentType;
+  final String state;
+  final String? attachmentId;
+  final String? error;
+  final int createdAt;
+  const AttachmentQueueData({
+    required this.id,
+    required this.ownerType,
+    required this.ownerId,
+    required this.localPath,
+    required this.fileName,
+    required this.contentType,
+    required this.state,
+    this.attachmentId,
+    this.error,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['owner_type'] = Variable<String>(ownerType);
+    map['owner_id'] = Variable<String>(ownerId);
+    map['local_path'] = Variable<String>(localPath);
+    map['file_name'] = Variable<String>(fileName);
+    map['content_type'] = Variable<String>(contentType);
+    map['state'] = Variable<String>(state);
+    if (!nullToAbsent || attachmentId != null) {
+      map['attachment_id'] = Variable<String>(attachmentId);
+    }
+    if (!nullToAbsent || error != null) {
+      map['error'] = Variable<String>(error);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  AttachmentQueueCompanion toCompanion(bool nullToAbsent) {
+    return AttachmentQueueCompanion(
+      id: Value(id),
+      ownerType: Value(ownerType),
+      ownerId: Value(ownerId),
+      localPath: Value(localPath),
+      fileName: Value(fileName),
+      contentType: Value(contentType),
+      state: Value(state),
+      attachmentId:
+          attachmentId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(attachmentId),
+      error:
+          error == null && nullToAbsent ? const Value.absent() : Value(error),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory AttachmentQueueData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AttachmentQueueData(
+      id: serializer.fromJson<String>(json['id']),
+      ownerType: serializer.fromJson<String>(json['ownerType']),
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      localPath: serializer.fromJson<String>(json['localPath']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      contentType: serializer.fromJson<String>(json['contentType']),
+      state: serializer.fromJson<String>(json['state']),
+      attachmentId: serializer.fromJson<String?>(json['attachmentId']),
+      error: serializer.fromJson<String?>(json['error']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'ownerType': serializer.toJson<String>(ownerType),
+      'ownerId': serializer.toJson<String>(ownerId),
+      'localPath': serializer.toJson<String>(localPath),
+      'fileName': serializer.toJson<String>(fileName),
+      'contentType': serializer.toJson<String>(contentType),
+      'state': serializer.toJson<String>(state),
+      'attachmentId': serializer.toJson<String?>(attachmentId),
+      'error': serializer.toJson<String?>(error),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  AttachmentQueueData copyWith({
+    String? id,
+    String? ownerType,
+    String? ownerId,
+    String? localPath,
+    String? fileName,
+    String? contentType,
+    String? state,
+    Value<String?> attachmentId = const Value.absent(),
+    Value<String?> error = const Value.absent(),
+    int? createdAt,
+  }) => AttachmentQueueData(
+    id: id ?? this.id,
+    ownerType: ownerType ?? this.ownerType,
+    ownerId: ownerId ?? this.ownerId,
+    localPath: localPath ?? this.localPath,
+    fileName: fileName ?? this.fileName,
+    contentType: contentType ?? this.contentType,
+    state: state ?? this.state,
+    attachmentId: attachmentId.present ? attachmentId.value : this.attachmentId,
+    error: error.present ? error.value : this.error,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  AttachmentQueueData copyWithCompanion(AttachmentQueueCompanion data) {
+    return AttachmentQueueData(
+      id: data.id.present ? data.id.value : this.id,
+      ownerType: data.ownerType.present ? data.ownerType.value : this.ownerType,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      contentType:
+          data.contentType.present ? data.contentType.value : this.contentType,
+      state: data.state.present ? data.state.value : this.state,
+      attachmentId:
+          data.attachmentId.present
+              ? data.attachmentId.value
+              : this.attachmentId,
+      error: data.error.present ? data.error.value : this.error,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AttachmentQueueData(')
+          ..write('id: $id, ')
+          ..write('ownerType: $ownerType, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('localPath: $localPath, ')
+          ..write('fileName: $fileName, ')
+          ..write('contentType: $contentType, ')
+          ..write('state: $state, ')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('error: $error, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    ownerType,
+    ownerId,
+    localPath,
+    fileName,
+    contentType,
+    state,
+    attachmentId,
+    error,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AttachmentQueueData &&
+          other.id == this.id &&
+          other.ownerType == this.ownerType &&
+          other.ownerId == this.ownerId &&
+          other.localPath == this.localPath &&
+          other.fileName == this.fileName &&
+          other.contentType == this.contentType &&
+          other.state == this.state &&
+          other.attachmentId == this.attachmentId &&
+          other.error == this.error &&
+          other.createdAt == this.createdAt);
+}
+
+class AttachmentQueueCompanion extends UpdateCompanion<AttachmentQueueData> {
+  final Value<String> id;
+  final Value<String> ownerType;
+  final Value<String> ownerId;
+  final Value<String> localPath;
+  final Value<String> fileName;
+  final Value<String> contentType;
+  final Value<String> state;
+  final Value<String?> attachmentId;
+  final Value<String?> error;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const AttachmentQueueCompanion({
+    this.id = const Value.absent(),
+    this.ownerType = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.contentType = const Value.absent(),
+    this.state = const Value.absent(),
+    this.attachmentId = const Value.absent(),
+    this.error = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AttachmentQueueCompanion.insert({
+    required String id,
+    required String ownerType,
+    required String ownerId,
+    required String localPath,
+    required String fileName,
+    required String contentType,
+    this.state = const Value.absent(),
+    this.attachmentId = const Value.absent(),
+    this.error = const Value.absent(),
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       ownerType = Value(ownerType),
+       ownerId = Value(ownerId),
+       localPath = Value(localPath),
+       fileName = Value(fileName),
+       contentType = Value(contentType),
+       createdAt = Value(createdAt);
+  static Insertable<AttachmentQueueData> custom({
+    Expression<String>? id,
+    Expression<String>? ownerType,
+    Expression<String>? ownerId,
+    Expression<String>? localPath,
+    Expression<String>? fileName,
+    Expression<String>? contentType,
+    Expression<String>? state,
+    Expression<String>? attachmentId,
+    Expression<String>? error,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ownerType != null) 'owner_type': ownerType,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (localPath != null) 'local_path': localPath,
+      if (fileName != null) 'file_name': fileName,
+      if (contentType != null) 'content_type': contentType,
+      if (state != null) 'state': state,
+      if (attachmentId != null) 'attachment_id': attachmentId,
+      if (error != null) 'error': error,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AttachmentQueueCompanion copyWith({
+    Value<String>? id,
+    Value<String>? ownerType,
+    Value<String>? ownerId,
+    Value<String>? localPath,
+    Value<String>? fileName,
+    Value<String>? contentType,
+    Value<String>? state,
+    Value<String?>? attachmentId,
+    Value<String?>? error,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return AttachmentQueueCompanion(
+      id: id ?? this.id,
+      ownerType: ownerType ?? this.ownerType,
+      ownerId: ownerId ?? this.ownerId,
+      localPath: localPath ?? this.localPath,
+      fileName: fileName ?? this.fileName,
+      contentType: contentType ?? this.contentType,
+      state: state ?? this.state,
+      attachmentId: attachmentId ?? this.attachmentId,
+      error: error ?? this.error,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (ownerType.present) {
+      map['owner_type'] = Variable<String>(ownerType.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (contentType.present) {
+      map['content_type'] = Variable<String>(contentType.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (attachmentId.present) {
+      map['attachment_id'] = Variable<String>(attachmentId.value);
+    }
+    if (error.present) {
+      map['error'] = Variable<String>(error.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AttachmentQueueCompanion(')
+          ..write('id: $id, ')
+          ..write('ownerType: $ownerType, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('localPath: $localPath, ')
+          ..write('fileName: $fileName, ')
+          ..write('contentType: $contentType, ')
+          ..write('state: $state, ')
+          ..write('attachmentId: $attachmentId, ')
+          ..write('error: $error, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$LocalDatabase extends GeneratedDatabase {
   _$LocalDatabase(QueryExecutor e) : super(e);
   $LocalDatabaseManager get managers => $LocalDatabaseManager(this);
@@ -1652,6 +3687,12 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
   late final $SyncMetadataTable syncMetadata = $SyncMetadataTable(this);
   late final $ThemeCacheTable themeCache = $ThemeCacheTable(this);
   late final $SyncConflictsTable syncConflicts = $SyncConflictsTable(this);
+  late final $LocalPondsTable localPonds = $LocalPondsTable(this);
+  late final $LocalCropsTable localCrops = $LocalCropsTable(this);
+  late final $DailyEntriesTable dailyEntries = $DailyEntriesTable(this);
+  late final $AttachmentQueueTable attachmentQueue = $AttachmentQueueTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1661,6 +3702,10 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
     syncMetadata,
     themeCache,
     syncConflicts,
+    localPonds,
+    localCrops,
+    dailyEntries,
+    attachmentQueue,
   ];
 }
 
@@ -2574,6 +4619,1067 @@ typedef $$SyncConflictsTableProcessedTableManager =
       SyncConflict,
       PrefetchHooks Function()
     >;
+typedef $$LocalPondsTableCreateCompanionBuilder =
+    LocalPondsCompanion Function({
+      required String id,
+      required String name,
+      required String code,
+      Value<String> attention,
+      Value<String?> attentionReason,
+      Value<String?> cropJson,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalPondsTableUpdateCompanionBuilder =
+    LocalPondsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> code,
+      Value<String> attention,
+      Value<String?> attentionReason,
+      Value<String?> cropJson,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalPondsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalPondsTable> {
+  $$LocalPondsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get attention => $composableBuilder(
+    column: $table.attention,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get attentionReason => $composableBuilder(
+    column: $table.attentionReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cropJson => $composableBuilder(
+    column: $table.cropJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalPondsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalPondsTable> {
+  $$LocalPondsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get attention => $composableBuilder(
+    column: $table.attention,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get attentionReason => $composableBuilder(
+    column: $table.attentionReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cropJson => $composableBuilder(
+    column: $table.cropJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalPondsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalPondsTable> {
+  $$LocalPondsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get attention =>
+      $composableBuilder(column: $table.attention, builder: (column) => column);
+
+  GeneratedColumn<String> get attentionReason => $composableBuilder(
+    column: $table.attentionReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cropJson =>
+      $composableBuilder(column: $table.cropJson, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$LocalPondsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $LocalPondsTable,
+          LocalPond,
+          $$LocalPondsTableFilterComposer,
+          $$LocalPondsTableOrderingComposer,
+          $$LocalPondsTableAnnotationComposer,
+          $$LocalPondsTableCreateCompanionBuilder,
+          $$LocalPondsTableUpdateCompanionBuilder,
+          (
+            LocalPond,
+            BaseReferences<_$LocalDatabase, $LocalPondsTable, LocalPond>,
+          ),
+          LocalPond,
+          PrefetchHooks Function()
+        > {
+  $$LocalPondsTableTableManager(_$LocalDatabase db, $LocalPondsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$LocalPondsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$LocalPondsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$LocalPondsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<String> attention = const Value.absent(),
+                Value<String?> attentionReason = const Value.absent(),
+                Value<String?> cropJson = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalPondsCompanion(
+                id: id,
+                name: name,
+                code: code,
+                attention: attention,
+                attentionReason: attentionReason,
+                cropJson: cropJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String code,
+                Value<String> attention = const Value.absent(),
+                Value<String?> attentionReason = const Value.absent(),
+                Value<String?> cropJson = const Value.absent(),
+                required int updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LocalPondsCompanion.insert(
+                id: id,
+                name: name,
+                code: code,
+                attention: attention,
+                attentionReason: attentionReason,
+                cropJson: cropJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalPondsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $LocalPondsTable,
+      LocalPond,
+      $$LocalPondsTableFilterComposer,
+      $$LocalPondsTableOrderingComposer,
+      $$LocalPondsTableAnnotationComposer,
+      $$LocalPondsTableCreateCompanionBuilder,
+      $$LocalPondsTableUpdateCompanionBuilder,
+      (LocalPond, BaseReferences<_$LocalDatabase, $LocalPondsTable, LocalPond>),
+      LocalPond,
+      PrefetchHooks Function()
+    >;
+typedef $$LocalCropsTableCreateCompanionBuilder =
+    LocalCropsCompanion Function({
+      required String id,
+      required String pondId,
+      required String code,
+      required String status,
+      Value<String?> figuresJson,
+      required int updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalCropsTableUpdateCompanionBuilder =
+    LocalCropsCompanion Function({
+      Value<String> id,
+      Value<String> pondId,
+      Value<String> code,
+      Value<String> status,
+      Value<String?> figuresJson,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalCropsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalCropsTable> {
+  $$LocalCropsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pondId => $composableBuilder(
+    column: $table.pondId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get figuresJson => $composableBuilder(
+    column: $table.figuresJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalCropsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalCropsTable> {
+  $$LocalCropsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pondId => $composableBuilder(
+    column: $table.pondId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get figuresJson => $composableBuilder(
+    column: $table.figuresJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalCropsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalCropsTable> {
+  $$LocalCropsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get pondId =>
+      $composableBuilder(column: $table.pondId, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get figuresJson => $composableBuilder(
+    column: $table.figuresJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$LocalCropsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $LocalCropsTable,
+          LocalCrop,
+          $$LocalCropsTableFilterComposer,
+          $$LocalCropsTableOrderingComposer,
+          $$LocalCropsTableAnnotationComposer,
+          $$LocalCropsTableCreateCompanionBuilder,
+          $$LocalCropsTableUpdateCompanionBuilder,
+          (
+            LocalCrop,
+            BaseReferences<_$LocalDatabase, $LocalCropsTable, LocalCrop>,
+          ),
+          LocalCrop,
+          PrefetchHooks Function()
+        > {
+  $$LocalCropsTableTableManager(_$LocalDatabase db, $LocalCropsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$LocalCropsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$LocalCropsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () => $$LocalCropsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> pondId = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> figuresJson = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalCropsCompanion(
+                id: id,
+                pondId: pondId,
+                code: code,
+                status: status,
+                figuresJson: figuresJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String pondId,
+                required String code,
+                required String status,
+                Value<String?> figuresJson = const Value.absent(),
+                required int updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LocalCropsCompanion.insert(
+                id: id,
+                pondId: pondId,
+                code: code,
+                status: status,
+                figuresJson: figuresJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalCropsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $LocalCropsTable,
+      LocalCrop,
+      $$LocalCropsTableFilterComposer,
+      $$LocalCropsTableOrderingComposer,
+      $$LocalCropsTableAnnotationComposer,
+      $$LocalCropsTableCreateCompanionBuilder,
+      $$LocalCropsTableUpdateCompanionBuilder,
+      (LocalCrop, BaseReferences<_$LocalDatabase, $LocalCropsTable, LocalCrop>),
+      LocalCrop,
+      PrefetchHooks Function()
+    >;
+typedef $$DailyEntriesTableCreateCompanionBuilder =
+    DailyEntriesCompanion Function({
+      required String id,
+      required String pondId,
+      Value<String?> cropId,
+      required String kind,
+      required String payloadJson,
+      Value<String> syncState,
+      Value<String?> conflictMarker,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$DailyEntriesTableUpdateCompanionBuilder =
+    DailyEntriesCompanion Function({
+      Value<String> id,
+      Value<String> pondId,
+      Value<String?> cropId,
+      Value<String> kind,
+      Value<String> payloadJson,
+      Value<String> syncState,
+      Value<String?> conflictMarker,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$DailyEntriesTableFilterComposer
+    extends Composer<_$LocalDatabase, $DailyEntriesTable> {
+  $$DailyEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pondId => $composableBuilder(
+    column: $table.pondId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cropId => $composableBuilder(
+    column: $table.cropId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncState => $composableBuilder(
+    column: $table.syncState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conflictMarker => $composableBuilder(
+    column: $table.conflictMarker,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DailyEntriesTableOrderingComposer
+    extends Composer<_$LocalDatabase, $DailyEntriesTable> {
+  $$DailyEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pondId => $composableBuilder(
+    column: $table.pondId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cropId => $composableBuilder(
+    column: $table.cropId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncState => $composableBuilder(
+    column: $table.syncState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conflictMarker => $composableBuilder(
+    column: $table.conflictMarker,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DailyEntriesTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $DailyEntriesTable> {
+  $$DailyEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get pondId =>
+      $composableBuilder(column: $table.pondId, builder: (column) => column);
+
+  GeneratedColumn<String> get cropId =>
+      $composableBuilder(column: $table.cropId, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get syncState =>
+      $composableBuilder(column: $table.syncState, builder: (column) => column);
+
+  GeneratedColumn<String> get conflictMarker => $composableBuilder(
+    column: $table.conflictMarker,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$DailyEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $DailyEntriesTable,
+          DailyEntry,
+          $$DailyEntriesTableFilterComposer,
+          $$DailyEntriesTableOrderingComposer,
+          $$DailyEntriesTableAnnotationComposer,
+          $$DailyEntriesTableCreateCompanionBuilder,
+          $$DailyEntriesTableUpdateCompanionBuilder,
+          (
+            DailyEntry,
+            BaseReferences<_$LocalDatabase, $DailyEntriesTable, DailyEntry>,
+          ),
+          DailyEntry,
+          PrefetchHooks Function()
+        > {
+  $$DailyEntriesTableTableManager(_$LocalDatabase db, $DailyEntriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () => $$DailyEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$DailyEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer:
+              () =>
+                  $$DailyEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> pondId = const Value.absent(),
+                Value<String?> cropId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<String> syncState = const Value.absent(),
+                Value<String?> conflictMarker = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DailyEntriesCompanion(
+                id: id,
+                pondId: pondId,
+                cropId: cropId,
+                kind: kind,
+                payloadJson: payloadJson,
+                syncState: syncState,
+                conflictMarker: conflictMarker,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String pondId,
+                Value<String?> cropId = const Value.absent(),
+                required String kind,
+                required String payloadJson,
+                Value<String> syncState = const Value.absent(),
+                Value<String?> conflictMarker = const Value.absent(),
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => DailyEntriesCompanion.insert(
+                id: id,
+                pondId: pondId,
+                cropId: cropId,
+                kind: kind,
+                payloadJson: payloadJson,
+                syncState: syncState,
+                conflictMarker: conflictMarker,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DailyEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $DailyEntriesTable,
+      DailyEntry,
+      $$DailyEntriesTableFilterComposer,
+      $$DailyEntriesTableOrderingComposer,
+      $$DailyEntriesTableAnnotationComposer,
+      $$DailyEntriesTableCreateCompanionBuilder,
+      $$DailyEntriesTableUpdateCompanionBuilder,
+      (
+        DailyEntry,
+        BaseReferences<_$LocalDatabase, $DailyEntriesTable, DailyEntry>,
+      ),
+      DailyEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$AttachmentQueueTableCreateCompanionBuilder =
+    AttachmentQueueCompanion Function({
+      required String id,
+      required String ownerType,
+      required String ownerId,
+      required String localPath,
+      required String fileName,
+      required String contentType,
+      Value<String> state,
+      Value<String?> attachmentId,
+      Value<String?> error,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$AttachmentQueueTableUpdateCompanionBuilder =
+    AttachmentQueueCompanion Function({
+      Value<String> id,
+      Value<String> ownerType,
+      Value<String> ownerId,
+      Value<String> localPath,
+      Value<String> fileName,
+      Value<String> contentType,
+      Value<String> state,
+      Value<String?> attachmentId,
+      Value<String?> error,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$AttachmentQueueTableFilterComposer
+    extends Composer<_$LocalDatabase, $AttachmentQueueTable> {
+  $$AttachmentQueueTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerType => $composableBuilder(
+    column: $table.ownerType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contentType => $composableBuilder(
+    column: $table.contentType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get attachmentId => $composableBuilder(
+    column: $table.attachmentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AttachmentQueueTableOrderingComposer
+    extends Composer<_$LocalDatabase, $AttachmentQueueTable> {
+  $$AttachmentQueueTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerType => $composableBuilder(
+    column: $table.ownerType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contentType => $composableBuilder(
+    column: $table.contentType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get attachmentId => $composableBuilder(
+    column: $table.attachmentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get error => $composableBuilder(
+    column: $table.error,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AttachmentQueueTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $AttachmentQueueTable> {
+  $$AttachmentQueueTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerType =>
+      $composableBuilder(column: $table.ownerType, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<String> get contentType => $composableBuilder(
+    column: $table.contentType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<String> get attachmentId => $composableBuilder(
+    column: $table.attachmentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get error =>
+      $composableBuilder(column: $table.error, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$AttachmentQueueTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $AttachmentQueueTable,
+          AttachmentQueueData,
+          $$AttachmentQueueTableFilterComposer,
+          $$AttachmentQueueTableOrderingComposer,
+          $$AttachmentQueueTableAnnotationComposer,
+          $$AttachmentQueueTableCreateCompanionBuilder,
+          $$AttachmentQueueTableUpdateCompanionBuilder,
+          (
+            AttachmentQueueData,
+            BaseReferences<
+              _$LocalDatabase,
+              $AttachmentQueueTable,
+              AttachmentQueueData
+            >,
+          ),
+          AttachmentQueueData,
+          PrefetchHooks Function()
+        > {
+  $$AttachmentQueueTableTableManager(
+    _$LocalDatabase db,
+    $AttachmentQueueTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer:
+              () =>
+                  $$AttachmentQueueTableFilterComposer($db: db, $table: table),
+          createOrderingComposer:
+              () => $$AttachmentQueueTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer:
+              () => $$AttachmentQueueTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> ownerType = const Value.absent(),
+                Value<String> ownerId = const Value.absent(),
+                Value<String> localPath = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<String> contentType = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<String?> attachmentId = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AttachmentQueueCompanion(
+                id: id,
+                ownerType: ownerType,
+                ownerId: ownerId,
+                localPath: localPath,
+                fileName: fileName,
+                contentType: contentType,
+                state: state,
+                attachmentId: attachmentId,
+                error: error,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String ownerType,
+                required String ownerId,
+                required String localPath,
+                required String fileName,
+                required String contentType,
+                Value<String> state = const Value.absent(),
+                Value<String?> attachmentId = const Value.absent(),
+                Value<String?> error = const Value.absent(),
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => AttachmentQueueCompanion.insert(
+                id: id,
+                ownerType: ownerType,
+                ownerId: ownerId,
+                localPath: localPath,
+                fileName: fileName,
+                contentType: contentType,
+                state: state,
+                attachmentId: attachmentId,
+                error: error,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper:
+              (p0) =>
+                  p0
+                      .map(
+                        (e) => (
+                          e.readTable(table),
+                          BaseReferences(db, table, e),
+                        ),
+                      )
+                      .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AttachmentQueueTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $AttachmentQueueTable,
+      AttachmentQueueData,
+      $$AttachmentQueueTableFilterComposer,
+      $$AttachmentQueueTableOrderingComposer,
+      $$AttachmentQueueTableAnnotationComposer,
+      $$AttachmentQueueTableCreateCompanionBuilder,
+      $$AttachmentQueueTableUpdateCompanionBuilder,
+      (
+        AttachmentQueueData,
+        BaseReferences<
+          _$LocalDatabase,
+          $AttachmentQueueTable,
+          AttachmentQueueData
+        >,
+      ),
+      AttachmentQueueData,
+      PrefetchHooks Function()
+    >;
 
 class $LocalDatabaseManager {
   final _$LocalDatabase _db;
@@ -2586,4 +5692,12 @@ class $LocalDatabaseManager {
       $$ThemeCacheTableTableManager(_db, _db.themeCache);
   $$SyncConflictsTableTableManager get syncConflicts =>
       $$SyncConflictsTableTableManager(_db, _db.syncConflicts);
+  $$LocalPondsTableTableManager get localPonds =>
+      $$LocalPondsTableTableManager(_db, _db.localPonds);
+  $$LocalCropsTableTableManager get localCrops =>
+      $$LocalCropsTableTableManager(_db, _db.localCrops);
+  $$DailyEntriesTableTableManager get dailyEntries =>
+      $$DailyEntriesTableTableManager(_db, _db.dailyEntries);
+  $$AttachmentQueueTableTableManager get attachmentQueue =>
+      $$AttachmentQueueTableTableManager(_db, _db.attachmentQueue);
 }
