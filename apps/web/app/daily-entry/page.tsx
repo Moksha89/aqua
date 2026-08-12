@@ -8,6 +8,7 @@ import { apiGet, apiRequest } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
 import { ChoiceToggle, Disclosure, Field, SelectField } from '../../src/components/design-system';
+import { saveFeedEntry, saveGrowthSample } from '../../src/lib/entry-actions';
 
 type Kind = 'feed' | 'growth' | 'water' | 'medicine' | 'health' | 'tray';
 type Pond = components['schemas']['PondListItemDto'];
@@ -26,7 +27,7 @@ const timestamp = () => new Date().toISOString().slice(0, 16);
 export default function DailyEntryPage() {
   const { t } = useI18n();
   const params = useSearchParams();
-  const [kind, setKind] = useState<Kind>('feed');
+  const [kind, setKind] = useState<Kind>((params.get('kind') as Kind) || 'feed');
   const [pondId, setPondId] = useState(params.get('pondId') ?? '');
   const [cropId, setCropId] = useState(params.get('cropId') ?? '');
   const [message, setMessage] = useState('');
@@ -66,10 +67,10 @@ export default function DailyEntryPage() {
     try {
       if (!cropId || !pondId) throw new Error(t.openActiveCrop);
       if (kind === 'feed') {
-        await apiRequest(`/crops/${cropId}/feed-logs`, { method: 'POST', body: JSON.stringify(feed) });
+        await saveFeedEntry(cropId, feed);
         window.localStorage.setItem(`aqua_last_feed_${cropId}`, JSON.stringify(feed));
       }
-      if (kind === 'growth') await apiRequest(`/crops/${cropId}/growth-samples`, { method: 'POST', body: JSON.stringify(growth) });
+      if (kind === 'growth') await saveGrowthSample(cropId, growth);
       if (kind === 'water') await apiRequest(`/crops/ponds/${pondId}/water-readings`, { method: 'POST', body: JSON.stringify({ ...water, cropId }) });
       if (kind === 'medicine') await apiRequest(`/crops/${cropId}/medicine-applications`, { method: 'POST', body: JSON.stringify(medicine) });
       if (kind === 'health') await apiRequest(`/crops/${cropId}/health-events`, { method: 'POST', body: JSON.stringify(health) });

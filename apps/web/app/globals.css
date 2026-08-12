@@ -186,5 +186,10 @@ button, input, select, textarea { font: inherit; }
 .rise { animation:rise .35s ease both; }
 .tap { transition:transform .16s ease, box-shadow .16s ease; }
 .tap:active { transform:scale(.98); }
+.sheet-backdrop { position:fixed; z-index:50; inset:0; display:flex; align-items:flex-end; justify-content:center; background:rgb(var(--color-textPrimary) / .42); }
+.quick-sheet { width:min(100%,30rem); max-height:90dvh; overflow:auto; padding:1.25rem 1rem 2rem; border-radius:1.5rem 1.5rem 0 0; background:rgb(var(--color-background)); box-shadow:0 -12px 40px rgb(var(--color-textPrimary) / .2); }
+.quick-kind { display:grid; justify-items:center; gap:.3rem; min-height:4.1rem; padding:.55rem .25rem; border:1px solid rgb(var(--color-border)); border-radius:1rem; background:rgb(var(--color-surface)); color:rgb(var(--color-textSecondary)); font-size:.68rem; font-weight:800; }
+.quick-kind i { color:rgb(var(--color-primary)); font-size:1.35rem; }
+.quick-kind.active { border-color:rgb(var(--color-primary)); background:rgb(var(--color-primary) / .1); color:rgb(var(--color-primary)); }
 @keyframes rise { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
 @media (min-width: 640px) { body { padding:0 1rem; } .app-frame { box-shadow:0 0 0 1px rgb(var(--color-border)); } }

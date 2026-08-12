@@ -7,7 +7,8 @@ import { apiGet, apiRequest, getSession } from '../../src/lib/api';
 import type { components } from '../../src/lib/api.generated';
 import { useI18n } from '../../src/lib/i18n';
 import { ActionButton, Card, ChoiceToggle, Disclosure, FormSection, PageHeader, SelectField, StatCard } from '../../src/components/design-system';
-import { formatPaise, rupeesToPaise } from '../../src/lib/money';
+import { formatPaise } from '../../src/lib/money';
+import { saveExpenseEntry, savePaymentEntry } from '../../src/lib/entry-actions';
 
 type Pond = components['schemas']['PondListItemDto'];
 type CostHead = components['schemas']['CostHeadListDto'];
@@ -81,7 +82,7 @@ export default function MoneyPage() {
       return;
     }
     try {
-      const created = await apiRequest<{ id: string }>('/finance/expenses', { method: 'POST', body: JSON.stringify({ ...expense, amountPaise: rupeesToPaise(expense.amountPaise) }) });
+      const created = await saveExpenseEntry<{ id: string }>(expense);
       if (billPhoto) {
         const presign = await apiRequest<{ attachmentId: string; uploadUrl: string }>('/attachments/presign', { method: 'POST', body: JSON.stringify({ ownerType: 'EXPENSE', ownerId: created.id, fileName: billPhoto.name, contentType: billPhoto.type, sizeBytes: billPhoto.size }) });
         const upload = await fetch(presign.uploadUrl, { method: 'PUT', headers: { 'content-type': billPhoto.type }, body: billPhoto });
@@ -103,7 +104,7 @@ export default function MoneyPage() {
       window.setTimeout(() => document.getElementById('payment-party')?.focus(), 0);
       return;
     }
-    try { await apiRequest('/finance/payments', { method: 'POST', body: JSON.stringify({ ...payment, amountPaise: rupeesToPaise(payment.amountPaise) }) }); if (typeof window !== 'undefined') window.localStorage.setItem('aqua_last_payment_mode', payment.mode); setMessage(t.savedPayment); }
+    try { await savePaymentEntry(payment); if (typeof window !== 'undefined') window.localStorage.setItem('aqua_last_payment_mode', payment.mode); setMessage(t.savedPayment); }
     catch (error) { setMessage(error instanceof Error ? error.message : t.savePayment); }
   }
 
